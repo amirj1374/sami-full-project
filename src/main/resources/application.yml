@@ -1,0 +1,92 @@
+# Base configuration shared by all profiles.
+# Environment-specific overrides live in application-{dev,prod}.yml.
+# Secrets and connection details are always injected via environment variables.
+
+spring:
+  application:
+    name: sami-backend
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/sami}
+    username: ${DB_USERNAME:sami}
+    password: ${DB_PASSWORD:sami}
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:10}
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      # Schema is owned by Flyway; Hibernate never alters it.
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+  jackson:
+    default-property-inclusion: non_null
+
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB
+
+server:
+  port: ${SERVER_PORT:8080}
+  error:
+    include-message: never
+    include-stacktrace: never
+
+# JWT settings. The secret MUST be provided via environment variable and be at
+# least 32 bytes (256 bits) for HS256.
+security:
+  jwt:
+    secret: ${JWT_SECRET:change-me-in-env-a-very-long-dev-only-secret-value-32b+}
+    issuer: ${JWT_ISSUER:sami}
+    access-token-ttl: ${JWT_ACCESS_TTL:900}        # 15 minutes
+    refresh-token-ttl: ${JWT_REFRESH_TTL:1209600}  # 14 days
+
+app:
+  suppliers:
+    code-prefix: ${SUP_CODE_PREFIX:SUP-}
+    code-padding: ${SUP_CODE_PADDING:6}
+  purchasing:
+    number-include-year: ${PUR_NUMBER_INCLUDE_YEAR:true}
+    number-padding: ${PUR_NUMBER_PADDING:6}
+  crm:
+    customer-code-prefix: ${CRM_CODE_PREFIX:C}
+    customer-code-padding: ${CRM_CODE_PADDING:6}
+  storage:
+    provider: ${STORAGE_PROVIDER:local}          # local today; minio / s3 later
+    base-path: ${STORAGE_BASE_PATH:./data/uploads}
+    max-image-size-bytes: ${STORAGE_MAX_IMAGE_BYTES:2097152}   # 2 MiB
+    allowed-image-types: ${STORAGE_ALLOWED_IMAGE_TYPES:image/jpeg,image/png,image/webp}
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+  bootstrap:
+    admin:
+      enabled: ${BOOTSTRAP_ADMIN_ENABLED:true}
+      email: ${BOOTSTRAP_ADMIN_EMAIL:admin@sami.local}
+      password: ${BOOTSTRAP_ADMIN_PASSWORD:Admin123!}
+      full-name: ${BOOTSTRAP_ADMIN_NAME:Administrator}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html

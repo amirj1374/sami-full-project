@@ -1,0 +1,22 @@
+# Maven build output
+target/
+
+# IDE
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Local uploads (file storage)
+data/
+uploads/
+
+# OS / logs
+*.log
+.DS_Store
