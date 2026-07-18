@@ -1,0 +1,86 @@
+# Full-stack production stack: PostgreSQL + Spring Boot API + nginx-served SPA.
+#
+# This is the production counterpart to docker-compose.yml (which runs the
+# backend standalone for local development). It wires the three services onto a
+# single network so the frontend's nginx can reach the API at the "backend"
+# host name it proxies to (see ../sami-frontend/nginx.conf).
+#
+# The frontend is built from the sibling repository checkout; both projects are
+# expected to live side by side:
+#   parent/
+#   ├── sami-backend/   (this repo)
+#   └── sami-frontend/
+#
+# Usage:
+#   cp .env.example .env      # then set STRONG values for the required vars
+#   docker compose -f docker-compose.prod.yml up --build -d
+#
+# App (SPA + proxied API):  http://localhost
+# Swagger (through nginx):   http://localhost/swagger-ui.html   (if exposed)
+#
+# Required secrets (no insecure defaults in prod — compose fails fast if unset):
+#   POSTGRES_PASSWORD, JWT_SECRET, BOOTSTRAP_ADMIN_PASSWORD
+#
+# Flyway runs all migrations (V1..V9) on first boot and a default admin is
+# seeded (see BOOTSTRAP_ADMIN_* in .env).
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-sami}
+      POSTGRES_USER: ${POSTGRES_USER:-sami}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required in production}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    # Not published to the host in production; only reachable on the compose network.
+    expose:
+      - "5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-sami} -d ${POSTGRES_DB:-sami}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-sami}
+      DB_USERNAME: ${POSTGRES_USER:-sami}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required in production}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required in production (>= 32 bytes)}
+      JWT_ISSUER: ${JWT_ISSUER:-sami}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost}
+      BOOTSTRAP_ADMIN_ENABLED: ${BOOTSTRAP_ADMIN_ENABLED:-true}
+      BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:-admin@sami.local}
+      BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:?BOOTSTRAP_ADMIN_PASSWORD is required in production}
+      BOOTSTRAP_ADMIN_NAME: ${BOOTSTRAP_ADMIN_NAME:-Administrator}
+      STORAGE_BASE_PATH: /app/data/uploads
+    volumes:
+      - uploads:/app/data/uploads
+    # Not published to the host; the frontend nginx proxies to it on the network.
+    expose:
+      - "8080"
+
+  frontend:
+    build:
+      # Sibling repository checkout; VITE_API_BASE_URL defaults to same-origin "/api".
+      context: ../sami-frontend
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api}
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
+
+volumes:
+  db-data:
+  uploads:
