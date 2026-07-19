@@ -44,6 +44,31 @@ class JwtServiceTest {
         assertThat(jwtService.extractUsername(token)).isEqualTo("user@example.com");
     }
 
+    /**
+     * Regression: refresh tokens are persisted as a SHA-256 hash under a unique
+     * constraint, so two tokens minted for the same user in the same wall-clock
+     * second must still differ. Before the {@code jti} claim they were identical
+     * (JWT dates have second granularity), and the second login returned HTTP 500.
+     */
+    @Test
+    void refreshTokensForSameSubjectAreUniqueWithinTheSameSecond() {
+        String first = jwtService.generateRefreshToken("user@example.com");
+        String second = jwtService.generateRefreshToken("user@example.com");
+
+        assertThat(first).isNotEqualTo(second);
+        assertThat(jwtService.parse(first).getId())
+                .isNotNull()
+                .isNotEqualTo(jwtService.parse(second).getId());
+    }
+
+    @Test
+    void accessTokensForSameSubjectAreUniqueWithinTheSameSecond() {
+        String first = jwtService.generateAccessToken("user@example.com");
+        String second = jwtService.generateAccessToken("user@example.com");
+
+        assertThat(first).isNotEqualTo(second);
+    }
+
     @Test
     void tamperedTokenIsRejected() {
         String token = jwtService.generateAccessToken("user@example.com");
