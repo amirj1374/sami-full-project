@@ -76,6 +76,13 @@ app:
       email: ${BOOTSTRAP_ADMIN_EMAIL:admin@sami.local}
       password: ${BOOTSTRAP_ADMIN_PASSWORD:Admin123!}
       full-name: ${BOOTSTRAP_ADMIN_NAME:Administrator}
+  # Realistic demo/business data generator. Idempotent and additive: it seeds
+  # only when enabled AND the business tables are still empty. Size presets:
+  # SMALL | MEDIUM | LARGE.
+  demo:
+    enabled: ${DEMO_SEED_ENABLED:false}
+    size: ${DEMO_SEED_SIZE:MEDIUM}
+    seed: ${DEMO_SEED_VALUE:20260719}
 
 management:
   endpoints:

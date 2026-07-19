@@ -2,6 +2,7 @@ package com.sami.app.config;
 
 import com.sami.app.common.storage.StorageProperties;
 import com.sami.app.crm.CrmProperties;
+import com.sami.app.demo.DemoProperties;
 import com.sami.app.purchasing.PurchasingProperties;
 import com.sami.app.supplier.SupplierProperties;
 import com.sami.app.security.jwt.JwtProperties;
@@ -17,7 +18,8 @@ import org.springframework.context.annotation.Configuration;
         StorageProperties.class,
         CrmProperties.class,
         PurchasingProperties.class,
-        SupplierProperties.class
+        SupplierProperties.class,
+        DemoProperties.class
 })
 public class PropertiesConfig {
 }

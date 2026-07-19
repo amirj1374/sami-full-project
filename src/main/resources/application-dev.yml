@@ -11,3 +11,9 @@ logging:
     com.sami.app: DEBUG
     org.springframework.security: INFO
     org.hibernate.SQL: DEBUG
+
+# Populate the dev database with realistic demo data on first run (idempotent).
+app:
+  demo:
+    enabled: ${DEMO_SEED_ENABLED:true}
+    size: ${DEMO_SEED_SIZE:MEDIUM}
