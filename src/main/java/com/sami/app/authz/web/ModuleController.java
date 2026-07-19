@@ -2,6 +2,8 @@ package com.sami.app.authz.web;
 
 import com.sami.app.authz.dto.CreateModuleRequest;
 import com.sami.app.authz.dto.ModuleResponse;
+import com.sami.app.authz.dto.ModuleStatusResponse;
+import com.sami.app.authz.dto.UpdateModuleLifecycleRequest;
 import com.sami.app.authz.dto.UpdateModuleRequest;
 import com.sami.app.authz.dto.UpdateModuleStatusRequest;
 import com.sami.app.authz.service.ModuleService;
@@ -25,6 +27,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 /**
  * Module administration. Every endpoint declares its required permission via the
@@ -69,6 +73,31 @@ public class ModuleController {
     public ApiResponse<ModuleResponse> updateStatus(@PathVariable Long id,
                                                     @Valid @RequestBody UpdateModuleStatusRequest request) {
         return ApiResponse.ok(moduleService.updateStatus(id, request));
+    }
+
+    /**
+     * Lifecycle stages available to administrators. Read-only and behind
+     * {@code modules:view} so the edit dialog can populate its dropdowns
+     * without granting edit rights.
+     */
+    @GetMapping("/lifecycle-statuses")
+    @PreAuthorize("@authz.has('modules:view')")
+    @Operation(summary = "List the configurable module lifecycle statuses")
+    public ApiResponse<List<ModuleStatusResponse>> lifecycleStatuses() {
+        return ApiResponse.ok(moduleService.lifecycleStatuses());
+    }
+
+    /**
+     * Distinct from {@code PATCH /{id}/status}, which toggles enablement.
+     * This records where the module sits in its development lifecycle.
+     */
+    @PatchMapping("/{id}/lifecycle")
+    @PreAuthorize("@authz.has('modules:edit')")
+    @Operation(summary = "Update a module's lifecycle record")
+    public ApiResponse<ModuleResponse> updateLifecycle(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateModuleLifecycleRequest request) {
+        return ApiResponse.ok(moduleService.updateLifecycle(id, request));
     }
 
     @DeleteMapping("/{id}")

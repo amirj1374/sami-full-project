@@ -3,6 +3,9 @@ package com.sami.app.authz.domain;
 import com.sami.app.common.domain.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -55,4 +58,52 @@ public class AppModule extends BaseEntity {
 
     @Column(name = "is_system", nullable = false)
     private boolean isSystem;
+
+    // ----------------------------------------------------------------
+    // Lifecycle (V25)
+    //
+    // Backend and frontend readiness are tracked independently because
+    // they genuinely move apart: most modules here have a complete
+    // server side and no screens. Inferring one from the other — which
+    // is what the frontend used to do by checking its own router — is
+    // wrong in both directions.
+    // ----------------------------------------------------------------
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "backend_status_id", nullable = false)
+    private ModuleStatus backendStatus;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "frontend_status_id", nullable = false)
+    private ModuleStatus frontendStatus;
+
+    /**
+     * Explicit override. NULL means the overall status is derived from the
+     * two axes by {@code ModuleLifecycle}; setting it pins the answer.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "overall_status_id")
+    private ModuleStatus overallStatus;
+
+    /** Version in which the module shipped, or is expected to. */
+    @Column(name = "release_version", length = 32)
+    private String releaseVersion;
+
+    @Column(name = "progress_percentage", nullable = false)
+    private short progressPercentage;
+
+    @Column(name = "development_notes", length = 2000)
+    private String developmentNotes;
+
+    /**
+     * Distinct from {@link #enabled}: an administrator switches a module off
+     * for this installation, whereas availability records whether it is fit
+     * to be used at all. Keeping them apart means disabling a module locally
+     * does not rewrite its lifecycle record.
+     */
+    @Column(name = "is_available", nullable = false)
+    private boolean isAvailable;
+
+    @Column(name = "is_production_ready", nullable = false)
+    private boolean isProductionReady;
 }
