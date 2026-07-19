@@ -9,6 +9,7 @@ import javax.crypto.SecretKey;
 import java.time.Instant;
 import java.util.Date;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Creates and validates signed JWTs (HS256).
@@ -77,10 +78,17 @@ public class JwtService {
                 .getPayload();
     }
 
+    /**
+     * Every token carries a random {@code jti}. JWT numeric dates have second
+     * granularity, so without it two tokens minted for the same subject within one
+     * second would be byte-identical — and refresh tokens are stored by SHA-256 hash
+     * under a unique constraint, so the duplicate would fail to persist.
+     */
     private String buildToken(String subject, Map<String, ?> claims, long ttlSeconds) {
         Instant now = Instant.now();
         return Jwts.builder()
                 .issuer(properties.issuer())
+                .id(UUID.randomUUID().toString())
                 .subject(subject)
                 .claims(claims)
                 .issuedAt(Date.from(now))
