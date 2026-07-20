@@ -14,19 +14,24 @@ import java.util.List;
  * narrowed to those whose {@code <code>:view} permission the user holds. The
  * super-admin bypass inside {@link Authz#has} means super admins see every
  * enabled module without special-casing here.
+ *
+ * <p>Since V25 each entry also carries its lifecycle status, so the frontend
+ * renders module state from data instead of inferring it from whether its own
+ * router happens to know the path.
  */
 @Service
 @RequiredArgsConstructor
 public class MenuService {
 
     private final AppModuleRepository moduleRepository;
+    private final ModuleLifecycle lifecycle;
     private final Authz authz;
 
     @Transactional(readOnly = true)
     public List<MenuItemResponse> menuForCurrentUser() {
         return moduleRepository.findByEnabledTrueOrderByDisplayOrderAsc().stream()
                 .filter(module -> authz.has(module.getCode() + ":view"))
-                .map(MenuItemResponse::from)
+                .map(module -> MenuItemResponse.from(module, lifecycle))
                 .toList();
     }
 }

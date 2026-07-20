@@ -1,12 +1,16 @@
 package com.sami.app.authz.service;
 
 import com.sami.app.authz.domain.AppModule;
+import com.sami.app.authz.domain.ModuleStatus;
 import com.sami.app.authz.domain.Permission;
 import com.sami.app.authz.dto.CreateModuleRequest;
 import com.sami.app.authz.dto.ModuleResponse;
+import com.sami.app.authz.dto.ModuleStatusResponse;
+import com.sami.app.authz.dto.UpdateModuleLifecycleRequest;
 import com.sami.app.authz.dto.UpdateModuleRequest;
 import com.sami.app.authz.dto.UpdateModuleStatusRequest;
 import com.sami.app.authz.repository.AppModuleRepository;
+import com.sami.app.authz.repository.ModuleStatusRepository;
 import com.sami.app.authz.repository.PermissionRepository;
 import com.sami.app.common.exception.ApiException;
 import com.sami.app.common.exception.ErrorCode;
@@ -37,12 +41,14 @@ public class ModuleService {
 
     private final AppModuleRepository moduleRepository;
     private final PermissionRepository permissionRepository;
+    private final ModuleStatusRepository statusRepository;
+    private final ModuleLifecycle lifecycle;
 
     @Transactional(readOnly = true)
     public Page<ModuleResponse> list(Pageable pageable) {
         return moduleRepository.findAll(pageable)
                 .map(module -> ModuleResponse.from(module,
-                        permissionRepository.countByModuleId(module.getId())));
+                        permissionRepository.countByModuleId(module.getId()), lifecycle));
     }
 
     @Transactional
@@ -60,6 +66,14 @@ public class ModuleService {
                 .path(request.path())
                 .displayOrder(request.displayOrder())
                 .enabled(request.enabled())
+                // A module created at runtime has nothing built yet. The seed
+                // stage comes from whichever row is flagged default for each
+                // axis, so changing the starting point is configuration.
+                .backendStatus(defaultBackendStatus())
+                .frontendStatus(defaultFrontendStatus())
+                .progressPercentage((short) 0)
+                .isAvailable(true)
+                .isProductionReady(false)
                 .build();
         moduleRepository.save(module);
 
@@ -67,7 +81,7 @@ public class ModuleService {
         if (request.createDefaultPermissions()) {
             permissionCount = createStandardPermissions(module);
         }
-        return ModuleResponse.from(module, permissionCount);
+        return ModuleResponse.from(module, permissionCount, lifecycle);
     }
 
     @Transactional
@@ -79,7 +93,7 @@ public class ModuleService {
         module.setPath(request.path());
         module.setDisplayOrder(request.displayOrder());
         // Dirty checking flushes the update on transaction commit.
-        return ModuleResponse.from(module, permissionRepository.countByModuleId(id));
+        return ModuleResponse.from(module, permissionRepository.countByModuleId(id), lifecycle);
     }
 
     @Transactional
@@ -89,7 +103,54 @@ public class ModuleService {
             throw new ApiException(ErrorCode.OPERATION_NOT_ALLOWED, "System modules cannot be disabled");
         }
         module.setEnabled(request.enabled());
-        return ModuleResponse.from(module, permissionRepository.countByModuleId(id));
+        return ModuleResponse.from(module, permissionRepository.countByModuleId(id), lifecycle);
+    }
+
+    /**
+     * Updates a module's lifecycle record.
+     *
+     * <p>Validates that each status actually applies to the axis it is being
+     * set on — {@code BACKEND_READY} is meaningless as a frontend state — so a
+     * mis-typed request fails loudly instead of producing a nonsensical pair
+     * that the derivation would then have to interpret.
+     */
+    @Transactional
+    public ModuleResponse updateLifecycle(Long id, UpdateModuleLifecycleRequest request) {
+        AppModule module = findOrThrow(id);
+
+        ModuleStatus backend = requireStatus(request.backendStatusCode());
+        if (!backend.isAppliesToBackend()) {
+            throw new ApiException(ErrorCode.VALIDATION_FAILED,
+                    "Status '%s' cannot be used for the backend axis".formatted(backend.getCode()));
+        }
+        ModuleStatus frontend = requireStatus(request.frontendStatusCode());
+        if (!frontend.isAppliesToFrontend()) {
+            throw new ApiException(ErrorCode.VALIDATION_FAILED,
+                    "Status '%s' cannot be used for the frontend axis".formatted(frontend.getCode()));
+        }
+
+        module.setBackendStatus(backend);
+        module.setFrontendStatus(frontend);
+        // A blank code clears the override and returns the module to derivation.
+        module.setOverallStatus(
+                request.overallStatusCode() == null || request.overallStatusCode().isBlank()
+                        ? null
+                        : requireStatus(request.overallStatusCode()));
+        module.setProgressPercentage(request.progressPercentage());
+        module.setReleaseVersion(request.releaseVersion());
+        module.setDevelopmentNotes(request.developmentNotes());
+        module.setAvailable(request.available());
+        module.setProductionReady(request.productionReady());
+
+        return ModuleResponse.from(module, permissionRepository.countByModuleId(id), lifecycle);
+    }
+
+    /** The configurable lifecycle stages, for admin dropdowns. */
+    @Transactional(readOnly = true)
+    public List<ModuleStatusResponse> lifecycleStatuses() {
+        return statusRepository.findAllByOrderByDisplayOrderAsc().stream()
+                .map(ModuleStatusResponse::from)
+                .toList();
     }
 
     @Transactional
@@ -122,6 +183,24 @@ public class ModuleService {
 
     private static String capitalize(String action) {
         return Character.toUpperCase(action.charAt(0)) + action.substring(1);
+    }
+
+    private ModuleStatus requireStatus(String code) {
+        return statusRepository.findByCode(code)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Module status '%s' not found".formatted(code)));
+    }
+
+    private ModuleStatus defaultBackendStatus() {
+        return statusRepository.findFirstByIsDefaultBackendTrue()
+                .orElseThrow(() -> new ApiException(ErrorCode.OPERATION_NOT_ALLOWED,
+                        "No default backend module status is configured"));
+    }
+
+    private ModuleStatus defaultFrontendStatus() {
+        return statusRepository.findFirstByIsDefaultFrontendTrue()
+                .orElseThrow(() -> new ApiException(ErrorCode.OPERATION_NOT_ALLOWED,
+                        "No default frontend module status is configured"));
     }
 
     private AppModule findOrThrow(Long id) {
