@@ -16,6 +16,13 @@ public record ModuleStatusResponse(
         String color,
         String icon,
         int lifecycleRank,
+        /**
+         * Whether this stage is a legal value for the backend / frontend axis.
+         * Exposed so the admin UI can filter each dropdown from data instead of
+         * excluding stage codes by name.
+         */
+        boolean appliesToBackend,
+        boolean appliesToFrontend,
         boolean navigable,
         boolean showsPlaceholder,
         boolean productionReady,
@@ -33,6 +40,8 @@ public record ModuleStatusResponse(
                 status.getColor(),
                 status.getIcon(),
                 status.getLifecycleRank(),
+                status.isAppliesToBackend(),
+                status.isAppliesToFrontend(),
                 status.isNavigable(),
                 status.isShowsPlaceholder(),
                 status.isProductionReady(),
