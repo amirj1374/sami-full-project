@@ -1,0 +1,4 @@
+interface:
+  display_name: "SAMI UI/UX Designer"
+  short_description: "Design enterprise SAMI experiences with proven patterns"
+  default_prompt: "Use $sami-ui-ux-designer to design this SAMI ERP experience with the right interaction and interface patterns."

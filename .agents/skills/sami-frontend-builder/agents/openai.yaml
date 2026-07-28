@@ -1,0 +1,4 @@
+interface:
+  display_name: "SAMI Frontend Builder"
+  short_description: "Build production-ready SAMI ERP frontend features"
+  default_prompt: "Use $sami-frontend-builder to implement this SAMI ERP frontend feature using existing UI conventions."

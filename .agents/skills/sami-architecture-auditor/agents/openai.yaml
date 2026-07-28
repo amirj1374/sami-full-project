@@ -1,0 +1,4 @@
+interface:
+  display_name: "SAMI Architecture Auditor"
+  short_description: "Audit SAMI architecture before major module work"
+  default_prompt: "Use $sami-architecture-auditor to audit the affected SAMI ERP architecture before implementation."

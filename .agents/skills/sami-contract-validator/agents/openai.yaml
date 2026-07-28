@@ -1,0 +1,4 @@
+interface:
+  display_name: "SAMI Contract Validator"
+  short_description: "Validate SAMI backend and frontend contracts"
+  default_prompt: "Use $sami-contract-validator to reconcile this SAMI backend/frontend API contract."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "SAMI Module Builder"
+  short_description: "Build complete production-ready SAMI ERP modules"
+  default_prompt: "Use $sami-module-builder to implement this SAMI ERP module from the supplied requirements."

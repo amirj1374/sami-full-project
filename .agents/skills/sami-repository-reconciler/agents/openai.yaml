@@ -1,0 +1,4 @@
+interface:
+  display_name: "SAMI Repository Reconciler"
+  short_description: "Safely reconcile SAMI Git branches and modules"
+  default_prompt: "Use $sami-repository-reconciler to compare and safely reconcile these SAMI branches."

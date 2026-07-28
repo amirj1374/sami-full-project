@@ -1,0 +1,4 @@
+[submodule "sami-frontend"]
+	path = sami-frontend
+	url = https://github.com/amirj1374/sami-frontend.git
+	branch = development

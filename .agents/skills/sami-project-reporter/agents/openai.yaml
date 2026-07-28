@@ -1,0 +1,4 @@
+interface:
+  display_name: "SAMI Project Reporter"
+  short_description: "Generate evidence-based SAMI progress reports"
+  default_prompt: "Use $sami-project-reporter to produce an accurate SAMI project status report from repository evidence."

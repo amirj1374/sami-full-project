@@ -1,0 +1,4 @@
+interface:
+  display_name: "SAMI Release Gate"
+  short_description: "Run evidence-based SAMI release validation"
+  default_prompt: "Use $sami-release-gate to determine whether this SAMI revision is ready to merge or release."

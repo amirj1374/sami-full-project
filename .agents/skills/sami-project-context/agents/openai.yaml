@@ -1,0 +1,4 @@
+interface:
+  display_name: "SAMI Project Context"
+  short_description: "Establish authoritative SAMI repository context"
+  default_prompt: "Use $sami-project-context to establish the verified technical context before making architecture or implementation decisions."

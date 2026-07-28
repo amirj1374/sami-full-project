@@ -1,0 +1,4 @@
+interface:
+  display_name: "SAMI Migration Guardian"
+  short_description: "Protect SAMI PostgreSQL and Flyway integrity"
+  default_prompt: "Use $sami-migration-guardian to audit or create this SAMI database migration safely."
