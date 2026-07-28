@@ -8,6 +8,10 @@ SAMI ERP is maintained as a single monorepo:
 
 The integration branch is `development`.
 
+The canonical technical knowledge base is [docs/README.md](docs/README.md).
+Start there for architecture, module status, workflows, operations, security,
+known risks, and AI-agent guidance.
+
 ## Clone
 
 ```bash
