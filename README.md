@@ -12,6 +12,9 @@ The canonical technical knowledge base is [docs/README.md](docs/README.md).
 Start there for architecture, module status, workflows, operations, security,
 known risks, and AI-agent guidance.
 
+Confirmed incomplete work and open decisions are tracked in the
+[project backlog](PROJECT_BACKLOG/README.md).
+
 ## Clone
 
 ```bash
