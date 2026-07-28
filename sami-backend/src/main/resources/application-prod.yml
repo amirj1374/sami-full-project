@@ -1,0 +1,11 @@
+# Production profile: quiet logging, no SQL echo. All secrets come from the
+# environment (see docker-compose.prod.yml / .env).
+spring:
+  jpa:
+    show-sql: false
+
+logging:
+  level:
+    root: INFO
+    com.sami.app: INFO
+    org.springframework.security: WARN

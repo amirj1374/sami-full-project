@@ -1,0 +1,133 @@
+# Base configuration shared by all profiles.
+# Environment-specific overrides live in application-{dev,prod}.yml.
+# Secrets and connection details are always injected via environment variables.
+
+spring:
+  application:
+    name: sami-backend
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/sami}
+    username: ${DB_USERNAME:sami}
+    password: ${DB_PASSWORD:sami}
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:10}
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      # Schema is owned by Flyway; Hibernate never alters it.
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+  jackson:
+    default-property-inclusion: non_null
+
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB
+
+server:
+  port: ${SERVER_PORT:8080}
+  error:
+    include-message: never
+    include-stacktrace: never
+
+# JWT settings. The secret MUST be provided via environment variable and be at
+# least 32 bytes (256 bits) for HS256.
+security:
+  jwt:
+    secret: ${JWT_SECRET:change-me-in-env-a-very-long-dev-only-secret-value-32b+}
+    issuer: ${JWT_ISSUER:sami}
+    access-token-ttl: ${JWT_ACCESS_TTL:900}        # 15 minutes
+    refresh-token-ttl: ${JWT_REFRESH_TTL:1209600}  # 14 days
+
+app:
+  suppliers:
+    code-prefix: ${SUP_CODE_PREFIX:SUP-}
+    code-padding: ${SUP_CODE_PADDING:6}
+  purchasing:
+    number-include-year: ${PUR_NUMBER_INCLUDE_YEAR:true}
+    number-padding: ${PUR_NUMBER_PADDING:6}
+  crm:
+    customer-code-prefix: ${CRM_CODE_PREFIX:C}
+    customer-code-padding: ${CRM_CODE_PADDING:6}
+  storage:
+    provider: ${STORAGE_PROVIDER:local}          # local today; minio / s3 later
+    base-path: ${STORAGE_BASE_PATH:./data/uploads}
+    max-image-size-bytes: ${STORAGE_MAX_IMAGE_BYTES:2097152}   # 2 MiB
+    allowed-image-types: ${STORAGE_ALLOWED_IMAGE_TYPES:image/jpeg,image/png,image/webp}
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+  bootstrap:
+    admin:
+      enabled: ${BOOTSTRAP_ADMIN_ENABLED:true}
+      email: ${BOOTSTRAP_ADMIN_EMAIL:admin@sami.local}
+      password: ${BOOTSTRAP_ADMIN_PASSWORD:Admin123!}
+      full-name: ${BOOTSTRAP_ADMIN_NAME:Administrator}
+  # Licensing: when `enforce` is false an installation with no licence runs
+  # unrestricted (existing/on-premise deployments keep working). `cache-seconds`
+  # bounds how long an entitlement snapshot is reused, so feature-flag changes
+  # apply without a restart.
+  licensing:
+    enforce: ${LICENSING_ENFORCE:false}
+    cache-seconds: ${LICENSING_CACHE_SECONDS:30}
+  # Realistic demo/business data generator. Idempotent and additive: it seeds
+  # only when enabled AND the business tables are still empty. Size presets:
+  # SMALL | MEDIUM | LARGE.
+  demo:
+    enabled: ${DEMO_SEED_ENABLED:false}
+    size: ${DEMO_SEED_SIZE:MEDIUM}
+    seed: ${DEMO_SEED_VALUE:20260719}
+  # Central file storage. Provider specifics live in the storage_providers table;
+  # only what the module needs before it can read the database is here.
+  files:
+    base-path: ${FILES_BASE_PATH:./data/files}
+    staging-path: ${FILES_STAGING_PATH:./data/files-staging}
+    max-upload-bytes: ${FILES_MAX_UPLOAD_BYTES:524288000}
+    quotas-enforced: ${FILES_QUOTAS_ENFORCED:false}
+  # Shared scheduler. Jobs themselves are rows in scheduled_jobs; all seeded
+  # jobs start in `draft`, so enabling this does not start sweeping data.
+  scheduler:
+    enabled: ${SCHEDULER_ENABLED:true}
+    poll-seconds: ${SCHEDULER_POLL_SECONDS:30}
+    batch-size: ${SCHEDULER_BATCH_SIZE:20}
+    startup-delay-seconds: ${SCHEDULER_STARTUP_DELAY:60}
+  # Customer portal. `jwt-secret` MUST differ from the staff JWT secret: the
+  # separation is what stops a staff token verifying as a customer token, and
+  # vice versa. The service refuses to start on a missing or short key.
+  portal:
+    enabled: ${PORTAL_ENABLED:true}
+    jwt-secret: ${PORTAL_JWT_SECRET:change-me-portal-secret-at-least-32-chars-long}
+    issuer: ${PORTAL_JWT_ISSUER:sami-portal}
+    access-token-ttl: ${PORTAL_ACCESS_TTL:PT30M}
+    session-ttl: ${PORTAL_SESSION_TTL:P30D}
+    max-failed-attempts: ${PORTAL_MAX_FAILED_ATTEMPTS:5}
+    lock-duration: ${PORTAL_LOCK_DURATION:PT15M}
+    otp-length: ${PORTAL_OTP_LENGTH:6}
+    otp-ttl: ${PORTAL_OTP_TTL:PT5M}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
