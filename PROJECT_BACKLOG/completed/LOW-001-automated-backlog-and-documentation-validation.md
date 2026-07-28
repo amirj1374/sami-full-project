@@ -11,6 +11,7 @@ blocks: []
 estimated_size: S
 risk: low
 source_refs: [PROJECT_BACKLOG, docs, .github/workflows/ci.yml]
+completion_commit: 025da67
 ---
 
 # Automate backlog and documentation integrity checks
