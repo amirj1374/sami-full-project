@@ -161,7 +161,9 @@ Full stack:
 - nginx expects a network hostname `backend` on port `8080`.
 - `sami-backend/docker-compose.yml` runs PostgreSQL plus the backend for development.
 - `sami-backend/docker-compose.prod.yml` builds PostgreSQL, backend and the sibling frontend for production.
-- `.env.example` documents database, JWT, CORS and bootstrap-admin variables.
+- `.env.example` documents database, staff/portal JWT, CORS and bootstrap-admin variables.
+- Production Compose requires distinct staff and portal JWT secrets and fails fast
+  when either is absent.
 
 The production Compose file remains located under `sami-backend`; run it from that directory. Some README/Compose comments still mention the historical V1..V9 range and should not be treated as current migration inventory.
 

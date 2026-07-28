@@ -18,7 +18,7 @@
 # Swagger (through nginx):   http://localhost/swagger-ui.html   (if exposed)
 #
 # Required secrets (no insecure defaults in prod — compose fails fast if unset):
-#   POSTGRES_PASSWORD, JWT_SECRET, BOOTSTRAP_ADMIN_PASSWORD
+#   POSTGRES_PASSWORD, JWT_SECRET, PORTAL_JWT_SECRET, BOOTSTRAP_ADMIN_PASSWORD
 #
 # Flyway runs all migrations on first boot and a default admin is
 # seeded (see BOOTSTRAP_ADMIN_* in .env).
@@ -55,6 +55,7 @@ services:
       DB_USERNAME: ${POSTGRES_USER:-sami}
       DB_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required in production}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required in production (>= 32 bytes)}
+      PORTAL_JWT_SECRET: ${PORTAL_JWT_SECRET:?PORTAL_JWT_SECRET is required in production (>= 32 bytes and distinct from JWT_SECRET)}
       JWT_ISSUER: ${JWT_ISSUER:-sami}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost}
       BOOTSTRAP_ADMIN_ENABLED: ${BOOTSTRAP_ADMIN_ENABLED:-true}
