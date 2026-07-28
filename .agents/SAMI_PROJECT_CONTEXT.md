@@ -96,6 +96,9 @@ Environment variables:
 
 Source: `sami-frontend/.env.example` and `env.d.ts`.
 
+The Vite development server listens on `7474`; backend development CORS defaults
+and examples must use `http://localhost:7474`.
+
 ## Build and run
 
 From `sami-frontend`:

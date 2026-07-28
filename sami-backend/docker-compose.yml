@@ -40,7 +40,7 @@ services:
       DB_PASSWORD: ${POSTGRES_PASSWORD:-sami}
       JWT_SECRET: ${JWT_SECRET:-change-me-in-env-a-very-long-dev-only-secret-value-32b+}
       JWT_ISSUER: ${JWT_ISSUER:-sami}
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5173}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:7474}
       BOOTSTRAP_ADMIN_ENABLED: ${BOOTSTRAP_ADMIN_ENABLED:-true}
       BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:-admin@sami.local}
       BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:-Admin123!}

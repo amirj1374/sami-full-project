@@ -1,11 +1,13 @@
 # SAMI ERP — Backend
 
-Production-ready REST API for the SAMI ERP, built with **Java 21** and
+Modular REST API for the SAMI ERP, built with **Java 21** and
 **Spring Boot 3.5**. Layered architecture, DTO pattern, database-driven
 permission RBAC, JWT auth, Flyway migrations, and OpenAPI docs.
 
 The companion SPA lives in the sibling `sami-frontend` directory of the
 [SAMI full-project monorepo](https://github.com/amirj1374/sami-full-project).
+For verified module status, architecture, operations, and known gaps, use the
+[canonical technical documentation](../docs/README.md).
 
 ---
 
@@ -68,28 +70,26 @@ Stop with `Ctrl+C`; remove volumes with `docker compose down -v`.
    ```
 3. **Run** (Flyway migrates on startup):
    ```bash
-   ./mvnw spring-boot:run        # or: mvn spring-boot:run
+   mvn spring-boot:run
    ```
 
-> No Maven installed? Use the wrapper `./mvnw` (Linux/macOS) / `mvnw.cmd`
-> (Windows) if present, otherwise install Maven 3.9+.
+> This repository does not currently include Maven Wrapper scripts. Install
+> Maven 3.9+ or use the Docker workflow.
 
 ---
 
 ## First login
 
-On first boot (empty `users` table) a super-admin is seeded from the
-`BOOTSTRAP_ADMIN_*` variables. Defaults:
-
-- **Email:** `admin@sami.local`
-- **Password:** `Admin123!`
+On first boot (empty `users` table) a super-admin may be seeded from the
+`BOOTSTRAP_ADMIN_*` variables. Set local values in the untracked `.env` file
+and use strong, externally managed values in production.
 
 Authenticate and grab a token:
 
 ```bash
 curl -s http://localhost:8080/api/v1/auth/login \
   -H 'Content-Type: application/json' \
-  -d '{"email":"admin@sami.local","password":"Admin123!"}'
+  -d '{"email":"<local-admin-email>","password":"<local-admin-password>"}'
 ```
 
 Use the returned `accessToken` as `Authorization: Bearer <token>` on protected
@@ -110,8 +110,8 @@ important ones:
 | `DB_URL` / `DB_USERNAME` / `DB_PASSWORD` | localhost / `sami` / `sami` | PostgreSQL connection |
 | `JWT_SECRET` | dev placeholder | HMAC secret (≥ 32 bytes) — **set a strong value** |
 | `JWT_ACCESS_TTL` / `JWT_REFRESH_TTL` | 900 / 1209600 | Token lifetimes (seconds) |
-| `CORS_ALLOWED_ORIGINS` | `http://localhost:5173` | Allowed frontend origin(s) |
-| `BOOTSTRAP_ADMIN_EMAIL` / `_PASSWORD` | `admin@sami.local` / `Admin123!` | Seed admin |
+| `CORS_ALLOWED_ORIGINS` | `http://localhost:7474` | Allowed frontend origin(s) |
+| `BOOTSTRAP_ADMIN_EMAIL` / `_PASSWORD` | development placeholders | Seed admin; replace outside local development |
 | `STORAGE_PROVIDER` / `STORAGE_BASE_PATH` | `local` / `./data/uploads` | File storage (avatars, documents) |
 
 Schema is owned by **Flyway** (`ddl-auto: validate`); Hibernate never alters
