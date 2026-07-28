@@ -1,0 +1,40 @@
+{
+  "name": "sami-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "type-check": "vue-tsc --noEmit"
+  },
+  "dependencies": {
+    "@fontsource-variable/vazirmatn": "^5.2.8",
+    "@mdi/font": "^7.4.47",
+    "@vee-validate/zod": "^4.15.0",
+    "@vueuse/core": "^12.7.0",
+    "axios": "^1.7.9",
+    "pinia": "^3.0.1",
+    "vee-validate": "^4.15.0",
+    "vue": "^3.5.13",
+    "vue-i18n": "^9.14.5",
+    "vue-router": "^4.5.0",
+    "vuetify": "^3.7.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.0",
+    "msw": "^2.15.0",
+    "sass-embedded": "^1.83.0",
+    "typescript": "~5.7.3",
+    "vite": "^8.0.0",
+    "vite-plugin-vuetify": "^2.1.0",
+    "vue-tsc": "^2.2.0"
+  },
+  "msw": {
+    "workerDirectory": [
+      "public"
+    ]
+  }
+}

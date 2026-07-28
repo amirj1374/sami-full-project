@@ -1,0 +1,188 @@
+/* ============================================================================
+   Sami design language — global layer.
+   Vuetify provides the component system + palette; this file adds the shared
+   tokens (spacing, radius, elevation, motion), premium scrollbars, accessible
+   focus rings, skeleton shimmer and route transitions used across every screen.
+   Colours are always derived from the Vuetify theme vars so light/dark and the
+   brand palette stay the single source of truth.
+   ============================================================================ */
+
+:root {
+  --app-font-family: 'Vazirmatn Variable', 'Roboto', system-ui, -apple-system, sans-serif;
+
+  /* Spacing scale (4pt grid) */
+  --app-space-1: 4px;
+  --app-space-2: 8px;
+  --app-space-3: 12px;
+  --app-space-4: 16px;
+  --app-space-5: 24px;
+  --app-space-6: 32px;
+  --app-space-8: 48px;
+
+  /* Radius scale */
+  --app-radius-sm: 8px;
+  --app-radius: 12px;
+  --app-radius-lg: 16px;
+  --app-radius-xl: 22px;
+
+  /* Soft, layered elevation — premium, low-alpha */
+  --app-shadow-sm: 0 1px 2px rgba(20, 28, 46, 0.06), 0 1px 1px rgba(20, 28, 46, 0.04);
+  --app-shadow-md: 0 4px 12px rgba(20, 28, 46, 0.08), 0 2px 4px rgba(20, 28, 46, 0.05);
+  --app-shadow-lg: 0 12px 32px rgba(20, 28, 46, 0.12), 0 4px 8px rgba(20, 28, 46, 0.06);
+
+  /* Motion tokens — subtle, consistent easing */
+  --app-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --app-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --app-dur-fast: 0.14s;
+  --app-dur: 0.22s;
+  --app-sidebar-w: 264px;
+  --app-sidebar-rail: 76px;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--app-font-family);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.v-application {
+  font-family: var(--app-font-family) !important;
+  letter-spacing: 0.1px;
+}
+
+/* Tighten heading rhythm for a denser, more professional feel */
+.v-application h1,
+.v-application h2,
+.v-application h3 {
+  letter-spacing: -0.2px;
+}
+
+/* ---- Utilities ---------------------------------------------------------- */
+.text-truncate-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.cursor-pointer {
+  cursor: pointer;
+}
+.app-elevate {
+  transition: box-shadow var(--app-dur) var(--app-ease), transform var(--app-dur) var(--app-ease);
+}
+.app-elevate:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--app-shadow-md);
+}
+
+/* ---- Premium scrollbars -------------------------------------------------- */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--v-theme-on-surface), 0.18) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: rgba(var(--v-theme-on-surface), 0.16);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(var(--v-theme-on-surface), 0.28);
+}
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* ---- Accessible focus ring ---------------------------------------------- */
+.v-application :focus-visible {
+  outline: 2px solid rgb(var(--v-theme-primary));
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+/* Vuetify components manage their own focus overlays; don't double up */
+.v-application .v-btn:focus-visible,
+.v-application .v-field:focus-within,
+.v-application .v-list-item:focus-visible {
+  outline: none;
+}
+
+/* ---- Skeleton shimmer ---------------------------------------------------- */
+.app-skeleton {
+  position: relative;
+  overflow: hidden;
+  background: rgba(var(--v-theme-on-surface), 0.06);
+  border-radius: var(--app-radius-sm);
+}
+.app-skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(var(--v-theme-on-surface), 0.06),
+    transparent
+  );
+  animation: app-shimmer 1.4s infinite;
+}
+[dir='rtl'] .app-skeleton::after {
+  animation-name: app-shimmer-rtl;
+}
+@keyframes app-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+@keyframes app-shimmer-rtl {
+  100% {
+    transform: translateX(-200%);
+  }
+}
+
+/* ---- Route / element transitions ---------------------------------------- */
+.route-fade-enter-active {
+  transition: opacity var(--app-dur) var(--app-ease-out),
+    transform var(--app-dur) var(--app-ease-out);
+}
+.route-fade-leave-active {
+  transition: opacity var(--app-dur-fast) var(--app-ease);
+}
+.route-fade-enter-from {
+  opacity: 0;
+  transform: translateY(6px);
+}
+.route-fade-leave-to {
+  opacity: 0;
+}
+
+.app-list-enter-active {
+  transition: opacity var(--app-dur) var(--app-ease-out),
+    transform var(--app-dur) var(--app-ease-out);
+}
+.app-list-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
