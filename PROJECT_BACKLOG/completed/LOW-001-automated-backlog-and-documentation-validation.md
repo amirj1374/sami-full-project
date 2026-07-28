@@ -1,7 +1,7 @@
 ---
 id: LOW-001
 title: Automate backlog and documentation integrity checks
-status: ready
+status: done
 priority: low
 type: documentation
 area: documentation
@@ -54,12 +54,14 @@ Fixtures for duplicate ID, missing dependency, cycle, broken link and bad enum.
 Document command and remediation output.
 
 ## Acceptance criteria
-- [ ] Checker detects all required metadata/link/dependency failures.
-- [ ] It has no new project dependency.
-- [ ] CI runs it and output does not reveal secrets.
+- [x] Checker detects all required metadata/link/dependency failures.
+- [x] It has no new project dependency.
+- [x] CI runs it and output does not reveal secrets.
 
 ## Validation commands
-Run checker against valid backlog and each invalid fixture.
+`node --test scripts/validate-documentation.test.mjs`
+
+`node scripts/validate-documentation.mjs`
 
 ## Risks and rollback considerations
 Keep parsing narrow and documented to avoid false failures.
@@ -68,4 +70,5 @@ Keep parsing narrow and documented to avoid false failures.
 `PROJECT_BACKLOG`, `docs`, CI.
 
 ## Notes for the next developer or AI agent
-This item is ready because scope and acceptance criteria require no business decision.
+Implemented with Node.js standard-library APIs only. The validator reports
+paths and structural errors without printing file contents or secret matches.

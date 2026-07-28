@@ -40,4 +40,4 @@
 
 | ID | Title | Status | Type | Area | Size | Dependencies | Task |
 |---|---|---|---|---|---|---|---|
-| LOW-001 | Automated backlog/docs validation | ready | documentation | documentation | S | — | [task](low/LOW-001-automated-backlog-and-documentation-validation.md) |
+| LOW-001 | Automated backlog/docs validation | done | documentation | documentation | S | — | [task](completed/LOW-001-automated-backlog-and-documentation-validation.md) |
