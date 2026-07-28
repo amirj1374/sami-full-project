@@ -5,8 +5,7 @@
 # single network so the frontend's nginx can reach the API at the "backend"
 # host name it proxies to (see ../sami-frontend/nginx.conf).
 #
-# The frontend is built from the sibling repository checkout; both projects are
-# expected to live side by side:
+# The frontend is built from the sibling monorepo directory:
 #   parent/
 #   ├── sami-backend/   (this repo)
 #   └── sami-frontend/
@@ -21,7 +20,7 @@
 # Required secrets (no insecure defaults in prod — compose fails fast if unset):
 #   POSTGRES_PASSWORD, JWT_SECRET, BOOTSTRAP_ADMIN_PASSWORD
 #
-# Flyway runs all migrations (V1..V9) on first boot and a default admin is
+# Flyway runs all migrations on first boot and a default admin is
 # seeded (see BOOTSTRAP_ADMIN_* in .env).
 
 services:
@@ -71,7 +70,7 @@ services:
 
   frontend:
     build:
-      # Sibling repository checkout; VITE_API_BASE_URL defaults to same-origin "/api".
+      # Sibling monorepo directory; VITE_API_BASE_URL defaults to same-origin "/api".
       context: ../sami-frontend
       args:
         VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api}

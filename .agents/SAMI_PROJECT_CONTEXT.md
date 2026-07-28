@@ -9,16 +9,15 @@ This file is a fast-start snapshot for Codex and developers. It reduces repeated
 
 | Area | Location | Git state | Current evidence |
 |---|---|---|---|
-| Workspace | `.` | Full-project Git repository, branch `development` | Tracks shared guidance and repository composition |
-| Frontend | `sami-frontend` | Independent Git repository and submodule | Source tree is present and builds |
-| Backend | `sami-backend` | Incomplete Git metadata | No source, build descriptor, configuration or migrations |
+| Workspace | `.` | Full-project monorepo, branch `development` | Tracks shared guidance plus backend and frontend source |
+| Frontend | `sami-frontend` | Monorepo directory imported from former frontend `development` | Source tree is present and builds |
+| Backend | `sami-backend` | Monorepo directory imported from former backend `development` | Java/Spring source, migrations, tests and deployment files are present |
 
 Important consequences:
 
-- Shared skills and this document are tracked by the full-project repository.
-- The frontend is linked through `.gitmodules`; clone the full project with submodules.
-- Backend framework, Java version, database, migrations and runtime contract are **unverified** until the real backend repository is restored.
-- Do not duplicate shared workspace files inside the frontend repository.
+- Shared skills, documentation, backend and frontend are tracked directly by the full-project repository.
+- No submodules or separate application repositories are required.
+- Use the root `development` branch as the integration source of truth.
 
 ## Frontend technology
 
@@ -119,44 +118,49 @@ There are currently no configured frontend lint or automated test scripts.
 
 The last verified production build passed and transformed 878 modules. Re-run it after any source or dependency change.
 
+## Backend technology and architecture
+
+Authoritative sources: `sami-backend/pom.xml`, `src/main/resources/application*.yml`, source packages, migrations and Docker files.
+
+- Java 21; Maven 3.9+ documented.
+- Spring Boot `3.5.3` parent with Web, Security, Data JPA, Validation and Actuator.
+- PostgreSQL 16 in Compose; Hibernate/JPA schema validation with `ddl-auto: validate`.
+- Flyway owns schema history under `src/main/resources/db/migration`.
+- JWT access/refresh authentication through JJWT `0.12.6`.
+- Database-driven permission RBAC enforced by `@PreAuthorize("@authz...")`.
+- OpenAPI/Swagger through springdoc `2.8.9`.
+- Lombok and Spring Boot test/Spring Security test.
+- Standard `ApiResponse<T>` envelope and centralized `ApiException` handling.
+- Audited `BaseEntity`, JPA auditing, public service/event patterns and tenant infrastructure.
+- Modules are organized below `com.sami.app` by domain, including auth, authz, automation, calendar, communication, CRM, dashboard, data quality, files, knowledge, licensing, metadata, portal, products, purchasing, scheduling, suppliers and users.
+
+Backend runtime:
+
+- API base: `/api/v1`.
+- Server port: `8080`.
+- Health: `/actuator/health`.
+- Swagger: `/swagger-ui.html`.
+- Database defaults: PostgreSQL at `localhost:5432/sami`.
+- Production secrets must be supplied through environment variables.
+
+Migration range is `V1` through `V27`. The former duplicate communication-hub `V26` was moved to `V27`; the earlier organization lifecycle `V26` remains unchanged.
+
 ## Container and deployment context
 
-Frontend:
+Full stack:
 
 - Multi-stage Dockerfile: Node 22 build, nginx 1.27 runtime.
+- Backend Dockerfile: Maven 3.9/JDK 21 build and non-root Temurin 21 JRE runtime.
+- PostgreSQL `16-alpine`.
 - nginx serves the SPA with history fallback.
 - Fingerprinted assets receive long-lived cache headers.
 - Container health check requests `/`.
 - nginx expects a network hostname `backend` on port `8080`.
+- `sami-backend/docker-compose.yml` runs PostgreSQL plus the backend for development.
+- `sami-backend/docker-compose.prod.yml` builds PostgreSQL, backend and the sibling frontend for production.
+- `.env.example` documents database, JWT, CORS and bootstrap-admin variables.
 
-Missing full-stack infrastructure:
-
-- root `docker-compose.yml`;
-- compose override;
-- root environment contract;
-- backend image/build/startup definition;
-- database service and persistence configuration;
-- deployment/startup scripts;
-- CI/CD and operational documentation.
-
-Do not create these until the backend repository establishes the database, ports, health endpoint and required variables.
-
-## Backend context
-
-Current status: **unavailable / unverified**.
-
-The `sami-backend` directory contains no usable application files. Therefore none of these may be assumed:
-
-- Java, Maven or Spring versions;
-- PostgreSQL or Flyway configuration;
-- entity, DTO, repository, service or controller patterns;
-- authentication and authorization implementation;
-- tenant/company/branch scope;
-- audit and event infrastructure;
-- API envelope or exception behavior;
-- migrations, tests, Dockerfile or run commands.
-
-Restore the actual backend repository before backend implementation, contract reconciliation, migrations, compose generation or release validation.
+The production Compose file remains located under `sami-backend`; run it from that directory. Some README/Compose comments still mention the historical V1..V9 range and should not be treated as current migration inventory.
 
 ## Repository-scoped skills
 
@@ -190,7 +194,7 @@ Use the most specific skill:
 
 Update this document when any of these changes:
 
-- a repository is added/restored or its default branch changes;
+- repository composition or its default branch changes;
 - runtime or dependency versions change;
 - package/build/run/test commands change;
 - API base paths, ports, proxy behavior or environment variables change;

@@ -9,9 +9,9 @@ Before architecture, implementation, dependency, migration, environment, or rele
 
 ## Repository safety
 
-- The workspace root is the shared full-project Git repository.
-- `sami-frontend` is an independent Git repository registered as a submodule.
-- `sami-backend` is currently incomplete and must not be reconstructed from frontend assumptions.
+- The workspace root is the full-project monorepo.
+- `sami-frontend` and `sami-backend` are ordinary tracked directories, not submodules.
+- Treat the root `development` branch as the shared integration source.
 - Preserve unrelated worktree changes.
 - Do not modify `main` unless explicitly instructed.
 - Use `development` as the normal integration branch.

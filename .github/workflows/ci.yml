@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [development]
+  pull_request:
+    branches: [development]
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sami-backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - name: Reject duplicate Flyway versions
+        shell: bash
+        run: |
+          duplicates="$(
+            find src/main/resources/db/migration -maxdepth 1 -type f -name 'V*__*.sql' \
+              -printf '%f\n' |
+              sed -E 's/^V([^_]+)__.*/\1/' |
+              sort |
+              uniq -d
+          )"
+          test -z "$duplicates" || {
+            echo "Duplicate Flyway versions: $duplicates"
+            exit 1
+          }
+      - name: Verify backend
+        run: mvn --batch-mode --no-transfer-progress clean verify
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sami-frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: sami-frontend/package-lock.json
+      - run: npm ci
+      - run: npm run type-check
+      - run: npm run build

@@ -7,7 +7,7 @@
 # API:      http://localhost:8080
 # Swagger:  http://localhost:8080/swagger-ui.html
 #
-# Flyway runs all migrations (V1..V9) on first boot and a default admin is
+# Flyway runs all migrations on first boot and a default admin is
 # seeded (see BOOTSTRAP_ADMIN_* in .env).
 
 services:

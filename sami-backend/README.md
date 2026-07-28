@@ -4,8 +4,8 @@ Production-ready REST API for the SAMI ERP, built with **Java 21** and
 **Spring Boot 3.5**. Layered architecture, DTO pattern, database-driven
 permission RBAC, JWT auth, Flyway migrations, and OpenAPI docs.
 
-The companion SPA lives in a separate repository:
-[sami-frontend](https://github.com/amirj1374/sami-frontend).
+The companion SPA lives in the sibling `sami-frontend` directory of the
+[SAMI full-project monorepo](https://github.com/amirj1374/sami-full-project).
 
 ---
 
@@ -16,7 +16,7 @@ The companion SPA lives in a separate repository:
 | Language / runtime | Java 21 (LTS) |
 | Framework | Spring Boot 3.5 (Web, Security, Data JPA, Validation, Actuator) |
 | Persistence | Hibernate / Spring Data JPA, PostgreSQL |
-| Migrations | Flyway (`V1` … `V9`) |
+| Migrations | Flyway (`V1` … `V27`) |
 | Auth | JWT (access + refresh), BCrypt, database-driven permission RBAC |
 | Docs | OpenAPI / Swagger UI (springdoc) |
 | Build | Maven |
@@ -168,7 +168,7 @@ src/main/java/com/sami/app/
 └── purchasing/   # purchasing lifecycle
 src/main/resources/
 ├── application*.yml
-└── db/migration/ # Flyway V1..V9
+└── db/migration/ # Flyway V1..V27
 ```
 
 ---
