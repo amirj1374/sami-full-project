@@ -134,7 +134,12 @@ Authoritative sources: `sami-backend/pom.xml`, `src/main/resources/application*.
 - OpenAPI/Swagger through springdoc `2.8.9`.
 - Lombok and Spring Boot test/Spring Security test.
 - Standard `ApiResponse<T>` envelope and centralized `ApiException` handling.
-- Audited `BaseEntity`, JPA auditing, public service/event patterns and tenant infrastructure.
+- Audited `BaseEntity`, JPA auditing and public service/event patterns.
+- New tenant-scoped code resolves ownership through request-scoped
+  `common.tenancy.TenantContext`, backed by the authenticated database-loaded
+  `SecurityUser`. It fails closed and does not trust client tenant identifiers.
+  `TenantDefaults` remains transitional legacy infrastructure and must not be
+  propagated.
 - Modules are organized below `com.sami.app` by domain, including auth, authz, automation, calendar, communication, CRM, dashboard, data quality, files, knowledge, licensing, metadata, portal, products, purchasing, scheduling, suppliers and users.
 
 Backend runtime:

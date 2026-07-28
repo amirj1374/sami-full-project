@@ -37,6 +37,16 @@ import java.time.Instant;
 @Builder
 public class User extends BaseEntity {
 
+    /**
+     * Trusted ownership discriminator loaded from the database.
+     *
+     * <p>The column is intentionally read-only in this mapping. Existing account
+     * creation relies on the database assigning the installation tenant, and no
+     * request/DTO mapper may move an account between tenants.
+     */
+    @Column(name = "tenant_id", nullable = false, insertable = false, updatable = false)
+    private Long tenantId;
+
     @Column(nullable = false, unique = true)
     private String email;
 

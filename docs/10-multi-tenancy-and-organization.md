@@ -6,10 +6,15 @@ Tenant is the intended isolation root. Company, branch, and store represent
 organizational and operational subdivisions beneath that root. Their exact
 business permissions and cross-company sharing rules remain open decisions.
 
-`common/tenancy/TenantDefaults` supplies a tenant ID for code written before a
-real request-bound `TenantContext` exists. Its own documentation calls it a
-bridge. Many entities and writes carry `tenantId`, but repository scoping is
-not uniformly enforced by one central mechanism.
+`common/tenancy/TenantContext` is the trusted request authority for new
+tenant-scoped code. It derives ownership exclusively from the authenticated,
+database-backed `SecurityUser`; client-supplied tenant identifiers are never an
+authority source. It fails closed when authentication or tenant ownership is
+missing and does not give platform roles an implicit cross-tenant bypass.
+
+`common/tenancy/TenantDefaults` remains only as a transitional bridge for older
+modules. Do not use it in new code. Repository scoping is not yet uniformly
+enforced across those older modules.
 
 ## Rules for current work
 
@@ -20,9 +25,9 @@ not uniformly enforced by one central mechanism.
 - Cross-tenant administration must be explicit, privileged, and audited.
 - Do not copy the default-tenant bridge into a new module as final design.
 
-## Open architecture decision
+## Remaining enforcement work
 
-A production model needs request authentication → tenant/company/branch
-context resolution → mandatory repository filtering → write attribution →
-background-job context propagation. Until that is implemented and integration
-tested, isolation must be classified as transitional.
+New tenant-owned modules must take their tenant from `TenantContext` for reads,
+writes, uniqueness, audit and events. Existing modules still require incremental
+repository enforcement. Background jobs must obtain tenant scope from trusted
+persisted work and must never silently use a default tenant.

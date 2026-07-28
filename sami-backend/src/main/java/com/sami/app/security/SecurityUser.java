@@ -22,6 +22,16 @@ public record SecurityUser(User user) implements UserDetails {
         return user.getId();
     }
 
+    /** @return the tenant persisted on the authenticated account. */
+    public Long getTenantId() {
+        return user.getTenantId();
+    }
+
+    /** @return whether the account's role is eligible for explicit platform operations. */
+    public boolean isPlatformActor() {
+        return user.getRole().isPlatform();
+    }
+
     /** @return true if the user's role bypasses all permission checks. */
     public boolean isSuperAdmin() {
         return user.getRole().isSuperAdmin();

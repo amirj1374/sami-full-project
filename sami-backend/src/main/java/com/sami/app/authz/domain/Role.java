@@ -46,6 +46,13 @@ public class Role extends BaseEntity {
     @Column(name = "is_super_admin", nullable = false)
     private boolean isSuperAdmin;
 
+    /**
+     * Platform roles may be used by explicitly authorized cross-tenant
+     * operations. This flag never grants an implicit tenant bypass.
+     */
+    @Column(name = "is_platform", nullable = false)
+    private boolean isPlatform;
+
     @Column(name = "is_default", nullable = false)
     private boolean isDefault;
 
