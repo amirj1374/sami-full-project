@@ -31,7 +31,8 @@ backup/restore and release gating.
 
 ## Suggested order
 
-1. Run the completed LOW-001 documentation gate and start ready foundation HIGH-001.
+1. Run the completed LOW-001 documentation gate; unblock HIGH-001 by providing
+   Java 21, Maven and Docker/Testcontainers.
 2. Resolve CRIT-001 and CRIT-002 owner decisions.
 3. Approve HIGH-002 and HIGH-010.
 4. Design Inventory and Pricing in parallel where dependencies permit.

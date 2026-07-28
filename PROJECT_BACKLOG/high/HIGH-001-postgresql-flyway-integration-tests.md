@@ -1,7 +1,7 @@
 ---
 id: HIGH-001
 title: Add PostgreSQL and Flyway integration test gate
-status: ready
+status: blocked
 priority: high
 type: test
 area: database
@@ -75,3 +75,8 @@ Container tests add CI time; isolate slow fixtures and avoid weakening coverage.
 
 ## Notes for the next developer or AI agent
 Do not use the locally running PostgreSQL service or Flyway repair.
+
+Blocked on 2026-07-28 because the execution environment has Java 17 while the
+project requires Java 21, and has neither Maven/a project wrapper nor Docker.
+Unblock only when Java 21, Maven (or a valid wrapper), Docker with a working
+daemon, and permission to run isolated PostgreSQL/Testcontainers are available.

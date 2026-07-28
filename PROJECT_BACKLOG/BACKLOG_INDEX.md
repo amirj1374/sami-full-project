@@ -11,7 +11,7 @@
 
 | ID | Title | Status | Type | Area | Size | Dependencies | Task |
 |---|---|---|---|---|---|---|---|
-| HIGH-001 | PostgreSQL/Flyway integration tests | ready | test | database | M | — | [task](high/HIGH-001-postgresql-flyway-integration-tests.md) |
+| HIGH-001 | PostgreSQL/Flyway integration tests | blocked | test | database | M | — | [task](high/HIGH-001-postgresql-flyway-integration-tests.md) |
 | HIGH-002 | Product variants and serial identity | needs-decision | architecture | product | L | CRIT-001 | [task](high/HIGH-002-product-variant-and-serialized-product-model.md) |
 | HIGH-003 | Inventory architecture | needs-decision | architecture | inventory | L | CRIT-001, HIGH-002 | [task](high/HIGH-003-inventory-warehouse-architecture.md) |
 | HIGH-004 | Inventory implementation | blocked | feature | inventory | XL | HIGH-001, HIGH-002, HIGH-003, HIGH-010 | [task](high/HIGH-004-inventory-warehouse-implementation.md) |
