@@ -16,3 +16,4 @@
 | SLO, RPO/RTO, retention, hosting and on-call ownership | [HIGH-014](high/HIGH-014-production-observability-backup-and-release-gate.md) |
 | Portal deployment and exposed customer self-service | [MED-003](medium/MED-003-customer-portal-completion.md) |
 | General reports, KPI definitions and settings hierarchy | [MED-004](medium/MED-004-general-reporting-settings-and-commercial-analytics.md) |
+| Licensing editions, scope, feature flags, offline validation and usage policy | [Licensing product decisions](../docs/decisions/licensing-product-decisions.md) |

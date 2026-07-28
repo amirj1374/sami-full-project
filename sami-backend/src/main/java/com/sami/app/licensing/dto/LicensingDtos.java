@@ -71,7 +71,7 @@ public final class LicensingDtos {
         }
     }
 
-    public record LicenseResponse(Long id, String code, String licenseKey, String typeCode, Long tenantId,
+    public record LicenseResponse(Long id, String code, String typeCode, Long tenantId,
                                   String tenantCode, Long companyId, String statusCode, String statusName,
                                   String planCode, String expiryBehavior, Instant activationDate,
                                   Instant expirationDate, int graceDays, Instant activatedAt,
@@ -79,8 +79,8 @@ public final class LicensingDtos {
                                   Instant emergencyUntil, int transferCount,
                                   Map<String, Object> limitOverrides, Instant createdAt, long version) {
         public static LicenseResponse from(License l) {
-            return new LicenseResponse(l.getId(), l.getCode(), l.getLicenseKey(),
-                    l.getLicenseType().getCode(), l.getTenant().getId(), l.getTenant().getCode(),
+            return new LicenseResponse(l.getId(), l.getCode(), l.getLicenseType().getCode(),
+                    l.getTenant().getId(), l.getTenant().getCode(),
                     l.getCompanyId(), l.getStatus().getCode(), l.getStatus().getName(),
                     l.getPlan().getCode(),
                     l.getExpiryBehavior() != null ? l.getExpiryBehavior().getCode() : null,

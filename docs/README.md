@@ -45,6 +45,7 @@ disagree. Status labels are defined in
 - [Glossary](22-glossary.md)
 - [Risks and debt](23-known-risks-and-technical-debt.md)
 - [Roadmap and open decisions](24-roadmap-and-open-decisions.md)
+- [Licensing product decisions](decisions/licensing-product-decisions.md)
 - [ADRs](adr/README.md)
 - [Runbooks](runbooks/README.md)
 
