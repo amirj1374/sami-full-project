@@ -162,13 +162,17 @@ Full stack:
 - PostgreSQL `16-alpine`.
 - nginx serves the SPA with history fallback.
 - Fingerprinted assets receive long-lived cache headers.
-- Container health check requests `/`.
+- Frontend container health checks request `/`; backend container health checks
+  request `/actuator/health`.
 - nginx expects a network hostname `backend` on port `8080`.
 - `sami-backend/docker-compose.yml` runs PostgreSQL plus the backend for development.
 - `sami-backend/docker-compose.prod.yml` builds PostgreSQL, backend and the sibling frontend for production.
 - `.env.example` documents database, staff/portal JWT, CORS and bootstrap-admin variables.
 - Production Compose requires distinct staff and portal JWT secrets and fails fast
   when either is absent.
+- Production Compose waits for PostgreSQL and backend health, publishes only the
+  frontend port, exposes backend health through nginx at `/health`, and persists
+  legacy uploads, managed files and staging in named volumes.
 
 The production Compose file remains located under `sami-backend`; run it from that directory. Some README/Compose comments still mention the historical V1..V9 range and should not be treated as current migration inventory.
 

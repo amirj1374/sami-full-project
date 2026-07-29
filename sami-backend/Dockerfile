@@ -19,12 +19,17 @@ WORKDIR /app
 
 # Run as an unprivileged user. The uploads directory is created here so the
 # named volume mounted over it inherits spring's ownership on first use.
-RUN groupadd --system spring && useradd --system --gid spring spring \
-    && mkdir -p /app/data/uploads && chown -R spring:spring /app/data
+RUN apt-get update && apt-get install --yes --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd --system spring && useradd --system --gid spring spring \
+    && mkdir -p /app/data/uploads /app/data/files /app/data/files-staging \
+    && chown -R spring:spring /app/data
 USER spring:spring
 
 COPY --from=build /workspace/target/*.jar app.jar
 
 EXPOSE 8080
 ENV JAVA_OPTS=""
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=5 \
+    CMD curl --fail --silent http://localhost:8080/actuator/health >/dev/null || exit 1
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

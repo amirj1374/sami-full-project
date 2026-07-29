@@ -63,8 +63,12 @@ services:
       BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:?BOOTSTRAP_ADMIN_PASSWORD is required in production}
       BOOTSTRAP_ADMIN_NAME: ${BOOTSTRAP_ADMIN_NAME:-Administrator}
       STORAGE_BASE_PATH: /app/data/uploads
+      FILES_BASE_PATH: /app/data/files
+      FILES_STAGING_PATH: /app/data/files-staging
     volumes:
       - uploads:/app/data/uploads
+      - managed-files:/app/data/files
+      - file-staging:/app/data/files-staging
     # Not published to the host; the frontend nginx proxies to it on the network.
     expose:
       - "8080"
@@ -77,10 +81,13 @@ services:
         VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api}
     restart: unless-stopped
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     ports:
       - "${FRONTEND_PORT:-80}:80"
 
 volumes:
   db-data:
   uploads:
+  managed-files:
+  file-staging:

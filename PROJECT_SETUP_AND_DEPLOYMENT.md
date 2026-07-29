@@ -146,9 +146,8 @@ Confirmed variables include `STORAGE_PROVIDER`, `STORAGE_BASE_PATH`,
 `SCHEDULER_ENABLED`, `SCHEDULER_POLL_SECONDS`, `SCHEDULER_BATCH_SIZE` and
 `SCHEDULER_STARTUP_DELAY`.
 
-Production Compose persists only `/app/data/uploads`. Persistence for the newer
-managed-file and staging defaults is unresolved and must be designed before
-relying on those paths in production.
+Production Compose persists legacy uploads, managed files and managed-file
+staging in separate named volumes.
 
 No Keycloak configuration or implemented external email/SMS provider
 credentials exist.
