@@ -1,6 +1,7 @@
 package com.sami.app.automation.engine;
 
 import com.sami.app.automation.domain.AutomationRule;
+import com.sami.app.automation.domain.AutomationExecution;
 import com.sami.app.automation.repository.AutomationRuleRepository;
 import com.sami.app.automation.spi.AutomationContext;
 import lombok.RequiredArgsConstructor;
@@ -41,11 +42,11 @@ public class AutomationEngine {
     }
 
     /** Run a specific rule directly (manual execution / testing), bypassing trigger match. */
-    public void executeRule(Long ruleId, AutomationContext ctx) {
+    public AutomationExecution.Status executeRule(Long ruleId, AutomationContext ctx) {
         if (ctx == null || ctx.tenantId() == null) {
             throw new IllegalArgumentException("Trusted tenant scope is required for automation execution");
         }
-        ruleExecutor.execute(ruleId, ctx);
+        return ruleExecutor.execute(ruleId, ctx);
     }
 
     /**

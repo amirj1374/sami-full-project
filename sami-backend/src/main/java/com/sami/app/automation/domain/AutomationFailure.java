@@ -19,9 +19,7 @@ import java.time.Instant;
 import java.util.Map;
 
 /**
- * A failed execution parked for retry / manual review. The retry scheduler
- * (future phase) drains rows where {@code resolved = false} and
- * {@code nextRetryAt <= now}.
+ * A failed execution parked for scheduled retry or manual review.
  */
 @Entity
 @Table(name = "automation_failures")

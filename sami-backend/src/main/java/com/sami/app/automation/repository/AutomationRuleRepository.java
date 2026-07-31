@@ -14,8 +14,13 @@ public interface AutomationRuleRepository
 
     boolean existsByTenantIdAndCode(Long tenantId, String code);
 
+    long countByTenantId(Long tenantId);
+
     @EntityGraph(attributePaths = {"status", "actions"})
     Optional<AutomationRule> findWithActionsByIdAndTenantId(Long id, Long tenantId);
+
+    @EntityGraph(attributePaths = {"status", "actions"})
+    List<AutomationRule> findTop10000ByTenantIdOrderByPriorityAsc(Long tenantId);
 
     /**
      * All rules whose status is an active state, ordered by priority — the

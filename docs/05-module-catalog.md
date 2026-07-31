@@ -17,7 +17,7 @@ Status means repository evidence, not roadmap intent:
 | Products | Implemented for basic CRUD | `product` | products | V2 | No canonical variant/SKU inventory model |
 | Purchasing | Implemented for current scope | `purchasing` | purchases | V8 | Receiving is not a stock ledger |
 | Dashboard/KPI | Implemented | `dashboard` | dashboard views/widgets | V10 | Operational metric coverage is separate |
-| Automation | Backend only | `automation` | none verified | V11 | In-process event bridge |
+| Automation | Implemented | `automation` | automation rules, execution history and monitoring | V11, V16, V29 | Domain-event delivery is process-local; action timeout cancellation is cooperative |
 | Licensing/tenant | Backend only | `licensing` | none verified | V12, V14, V16–V17 | Tenant context remains transitional |
 | Data quality | Backend only | `dataquality` | none verified | V13 | Coverage varies by registered rules |
 | Metadata/forms | Backend only | `metadata` | none verified | V15 | Dynamic-field consumers require validation |

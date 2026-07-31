@@ -5,9 +5,14 @@ import com.sami.app.automation.domain.AutomationExecution;
 import com.sami.app.automation.domain.AutomationExecutionLog;
 import com.sami.app.automation.domain.AutomationRule;
 import com.sami.app.automation.domain.AutomationStatus;
+import com.sami.app.automation.domain.AutomationFailure;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 
 import java.time.Instant;
 import java.util.List;
@@ -22,41 +27,42 @@ public final class AutomationDtos {
     // ---- Requests -----------------------------------------------------------
 
     public record ActionRequest(
-            int stepOrder,
-            @NotBlank String actionType,
-            String name,
+            @PositiveOrZero int stepOrder,
+            @NotBlank @Size(max = 128) String actionType,
+            @Size(max = 160) String name,
             Map<String, Object> config,
             Map<String, Object> stepCondition,
-            String runMode,
+            @Pattern(regexp = "SEQUENTIAL|PARALLEL|SYNC") String runMode,
             boolean continueOnError,
-            int delaySeconds,
-            int retryCount,
-            Integer timeoutSeconds
+            @PositiveOrZero int delaySeconds,
+            @PositiveOrZero @Max(20) int retryCount,
+            @Positive Integer timeoutSeconds
     ) {
     }
 
     public record RuleRequest(
             @NotBlank @Pattern(regexp = "^[a-z][a-z0-9-]{1,63}$",
                     message = "code must be a lowercase slug") String code,
-            @NotBlank String name,
-            String description,
-            String category,
+            @NotBlank @Size(max = 160) String name,
+            @Size(max = 2000) String description,
+            @Size(max = 64) String category,
             Integer priority,
-            Long companyId,
-            Long branchId,
-            @NotBlank String statusCode,
-            @NotBlank String triggerType,
+            @Positive Long companyId,
+            @Positive Long branchId,
+            @NotBlank @Size(max = 64) String statusCode,
+            @NotBlank @Size(max = 128) String triggerType,
             Map<String, Object> triggerConfig,
             Map<String, Object> conditionConfig,
             Map<String, Object> executionPolicy,
             boolean allowRecursion,
-            Integer maxExecutions,
-            @Valid List<ActionRequest> actions,
+            @Positive Integer maxExecutions,
+            @Valid @Size(max = 100) List<ActionRequest> actions,
             Long expectedVersion
     ) {
     }
 
-    public record RunRequest(String entityType, Long entityId, Map<String, Object> data) {
+    public record RunRequest(@Size(max = 64) String entityType, @Positive Long entityId,
+                             Map<String, Object> data) {
     }
 
     public record StatusChangeRequest(@NotBlank String statusCode, Long expectedVersion) {
@@ -141,5 +147,20 @@ public final class AutomationDtos {
     }
 
     public record RuleFilter(String search, String triggerType, String statusCode, String category) {
+    }
+
+    public record FailureResponse(Long id, Long ruleId, String ruleCode, Long executionId,
+                                  String reason, int retryCount, Instant nextRetryAt,
+                                  boolean resolved, Instant createdAt) {
+        public static FailureResponse from(AutomationFailure failure) {
+            return new FailureResponse(failure.getId(), failure.getRule().getId(),
+                    failure.getRule().getCode(), failure.getExecutionId(), failure.getReason(),
+                    failure.getRetryCount(), failure.getNextRetryAt(), failure.isResolved(),
+                    failure.getCreatedAt());
+        }
+    }
+
+    public record MonitoringResponse(long running, long succeeded, long failed,
+                                     long openFailures, long totalRules, Instant generatedAt) {
     }
 }

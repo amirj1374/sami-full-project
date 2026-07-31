@@ -17,6 +17,12 @@ events to configured triggers/actions. Provider/action availability must be
 verified from registered beans; a rule definition alone does not prove an
 external integration works.
 
+The Automation UI supports tenant-scoped rule configuration, lifecycle changes,
+manual and scheduled execution, step history, failure monitoring and recovery,
+configuration import/export, and CSV execution reporting. Scheduled rules and
+failure retries register `automation.rule` and `automation.failure-retry`
+handlers with the shared scheduler rather than owning module-local clocks.
+
 ## Scheduler
 
 The master scheduler polls persisted job definitions and dispatches registered

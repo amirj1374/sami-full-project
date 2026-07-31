@@ -1,9 +1,11 @@
 package com.sami.app.automation;
 
 import com.sami.app.automation.engine.AutomationEngine;
+import com.sami.app.automation.domain.AutomationExecution;
 import com.sami.app.automation.provider.AutomationJobHandler;
 import com.sami.app.automation.spi.AutomationContext;
 import com.sami.app.common.scheduler.spi.JobContext;
+import com.sami.app.common.tenancy.TenantContext;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -16,7 +18,7 @@ import static org.mockito.Mockito.*;
 class AutomationJobHandlerTest {
 
     private final AutomationEngine engine = mock(AutomationEngine.class);
-    private final AutomationJobHandler handler = new AutomationJobHandler(engine);
+    private final AutomationJobHandler handler = new AutomationJobHandler(engine, new TenantContext());
 
     @Test
     void rejectsMissingRuleConfiguration() {
@@ -34,6 +36,7 @@ class AutomationJobHandlerTest {
 
     @Test
     void executesConfiguredRuleWithSchedulerTenant() {
+        when(engine.executeRule(eq(9L), any())).thenReturn(AutomationExecution.Status.SUCCEEDED);
         var result = handler.execute(context(Map.of("ruleId", 9, "branchId", 3), 44L));
 
         assertTrue(result.success());

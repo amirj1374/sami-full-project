@@ -24,6 +24,9 @@ import lombok.Setter;
 @Builder
 public class AutomationStatus extends BaseEntity {
 
+    @Column(name = "tenant_id")
+    private Long tenantId;
+
     @Column(nullable = false, unique = true, length = 64)
     private String code;
 
