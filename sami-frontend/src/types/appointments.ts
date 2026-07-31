@@ -1,0 +1,6 @@
+export interface AppointmentType { id: number; code: string; name: string; defaultDurationMinutes: number; minDurationMinutes: number; maxDurationMinutes: number; requiresCustomer: boolean; requiresSupplier: boolean; color?: string }
+export interface AppointmentResource { id: number; code: string; name: string; category: string; status: string; acceptsBookings: boolean; capacity: number }
+export interface AppointmentCatalog { appointmentTypes: AppointmentType[]; statuses: unknown[]; categories: unknown[]; resourceCategories: unknown[]; resourceStatuses: unknown[] }
+export interface TimeSlot { resourceId: number; resourceName: string; start: string; end: string; resourceStart: string; resourceEnd: string }
+export interface BookingPayload { appointmentTypeCode: string; title: string; description?: string; customerId?: number; supplierId?: number; resourceIds: number[]; requiredSkills: string[]; startsAt: string; durationMinutes?: number; priority?: number; sourceChannel: string; joinWaitingList: boolean }
+export interface BookingResult { scheduleId?: number; scheduleNumber?: string; booked: boolean; awaitingApproval: boolean; alternatives: TimeSlot[]; waitingListEntryId?: number; message?: string }

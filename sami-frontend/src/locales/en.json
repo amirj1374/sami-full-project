@@ -1177,6 +1177,31 @@
       "once": "One-time run"
     }
   },
+  "appointments": {
+    "eyebrow": "Operations",
+    "title": "Appointments",
+    "contractNote": "The current API supports availability and booking. Appointment history and calendar listing require a backend list endpoint.",
+    "findAvailability": "Find available times",
+    "type": "Appointment type",
+    "resources": "Resources",
+    "date": "Date",
+    "from": "From",
+    "to": "To",
+    "duration": "Duration (minutes)",
+    "search": "Find times",
+    "noSlots": "No times loaded",
+    "noSlotsDescription": "Select the criteria and search for available times.",
+    "book": "Book this time",
+    "create": "Create appointment",
+    "subject": "Subject",
+    "description": "Description",
+    "customerId": "Customer ID",
+    "waitingList": "Join the waiting list if the time becomes unavailable",
+    "confirm": "Confirm booking",
+    "booked": "Appointment booked successfully.",
+    "notBooked": "Appointment not booked",
+    "conflict": "The selected time is no longer available."
+  },
   "files": {
     "eyebrow": "Content management",
     "title": "Files",

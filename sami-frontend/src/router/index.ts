@@ -101,6 +101,12 @@ const routes: RouteRecordRaw[] = [
         meta: { requiresAuth: true, permission: 'files:view' },
       },
       {
+        path: 'appointments',
+        name: 'appointments',
+        component: () => import('@/views/AppointmentsView.vue'),
+        meta: { requiresAuth: true, permission: 'appointments:view' },
+      },
+      {
         path: 'users',
         name: 'users',
         component: () => import('@/views/admin/UsersView.vue'),
