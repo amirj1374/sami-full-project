@@ -14,4 +14,5 @@ export const salesApi={
  returnSale:(id:number,p:{reason:string;refundMethod:string;items:{saleItemId:number;quantity:number}[]}):Promise<Sale>=>unwrap(http.post<ApiResponse<Sale>>(`/v1/sales/${id}/return`,p)),
  audit:(id:number):Promise<SaleAudit[]>=>unwrap(http.get<ApiResponse<SaleAudit[]>>(`/v1/sales/${id}/audit`)),
  dashboard:():Promise<SalesDashboard>=>unwrap(http.get<ApiResponse<SalesDashboard>>('/v1/sales/dashboard')),
+ exportCsv:async():Promise<void>=>{const response=await http.get<Blob>('/v1/sales/reports/export.csv',{responseType:'blob'});const url=URL.createObjectURL(response.data);const anchor=document.createElement('a');anchor.href=url;anchor.download='sales-report.csv';anchor.click();URL.revokeObjectURL(url)},
 }
