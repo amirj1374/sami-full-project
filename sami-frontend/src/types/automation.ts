@@ -106,3 +106,24 @@ export interface AutomationActionDescriptor {
   type: string
   label: string
 }
+
+export interface AutomationMonitoring {
+  running: number
+  succeeded: number
+  failed: number
+  openFailures: number
+  totalRules: number
+  generatedAt: string
+}
+
+export interface AutomationFailure {
+  id: number
+  ruleId: number
+  ruleCode: string
+  executionId: number | null
+  reason: string | null
+  retryCount: number
+  nextRetryAt: string | null
+  resolved: boolean
+  createdAt: string
+}

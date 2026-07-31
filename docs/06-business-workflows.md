@@ -12,7 +12,7 @@ Detailed flow summaries are maintained in [workflows/README.md](workflows/README
 | Purchase approval/receiving/return | Confirmed for purchasing scope | `PurchaseController`, purchasing services, purchases view |
 | Dashboard loading | Confirmed | dashboard controllers/services and widget registry |
 | Managed-file lifecycle | Backend only | `FileController`, files services/providers |
-| Automation execution | Backend only | automation controller, engine, event bridge |
+| Automation execution | Confirmed | automation controller/engine, shared scheduler handlers, automation view and API client |
 | Scheduled-job execution | Backend only | scheduler controller, runner and handlers |
 | Portal authentication | Partially implemented | portal services/security; no verified public end-to-end UI/controller |
 | Communication delivery | Backend foundation | durable message rows and dispatcher; provider handlers absent |

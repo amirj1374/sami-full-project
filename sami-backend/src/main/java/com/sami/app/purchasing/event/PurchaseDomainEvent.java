@@ -16,6 +16,7 @@ import java.util.Map;
  * </pre>
  */
 public record PurchaseDomainEvent(
+        Long tenantId,
         Long purchaseId,
         String purchaseNumber,
         String action,

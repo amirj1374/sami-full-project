@@ -29,6 +29,7 @@ import java.util.Map;
  */
 public record DashboardDomainEvent(
         String eventId,
+        Long tenantId,
         String eventType,
         String entityType,
         Long entityId,

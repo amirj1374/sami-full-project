@@ -13,6 +13,7 @@ import java.util.Map;
  * @param entityType  affected entity, e.g. {@code customer}
  * @param entityId    affected entity id (may be null)
  * @param data        flattened event payload; the field source for conditions/actions
+ * @param tenantId    trusted tenant scope; required for tenant-owned execution
  * @param companyId   tenant scope (nullable, forward-compat)
  * @param branchId    branch scope (nullable, forward-compat)
  * @param actorId     the user who caused the event (nullable for system events)
@@ -25,6 +26,7 @@ public record AutomationContext(
         String entityType,
         Long entityId,
         Map<String, Object> data,
+        Long tenantId,
         Long companyId,
         Long branchId,
         Long actorId,
@@ -35,6 +37,6 @@ public record AutomationContext(
     /** A shallow copy with an incremented recursion depth (used when re-dispatching). */
     public AutomationContext deeper() {
         return new AutomationContext(triggerType, module, entityType, entityId, data,
-                companyId, branchId, actorId, occurredAt, depth + 1);
+                tenantId, companyId, branchId, actorId, occurredAt, depth + 1);
     }
 }

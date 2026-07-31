@@ -4,6 +4,7 @@ import com.sami.app.dashboard.domain.DashboardAuditLog;
 import com.sami.app.dashboard.event.DashboardDomainEvent;
 import com.sami.app.dashboard.repository.DashboardAuditLogRepository;
 import com.sami.app.security.CurrentActor;
+import com.sami.app.common.tenancy.TenantContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -28,6 +29,7 @@ public class DashboardAuditService {
 
     private final DashboardAuditLogRepository auditLogRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final TenantContext tenantContext;
 
     /** Appends an audit entry (changed fields only) and publishes a domain event. */
     @Transactional(propagation = Propagation.MANDATORY)
@@ -60,6 +62,7 @@ public class DashboardAuditService {
                         Map<String, Object> payload) {
         eventPublisher.publishEvent(new DashboardDomainEvent(
                 UUID.randomUUID().toString(),
+                tenantContext.requireTenantId(),
                 eventType,
                 entityType,
                 entityId,

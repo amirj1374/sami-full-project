@@ -9,6 +9,7 @@ import java.util.Map;
  * listeners; nothing depends on supplier internals.
  */
 public record SupplierDomainEvent(
+        Long tenantId,
         Long supplierId,
         String supplierCode,
         String action,

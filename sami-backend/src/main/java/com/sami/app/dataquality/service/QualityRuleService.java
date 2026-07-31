@@ -3,6 +3,7 @@ package com.sami.app.dataquality.service;
 import com.sami.app.common.exception.ApiException;
 import com.sami.app.common.exception.ErrorCode;
 import com.sami.app.common.exception.ResourceNotFoundException;
+import com.sami.app.common.tenancy.TenantContext;
 import com.sami.app.dataquality.domain.QualityRule;
 import com.sami.app.dataquality.repository.QualityDimensionRepository;
 import com.sami.app.dataquality.repository.QualityRuleRepository;
@@ -35,15 +36,16 @@ public class QualityRuleService {
     private final QualityDimensionRepository dimensionRepository;
     private final ValidationRuleRegistry validatorRegistry;
     private final QualityAuditService audit;
+    private final TenantContext tenantContext;
 
     @Transactional(readOnly = true)
     public List<QualityRule> list() {
-        return ruleRepository.findAllBy();
+        return ruleRepository.findAllVisible(tenantContext.requireTenantId());
     }
 
     @Transactional(readOnly = true)
     public QualityRule get(Long id) {
-        return ruleRepository.findWithDetailsById(id)
+        return ruleRepository.findWithDetailsByIdAndTenantId(id, tenantContext.requireTenantId())
                 .orElseThrow(() -> new ResourceNotFoundException("Quality rule not found: " + id));
     }
 
@@ -53,7 +55,8 @@ public class QualityRuleService {
                               String severityCode, String dimensionCode, String validationType,
                               String targetField, Map<String, Object> config,
                               Map<String, Object> conditionConfig, BigDecimal weight) {
-        if (ruleRepository.existsByCode(code)) {
+        Long tenantId = tenantContext.requireTenantId();
+        if (ruleRepository.existsByTenantIdAndCode(tenantId, code)) {
             throw new ApiException(ErrorCode.RESOURCE_CONFLICT, "Quality rule code already exists: " + code);
         }
         ValidationRule validator = validatorRegistry.find(validationType)
@@ -66,6 +69,7 @@ public class QualityRuleService {
         }
 
         QualityRule rule = QualityRule.builder()
+                .tenantId(tenantId)
                 .code(code)
                 .name(name)
                 .description(description)

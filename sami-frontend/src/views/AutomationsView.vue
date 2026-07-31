@@ -15,6 +15,8 @@ import type {
   AutomationRunPayload,
   AutomationStatus,
   AutomationTrigger,
+  AutomationMonitoring,
+  AutomationFailure,
 } from '@/types/automation'
 import { automationRuleSchema } from '@/schemas/automation'
 import { useApiError } from '@/composables/useApiError'
@@ -77,6 +79,11 @@ const executionPolicy = ref('{}')
 const actions = ref<AutomationAction[]>([])
 const actionConfigDrafts = ref<string[]>([])
 const actionConditionDrafts = ref<string[]>([])
+const monitoring = ref<AutomationMonitoring>()
+const failures = ref<AutomationFailure[]>([])
+const monitoringOpen = ref(false)
+const failureActionId = ref<number>()
+const importInput = ref<HTMLInputElement>()
 
 const { handleSubmit, defineField, errors, resetForm } = useForm({
   validationSchema: computed(() => toTypedSchema(automationRuleSchema(t))),
@@ -140,6 +147,81 @@ async function load(): Promise<void> {
   }
 }
 
+async function loadMonitoring(): Promise<void> {
+  const [summary, failurePage] = await Promise.all([
+    automationsApi.monitoring(),
+    automationsApi.failures({ page: 0, size: 50, sort: 'createdAt,desc' }),
+  ])
+  monitoring.value = summary
+  failures.value = failurePage.content
+}
+
+async function openMonitoring(): Promise<void> {
+  try {
+    await loadMonitoring()
+    monitoringOpen.value = true
+  } catch (error) {
+    setError(error)
+  }
+}
+
+async function retryFailure(failure: AutomationFailure): Promise<void> {
+  failureActionId.value = failure.id
+  try {
+    await automationsApi.retryFailure(failure.id)
+    notifications.success(t('automation.failureRetried'))
+    await loadMonitoring()
+  } catch (error) {
+    setError(error)
+  } finally {
+    failureActionId.value = undefined
+  }
+}
+
+async function resolveFailure(failure: AutomationFailure): Promise<void> {
+  failureActionId.value = failure.id
+  try {
+    await automationsApi.resolveFailure(failure.id)
+    notifications.success(t('automation.failureResolved'))
+    await loadMonitoring()
+  } catch (error) {
+    setError(error)
+  } finally {
+    failureActionId.value = undefined
+  }
+}
+
+async function exportConfiguration(): Promise<void> {
+  try {
+    const rules = await automationsApi.exportConfiguration()
+    const url = URL.createObjectURL(new Blob([JSON.stringify(rules, null, 2)], { type: 'application/json' }))
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = 'automation-configuration.json'
+    anchor.click()
+    URL.revokeObjectURL(url)
+  } catch (error) {
+    setError(error)
+  }
+}
+
+async function importConfiguration(event: Event): Promise<void> {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  try {
+    const parsed: unknown = JSON.parse(await file.text())
+    if (!Array.isArray(parsed)) throw new Error(t('automation.importInvalid'))
+    await automationsApi.importConfiguration(parsed as AutomationRulePayload[])
+    notifications.success(t('automation.imported'))
+    await load()
+  } catch (error) {
+    setError(error)
+  } finally {
+    input.value = ''
+  }
+}
+
 async function openForm(row?: AutomationRule): Promise<void> {
   clearError()
   jsonError.value = ''
@@ -174,7 +256,7 @@ function addAction(): void {
     name: '',
     config: {},
     stepCondition: {},
-    runMode: 'SYNC',
+    runMode: 'SEQUENTIAL',
     continueOnError: false,
     delaySeconds: 0,
     retryCount: 0,
@@ -344,14 +426,41 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div>
+  <div class="automation-page">
     <AppPageHeader icon="mdi-robot-outline" :eyebrow="t('automation.eyebrow')" :title="t('automation.title')">
       <template #actions>
+        <v-btn v-if="can('automation:view')" variant="tonal" prepend-icon="mdi-monitor-dashboard" @click="openMonitoring">
+          {{ t('automation.monitoring') }}
+        </v-btn>
+        <v-btn v-if="can('automation:report')" variant="tonal" prepend-icon="mdi-file-chart-outline" @click="automationsApi.downloadExecutionReport().catch(setError)">
+          {{ t('automation.report') }}
+        </v-btn>
+        <v-btn v-if="can('automation:export')" variant="tonal" prepend-icon="mdi-download" @click="exportConfiguration">
+          {{ t('automation.export') }}
+        </v-btn>
+        <v-btn v-if="can('automation:import')" variant="tonal" prepend-icon="mdi-upload" @click="importInput?.click()">
+          {{ t('automation.import') }}
+        </v-btn>
+        <input ref="importInput" type="file" accept="application/json,.json" hidden @change="importConfiguration">
         <v-btn v-if="can('automation:create')" color="primary" prepend-icon="mdi-plus" @click="openForm()">
           {{ t('automation.create') }}
         </v-btn>
       </template>
     </AppPageHeader>
+
+    <v-dialog v-model="monitoringOpen" :fullscreen="xs" max-width="860">
+      <v-card :rounded="xs ? 0 : 'xl'">
+        <v-card-title class="d-flex align-center px-5 pt-5">{{ t('automation.monitoring') }}<v-spacer/><v-btn icon="mdi-close" variant="text" @click="monitoringOpen=false"/></v-card-title>
+        <v-card-text class="px-5">
+          <div v-if="monitoring" class="monitor-grid mb-5">
+            <v-card v-for="key in ['running','succeeded','failed','openFailures']" :key="key" variant="tonal" rounded="lg"><v-card-text><div class="text-caption text-medium-emphasis">{{t(`automation.monitor.${key}`)}}</div><div class="text-h5 font-weight-bold">{{formatNumber(monitoring[key as keyof AutomationMonitoring] as number)}}</div></v-card-text></v-card>
+          </div>
+          <h3 class="text-subtitle-1 font-weight-bold mb-3">{{t('automation.failureQueue')}}</h3>
+          <v-list v-if="failures.length" lines="three"><v-list-item v-for="failure in failures" :key="failure.id" :title="failure.ruleCode" :subtitle="failure.reason || t('automation.unknownFailure')"><template #append><div class="failure-actions text-end"><div class="text-caption mb-2">{{formatDateTime(failure.createdAt)}}<br>{{t('automation.retryCount',{count:failure.retryCount})}}</div><div class="d-flex flex-wrap ga-2 justify-end"><v-btn v-if="can('automation:execute')" size="small" variant="tonal" prepend-icon="mdi-refresh" :loading="failureActionId===failure.id" @click="retryFailure(failure)">{{t('automation.retryFailure')}}</v-btn><v-btn v-if="can('automation:manage-status')" size="small" variant="text" prepend-icon="mdi-check" :disabled="failureActionId===failure.id" @click="resolveFailure(failure)">{{t('automation.resolveFailure')}}</v-btn></div></div></template></v-list-item></v-list>
+          <AppEmptyState v-else dense icon="mdi-check-circle-outline" :title="t('automation.noFailures')"/>
+        </v-card-text>
+      </v-card>
+    </v-dialog>
 
     <v-alert v-if="errorMessage" type="error" variant="tonal" closable class="mb-4" @click:close="clearError">
       {{ errorMessage }}<template #append><v-btn variant="text" @click="load">{{ t('common.retry') }}</v-btn></template>
@@ -511,6 +620,7 @@ onMounted(async () => {
 <style scoped>
 .automation-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 14px; }
 .summary-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.monitor-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 .filter-grid { display: grid; grid-template-columns: repeat(3, minmax(180px, 1fr)); gap: 12px; align-items: center; }
 .detail-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
 .json-preview { direction: ltr; text-align: left; white-space: pre-wrap; overflow-wrap: anywhere; padding: 12px; border-radius: 10px; background: rgba(var(--v-theme-on-surface), 0.05); font: 0.78rem/1.6 ui-monospace, monospace; }
@@ -518,11 +628,18 @@ onMounted(async () => {
 .min-width-0 { min-width: 0; }
 .status-select { max-width: 150px; }
 .small-number { max-width: 150px; }
+.failure-actions { min-width: 250px; }
 .json-field :deep(textarea) { direction: ltr; text-align: left; font-family: ui-monospace, monospace; font-size: 0.8rem; }
 @media (max-width: 599px) {
-  .summary-grid, .filter-grid, .detail-grid { grid-template-columns: 1fr; }
+  .summary-grid, .filter-grid, .detail-grid, .monitor-grid { grid-template-columns: 1fr 1fr; }
   .automation-grid { grid-template-columns: 1fr; padding: 12px !important; }
   .status-select { max-width: 130px; }
+  .failure-actions { min-width: 0; }
+  .failure-actions .v-btn { min-width: 0; }
+  .automation-page :deep(.app-page-header__actions .v-btn) {
+    flex: 1 1 calc(50% - 4px);
+    min-width: 0;
+  }
 }
 @media (min-width: 600px) and (max-width: 959px) { .filter-grid, .detail-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 </style>

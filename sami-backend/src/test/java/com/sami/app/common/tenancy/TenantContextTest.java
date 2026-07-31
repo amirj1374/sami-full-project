@@ -59,6 +59,22 @@ class TenantContextTest {
         assertApiError(ErrorCode.ACCESS_DENIED, () -> context.requireAccessTo(42L));
     }
 
+    @Test
+    void trustedBackgroundScopeResolvesAndIsCleared() {
+        Long tenant = context.callAsTenant(77L, context::requireTenantId);
+
+        assertThat(tenant).isEqualTo(77L);
+        assertApiError(ErrorCode.UNAUTHENTICATED, context::requireTenantId);
+    }
+
+    @Test
+    void authenticatedTenantCannotBeOverridden() {
+        authenticate(41L, false);
+
+        assertApiError(ErrorCode.ACCESS_DENIED,
+                () -> context.callAsTenant(42L, context::requireTenantId));
+    }
+
     private void authenticate(Long tenantId, boolean platform) {
         Role role = Role.builder()
                 .isPlatform(platform)

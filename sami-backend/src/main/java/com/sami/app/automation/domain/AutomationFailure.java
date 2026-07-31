@@ -19,9 +19,7 @@ import java.time.Instant;
 import java.util.Map;
 
 /**
- * A failed execution parked for retry / manual review. The retry scheduler
- * (future phase) drains rows where {@code resolved = false} and
- * {@code nextRetryAt <= now}.
+ * A failed execution parked for scheduled retry or manual review.
  */
 @Entity
 @Table(name = "automation_failures")
@@ -31,6 +29,9 @@ import java.util.Map;
 @AllArgsConstructor
 @Builder
 public class AutomationFailure extends BaseEntity {
+
+    @Column(name = "tenant_id", nullable = false)
+    private Long tenantId;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "rule_id", nullable = false)

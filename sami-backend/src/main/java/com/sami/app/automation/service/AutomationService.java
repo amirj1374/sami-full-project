@@ -2,6 +2,7 @@ package com.sami.app.automation.service;
 
 import com.sami.app.automation.domain.AutomationAction;
 import com.sami.app.automation.domain.AutomationExecution;
+import com.sami.app.automation.domain.AutomationFailure;
 import com.sami.app.automation.domain.AutomationRule;
 import com.sami.app.automation.domain.AutomationStatus;
 import com.sami.app.automation.dto.AutomationDtos.ActionDescriptorResponse;
@@ -20,6 +21,9 @@ import com.sami.app.automation.repository.AutomationExecutionLogRepository;
 import com.sami.app.automation.repository.AutomationExecutionRepository;
 import com.sami.app.automation.repository.AutomationRuleRepository;
 import com.sami.app.automation.repository.AutomationStatusRepository;
+import com.sami.app.automation.repository.AutomationFailureRepository;
+import com.sami.app.automation.dto.AutomationDtos.FailureResponse;
+import com.sami.app.automation.dto.AutomationDtos.MonitoringResponse;
 import com.sami.app.automation.spi.ActionProvider;
 import com.sami.app.automation.spi.ActionProviderRegistry;
 import com.sami.app.automation.spi.AutomationContext;
@@ -27,10 +31,12 @@ import com.sami.app.automation.spi.TriggerRegistry;
 import com.sami.app.common.exception.ApiException;
 import com.sami.app.common.exception.ErrorCode;
 import com.sami.app.common.exception.ResourceNotFoundException;
+import com.sami.app.common.tenancy.TenantContext;
 import com.sami.app.security.CurrentActor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -41,6 +47,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.nio.charset.StandardCharsets;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 
 /**
  * Application service for automation rules: configuration CRUD (with validation
@@ -61,12 +70,14 @@ public class AutomationService {
     private final AutomationEngine engine;
     private final AutomationAuditService audit;
     private final ApplicationEventPublisher eventPublisher;
+    private final TenantContext tenantContext;
+    private final AutomationFailureRepository failureRepository;
 
     // ---- Read ---------------------------------------------------------------
 
     @Transactional(readOnly = true)
     public Page<RuleResponse> list(RuleFilter filter, Pageable pageable) {
-        return ruleRepository.findAll(toSpecification(filter), pageable).map(RuleResponse::row);
+        return ruleRepository.findAll(toSpecification(filter, tenantContext.requireTenantId()), pageable).map(RuleResponse::row);
     }
 
     @Transactional(readOnly = true)
@@ -76,19 +87,27 @@ public class AutomationService {
 
     @Transactional(readOnly = true)
     public Page<ExecutionResponse> executions(Long ruleId, Pageable pageable) {
-        return executionRepository.findByRuleIdOrderByStartedAtDesc(ruleId, pageable)
+        AutomationRule rule = loadRule(ruleId);
+        return executionRepository.findByRuleIdAndTenantIdOrderByStartedAtDesc(rule.getId(), rule.getTenantId(), pageable)
                 .map(ExecutionResponse::from);
     }
 
     @Transactional(readOnly = true)
     public List<ExecutionLogResponse> executionLogs(Long executionId) {
+        executionRepository.findByIdAndTenantId(executionId, tenantContext.requireTenantId())
+                .orElseThrow(() -> new ResourceNotFoundException("Automation execution not found: " + executionId));
         return executionLogRepository.findByExecutionIdOrderByStepOrderAsc(executionId)
                 .stream().map(ExecutionLogResponse::from).toList();
     }
 
     @Transactional(readOnly = true)
     public List<StatusResponse> statuses() {
-        return statusRepository.findAllByOrderByDisplayOrderAsc().stream().map(StatusResponse::from).toList();
+        Long tenantId = tenantContext.requireTenantId();
+        return new ArrayList<>(statusRepository.findVisible(tenantId).stream()
+                .collect(java.util.stream.Collectors.toMap(AutomationStatus::getCode, status -> status,
+                        (preferred, ignored) -> preferred, LinkedHashMap::new)).values()).stream()
+                .sorted(Comparator.comparingInt(AutomationStatus::getDisplayOrder))
+                .map(StatusResponse::from).toList();
     }
 
     public List<TriggerDescriptorResponse> triggers() {
@@ -101,14 +120,71 @@ public class AutomationService {
                 .map(a -> new ActionDescriptorResponse(a.type(), a.label())).toList();
     }
 
+    @Transactional(readOnly = true)
+    public MonitoringResponse monitoring() {
+        Long tenantId = tenantContext.requireTenantId();
+        return new MonitoringResponse(
+                executionRepository.countByTenantIdAndStatus(tenantId, AutomationExecution.Status.RUNNING.name()),
+                executionRepository.countByTenantIdAndStatus(tenantId, AutomationExecution.Status.SUCCEEDED.name()),
+                executionRepository.countByTenantIdAndStatus(tenantId, AutomationExecution.Status.FAILED.name()),
+                failureRepository.countByTenantIdAndResolved(tenantId, false),
+                ruleRepository.countByTenantId(tenantId), Instant.now());
+    }
+
+    @Transactional(readOnly = true)
+    public Page<FailureResponse> failures(boolean resolved, Pageable pageable) {
+        return failureRepository.findByTenantIdAndResolvedOrderByCreatedAtDesc(
+                tenantContext.requireTenantId(), resolved, pageable).map(FailureResponse::from);
+    }
+
+    @Transactional(readOnly = true)
+    public List<RuleResponse> exportConfiguration() {
+        return ruleRepository.findTop10000ByTenantIdOrderByPriorityAsc(tenantContext.requireTenantId())
+                .stream().map(RuleResponse::from).toList();
+    }
+
+    @Transactional
+    public List<RuleResponse> importConfiguration(List<RuleRequest> requests) {
+        if (requests == null || requests.isEmpty()) {
+            throw new ApiException(ErrorCode.BAD_REQUEST, "At least one automation rule is required");
+        }
+        if (requests.size() > 500) {
+            throw new ApiException(ErrorCode.BAD_REQUEST, "A single import may contain at most 500 rules");
+        }
+        List<RuleResponse> imported = new ArrayList<>();
+        for (RuleRequest request : requests) {
+            imported.add(create(request));
+        }
+        return imported;
+    }
+
+    @Transactional(readOnly = true)
+    public byte[] executionReportCsv() {
+        Long tenantId = tenantContext.requireTenantId();
+        StringBuilder csv = new StringBuilder("\uFEFFExecution,Rule,Trigger,Status,Started,Ended,DurationMs,Error\r\n");
+        executionRepository.findByTenantIdOrderByStartedAtDesc(tenantId,
+                org.springframework.data.domain.PageRequest.of(0, 10_000)).forEach(execution -> csv
+                .append(csv(execution.getExecutionNumber())).append(',')
+                .append(csv(execution.getRule().getCode())).append(',')
+                .append(csv(execution.getTriggerType())).append(',')
+                .append(csv(execution.getStatus())).append(',')
+                .append(execution.getStartedAt()).append(',')
+                .append(execution.getEndedAt() == null ? "" : execution.getEndedAt()).append(',')
+                .append(execution.getDurationMs() == null ? "" : execution.getDurationMs()).append(',')
+                .append(csv(execution.getError())).append("\r\n"));
+        return csv.toString().getBytes(StandardCharsets.UTF_8);
+    }
+
     // ---- Write --------------------------------------------------------------
 
     @Transactional
     public RuleResponse create(RuleRequest request) {
-        if (ruleRepository.existsByCode(request.code())) {
+        Long tenantId = tenantContext.requireTenantId();
+        if (ruleRepository.existsByTenantIdAndCode(tenantId, request.code())) {
             throw new ApiException(ErrorCode.RESOURCE_CONFLICT, "Automation code already exists: " + request.code());
         }
         AutomationRule rule = new AutomationRule();
+        rule.setTenantId(tenantId);
         // @Builder.Default leaves collections null under the no-args constructor.
         rule.setActions(new ArrayList<>());
         rule.setTriggerConfig(new HashMap<>());
@@ -123,7 +199,7 @@ public class AutomationService {
         audit.record("RULE", saved.getId(), "CREATED", null, snapshot(saved));
         eventPublisher.publishEvent(new AutomationDomainEvent(
                 "rule-" + saved.getId(), AutomationDomainEvent.RULE_CREATED,
-                saved.getId(), saved.getCode(), null, Map.of(), Instant.now()));
+                saved.getTenantId(), saved.getId(), saved.getCode(), null, Map.of(), Instant.now()));
         return RuleResponse.from(saved);
     }
 
@@ -142,7 +218,7 @@ public class AutomationService {
         audit.record("RULE", saved.getId(), "UPDATED", before, snapshot(saved));
         eventPublisher.publishEvent(new AutomationDomainEvent(
                 "rule-" + saved.getId(), AutomationDomainEvent.RULE_UPDATED,
-                saved.getId(), saved.getCode(), null, Map.of(), Instant.now()));
+                saved.getTenantId(), saved.getId(), saved.getCode(), null, Map.of(), Instant.now()));
         return RuleResponse.from(saved);
     }
 
@@ -150,8 +226,7 @@ public class AutomationService {
     public RuleResponse changeStatus(Long id, String statusCode, Long expectedVersion) {
         AutomationRule rule = loadRule(id);
         checkVersion(rule, expectedVersion);
-        AutomationStatus status = statusRepository.findByCode(statusCode)
-                .orElseThrow(() -> new ApiException(ErrorCode.BAD_REQUEST, "Unknown status: " + statusCode));
+        AutomationStatus status = resolveStatus(statusCode);
         String from = rule.getStatus().getCode();
         rule.setStatus(status);
         AutomationRule saved = ruleRepository.save(rule);
@@ -161,13 +236,17 @@ public class AutomationService {
         eventPublisher.publishEvent(new AutomationDomainEvent(
                 "rule-" + id, status.isActiveState() ? AutomationDomainEvent.RULE_ACTIVATED
                         : AutomationDomainEvent.RULE_DISABLED,
-                id, saved.getCode(), null, Map.of("status", statusCode), Instant.now()));
+                saved.getTenantId(), id, saved.getCode(), null, Map.of("status", statusCode), Instant.now()));
         return RuleResponse.from(saved);
     }
 
     @Transactional
     public void delete(Long id) {
         AutomationRule rule = loadRule(id);
+        if (executionRepository.existsByRuleIdAndTenantId(rule.getId(), rule.getTenantId())) {
+            throw new ApiException(ErrorCode.OPERATION_NOT_ALLOWED,
+                    "Automation rules with execution history cannot be deleted; archive the rule instead");
+        }
         audit.record("RULE", id, "DELETED", snapshot(rule), null);
         ruleRepository.delete(rule);
     }
@@ -182,15 +261,54 @@ public class AutomationService {
                 request != null ? request.entityType() : null,
                 request != null ? request.entityId() : null,
                 request != null && request.data() != null ? request.data() : Map.of(),
-                rule.getCompanyId(), rule.getBranchId(), CurrentActor.id(), Instant.now(), 0);
+                rule.getTenantId(), rule.getCompanyId(), rule.getBranchId(), CurrentActor.id(), Instant.now(), 0);
         engine.executeRule(id, ctx);
+    }
+
+    @Transactional
+    public FailureResponse retryFailure(Long id) {
+        Long tenantId = tenantContext.requireTenantId();
+        AutomationFailure failure = loadFailure(id, tenantId);
+        retry(failure, tenantId);
+        return FailureResponse.from(failureRepository.save(failure));
+    }
+
+    @Transactional
+    public FailureResponse resolveFailure(Long id) {
+        Long tenantId = tenantContext.requireTenantId();
+        AutomationFailure failure = loadFailure(id, tenantId);
+        resolve(failure);
+        audit.record("FAILURE", failure.getId(), "RESOLVED", null, failureSnapshot(failure));
+        eventPublisher.publishEvent(new AutomationDomainEvent(
+                "afail-" + failure.getId(), AutomationDomainEvent.FAILURE_RESOLVED,
+                tenantId, failure.getRule().getId(), failure.getRule().getCode(),
+                failure.getExecutionId(), Map.of(), Instant.now()));
+        return FailureResponse.from(failureRepository.save(failure));
+    }
+
+    /** Tenant-explicit entry point for the shared scheduler; it never reads HTTP context. */
+    @Transactional
+    public int retryDueFailures(Long tenantId, int requestedLimit) {
+        if (tenantId == null) {
+            throw new IllegalArgumentException("Trusted tenant scope is required");
+        }
+        int limit = Math.max(1, Math.min(requestedLimit, 100));
+        List<AutomationFailure> due = failureRepository
+                .findByTenantIdAndResolvedFalseAndNextRetryAtLessThanEqualOrderByNextRetryAtAsc(
+                        tenantId, Instant.now(), PageRequest.of(0, limit));
+        int processed = 0;
+        for (AutomationFailure failure : due) {
+            retry(failure, tenantId);
+            failureRepository.save(failure);
+            processed++;
+        }
+        return processed;
     }
 
     // ---- Helpers ------------------------------------------------------------
 
     private void apply(AutomationRule rule, RuleRequest request) {
-        AutomationStatus status = statusRepository.findByCode(request.statusCode())
-                .orElseThrow(() -> new ApiException(ErrorCode.BAD_REQUEST, "Unknown status: " + request.statusCode()));
+        AutomationStatus status = resolveStatus(request.statusCode());
         if (request.triggerType().isBlank()) {
             throw new ApiException(ErrorCode.BAD_REQUEST, "triggerType is required");
         }
@@ -234,7 +352,8 @@ public class AutomationService {
                     .name(ar.name())
                     .config(config)
                     .stepCondition(ar.stepCondition())
-                    .runMode(ar.runMode() != null ? ar.runMode() : "SEQUENTIAL")
+                    .runMode(ar.runMode() == null || "SYNC".equals(ar.runMode())
+                            ? "SEQUENTIAL" : ar.runMode())
                     .continueOnError(ar.continueOnError())
                     .delaySeconds(ar.delaySeconds())
                     .retryCount(ar.retryCount())
@@ -245,8 +364,66 @@ public class AutomationService {
     }
 
     private AutomationRule loadRule(Long id) {
-        return ruleRepository.findWithActionsById(id)
+        return ruleRepository.findWithActionsByIdAndTenantId(id, tenantContext.requireTenantId())
                 .orElseThrow(() -> new ResourceNotFoundException("Automation rule not found: " + id));
+    }
+
+    private AutomationStatus resolveStatus(String code) {
+        return statusRepository.findVisibleByCode(tenantContext.requireTenantId(), code).stream()
+                .findFirst()
+                .orElseThrow(() -> new ApiException(ErrorCode.BAD_REQUEST, "Unknown status: " + code));
+    }
+
+    private AutomationFailure loadFailure(Long id, Long tenantId) {
+        return failureRepository.findByIdAndTenantId(id, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Automation failure not found: " + id));
+    }
+
+    private AutomationExecution.Status retry(AutomationFailure failure, Long tenantId) {
+        if (failure.isResolved()) {
+            return AutomationExecution.Status.SKIPPED;
+        }
+        AutomationRule rule = failure.getRule();
+        Map<String, Object> payload = failure.getPayload() == null ? Map.of() : failure.getPayload();
+        AutomationExecution.Status outcome = engine.executeRule(rule.getId(), new AutomationContext(
+                rule.getTriggerType(), null, null, null, payload, tenantId,
+                rule.getCompanyId(), rule.getBranchId(), CurrentActor.id(), Instant.now(), 0));
+        failure.setRetryCount(failure.getRetryCount() + 1);
+        if (outcome != AutomationExecution.Status.SKIPPED) {
+            resolve(failure);
+        } else {
+            failure.setNextRetryAt(Instant.now().plusSeconds(retryDelay(rule)));
+        }
+        eventPublisher.publishEvent(new AutomationDomainEvent(
+                "afail-" + failure.getId() + "-retry-" + failure.getRetryCount(),
+                AutomationDomainEvent.FAILURE_RETRIED, tenantId, rule.getId(), rule.getCode(),
+                failure.getExecutionId(), Map.of("outcome", outcome.name(),
+                        "retryCount", failure.getRetryCount()), Instant.now()));
+        audit.recordForTenant(tenantId, "FAILURE", failure.getId(), "RETRIED", null,
+                failureSnapshot(failure));
+        return outcome;
+    }
+
+    private void resolve(AutomationFailure failure) {
+        failure.setResolved(true);
+        failure.setResolvedAt(Instant.now());
+        failure.setNextRetryAt(null);
+    }
+
+    private long retryDelay(AutomationRule rule) {
+        Object configured = rule.getExecutionPolicy().get("retryDelaySeconds");
+        if (configured instanceof Number number) {
+            return Math.max(1, number.longValue());
+        }
+        return 60;
+    }
+
+    private Map<String, Object> failureSnapshot(AutomationFailure failure) {
+        Map<String, Object> snapshot = new HashMap<>();
+        snapshot.put("executionId", failure.getExecutionId());
+        snapshot.put("retryCount", failure.getRetryCount());
+        snapshot.put("resolved", failure.isResolved());
+        return snapshot;
     }
 
     private void checkVersion(AutomationRule rule, Long expectedVersion) {
@@ -256,8 +433,9 @@ public class AutomationService {
         }
     }
 
-    private Specification<AutomationRule> toSpecification(RuleFilter filter) {
+    private Specification<AutomationRule> toSpecification(RuleFilter filter, Long tenantId) {
         return Specification.allOf(
+                (root, query, cb) -> cb.equal(root.get("tenantId"), tenantId),
                 searchSpec(filter == null ? null : filter.search()),
                 equalSpec("triggerType", filter == null ? null : filter.triggerType()),
                 statusSpec(filter == null ? null : filter.statusCode()),
@@ -301,5 +479,9 @@ public class AutomationService {
         snap.put("priority", rule.getPriority());
         snap.put("actionCount", rule.getActions().size());
         return snap;
+    }
+
+    private String csv(String value) {
+        return value == null ? "" : '"' + value.replace("\"", "\"\"") + '"';
     }
 }

@@ -26,6 +26,9 @@ import java.util.Map;
 @Builder
 public class ValidationRun extends BaseEntity {
 
+    @Column(name = "tenant_id", nullable = false)
+    private Long tenantId;
+
     public enum Status { PASSED, FAILED }
 
     @Column(name = "run_number", nullable = false, unique = true, length = 40)

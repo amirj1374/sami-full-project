@@ -10,6 +10,8 @@ import com.sami.app.automation.dto.AutomationDtos.RunRequest;
 import com.sami.app.automation.dto.AutomationDtos.StatusChangeRequest;
 import com.sami.app.automation.dto.AutomationDtos.StatusResponse;
 import com.sami.app.automation.dto.AutomationDtos.TriggerDescriptorResponse;
+import com.sami.app.automation.dto.AutomationDtos.FailureResponse;
+import com.sami.app.automation.dto.AutomationDtos.MonitoringResponse;
 import com.sami.app.automation.service.AutomationService;
 import com.sami.app.common.api.ApiResponse;
 import com.sami.app.common.api.PageResponse;
@@ -20,6 +22,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -136,5 +141,61 @@ public class AutomationController {
     @Operation(summary = "List available action providers (plugin catalog)")
     public ApiResponse<List<ActionDescriptorResponse>> actions() {
         return ApiResponse.ok(service.actions());
+    }
+
+    @GetMapping("/monitoring")
+    @PreAuthorize("@authz.has('automation:view')")
+    @Operation(summary = "Automation execution and failure monitoring summary")
+    public ApiResponse<MonitoringResponse> monitoring() {
+        return ApiResponse.ok(service.monitoring());
+    }
+
+    @GetMapping("/failures")
+    @PreAuthorize("@authz.has('automation:view')")
+    @Operation(summary = "List automation failures requiring review")
+    public ApiResponse<PageResponse<FailureResponse>> failures(
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "false") boolean resolved,
+            @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
+        return ApiResponse.ok(PageResponse.from(service.failures(resolved, pageable)));
+    }
+
+    @PostMapping("/failures/{id}/retry")
+    @PreAuthorize("@authz.has('automation:execute')")
+    @Operation(summary = "Retry an automation failure")
+    public ApiResponse<FailureResponse> retryFailure(@PathVariable Long id) {
+        return ApiResponse.ok(service.retryFailure(id));
+    }
+
+    @PostMapping("/failures/{id}/resolve")
+    @PreAuthorize("@authz.has('automation:manage-status')")
+    @Operation(summary = "Resolve an automation failure after review")
+    public ApiResponse<FailureResponse> resolveFailure(@PathVariable Long id) {
+        return ApiResponse.ok(service.resolveFailure(id));
+    }
+
+    @GetMapping("/configuration/export")
+    @PreAuthorize("@authz.has('automation:export')")
+    @Operation(summary = "Export tenant automation configuration")
+    public ApiResponse<List<RuleResponse>> exportConfiguration() {
+        return ApiResponse.ok(service.exportConfiguration());
+    }
+
+    @PostMapping("/configuration/import")
+    @PreAuthorize("@authz.has('automation:import')")
+    @Operation(summary = "Import validated tenant automation configuration")
+    public ApiResponse<List<RuleResponse>> importConfiguration(
+            @Valid @RequestBody List<@Valid RuleRequest> rules) {
+        return ApiResponse.ok(service.importConfiguration(rules));
+    }
+
+    @GetMapping(value = "/reports/executions.csv", produces = "text/csv;charset=UTF-8")
+    @PreAuthorize("@authz.has('automation:report')")
+    @Operation(summary = "Export automation execution report")
+    public ResponseEntity<byte[]> executionReport() {
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("text/csv;charset=UTF-8"))
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename*=UTF-8''automation-executions.csv")
+                .body(service.executionReportCsv());
     }
 }

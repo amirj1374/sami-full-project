@@ -8,6 +8,8 @@ import type {
   AutomationRunPayload,
   AutomationStatus,
   AutomationTrigger,
+  AutomationMonitoring,
+  AutomationFailure,
 } from '@/types/automation'
 import { http, unwrap } from './http'
 
@@ -42,4 +44,25 @@ export const automationsApi = {
     unwrap(http.get<ApiResponse<AutomationTrigger[]>>('/v1/automations/triggers')),
   actions: (): Promise<AutomationActionDescriptor[]> =>
     unwrap(http.get<ApiResponse<AutomationActionDescriptor[]>>('/v1/automations/actions')),
+  monitoring: (): Promise<AutomationMonitoring> =>
+    unwrap(http.get<ApiResponse<AutomationMonitoring>>('/v1/automations/monitoring')),
+  failures: (params: PageQuery = {}): Promise<PageResponse<AutomationFailure>> =>
+    unwrap(http.get<ApiResponse<PageResponse<AutomationFailure>>>('/v1/automations/failures', { params })),
+  retryFailure: (id: number): Promise<AutomationFailure> =>
+    unwrap(http.post<ApiResponse<AutomationFailure>>(`/v1/automations/failures/${id}/retry`)),
+  resolveFailure: (id: number): Promise<AutomationFailure> =>
+    unwrap(http.post<ApiResponse<AutomationFailure>>(`/v1/automations/failures/${id}/resolve`)),
+  exportConfiguration: (): Promise<AutomationRule[]> =>
+    unwrap(http.get<ApiResponse<AutomationRule[]>>('/v1/automations/configuration/export')),
+  importConfiguration: (rules: AutomationRulePayload[]): Promise<AutomationRule[]> =>
+    unwrap(http.post<ApiResponse<AutomationRule[]>>('/v1/automations/configuration/import', rules)),
+  downloadExecutionReport: async (): Promise<void> => {
+    const response = await http.get<Blob>('/v1/automations/reports/executions.csv', { responseType: 'blob' })
+    const url = URL.createObjectURL(response.data)
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = 'automation-executions.csv'
+    anchor.click()
+    URL.revokeObjectURL(url)
+  },
 }

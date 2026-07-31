@@ -8,8 +8,8 @@ import java.util.List;
 public interface QualityScoreRepository extends JpaRepository<QualityScore, Long> {
 
     /** Most recent score snapshots for an entity — the trend series. */
-    List<QualityScore> findTop30ByModuleCodeAndEntityCodeOrderByComputedAtDesc(
-            String moduleCode, String entityCode);
+    List<QualityScore> findTop30ByTenantIdAndModuleCodeAndEntityCodeOrderByComputedAtDesc(
+            Long tenantId, String moduleCode, String entityCode);
 
-    List<QualityScore> findTop100ByOrderByComputedAtDesc();
+    List<QualityScore> findTop100ByTenantIdOrderByComputedAtDesc(Long tenantId);
 }

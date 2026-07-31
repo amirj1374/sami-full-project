@@ -5,6 +5,7 @@ import com.sami.app.dataquality.domain.QualityScore;
 import com.sami.app.dataquality.domain.QualityScoreBand;
 import com.sami.app.dataquality.repository.QualityScoreBandRepository;
 import com.sami.app.dataquality.repository.QualityScoreRepository;
+import com.sami.app.common.tenancy.TenantContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +27,7 @@ public class QualityScoreService {
 
     private final QualityScoreBandRepository bandRepository;
     private final QualityScoreRepository scoreRepository;
+    private final TenantContext tenantContext;
 
     /** Weighted penalty for one rule (used for both the numerator and the max). */
     public BigDecimal penaltyOf(QualityRule rule) {
@@ -65,6 +67,7 @@ public class QualityScoreService {
     public QualityScore record(String moduleCode, String entityCode, String dimensionCode,
                                BigDecimal score, int sampleSize, Map<String, Object> detail) {
         return scoreRepository.save(QualityScore.builder()
+                .tenantId(tenantContext.requireTenantId())
                 .moduleCode(moduleCode)
                 .entityCode(entityCode)
                 .dimensionCode(dimensionCode)
@@ -77,7 +80,8 @@ public class QualityScoreService {
 
     @Transactional(readOnly = true)
     public List<QualityScore> trend(String moduleCode, String entityCode) {
-        return scoreRepository.findTop30ByModuleCodeAndEntityCodeOrderByComputedAtDesc(moduleCode, entityCode);
+        return scoreRepository.findTop30ByTenantIdAndModuleCodeAndEntityCodeOrderByComputedAtDesc(
+                tenantContext.requireTenantId(), moduleCode, entityCode);
     }
 
     @Transactional(readOnly = true)

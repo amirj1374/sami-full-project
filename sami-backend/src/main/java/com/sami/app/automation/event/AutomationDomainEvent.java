@@ -11,6 +11,7 @@ import java.util.Map;
 public record AutomationDomainEvent(
         String eventId,
         String eventType,
+        Long tenantId,
         Long ruleId,
         String ruleCode,
         Long executionId,
@@ -24,4 +25,6 @@ public record AutomationDomainEvent(
     public static final String EXECUTION_STARTED = "ExecutionStarted";
     public static final String EXECUTION_COMPLETED = "ExecutionCompleted";
     public static final String EXECUTION_FAILED = "ExecutionFailed";
+    public static final String FAILURE_RETRIED = "FailureRetried";
+    public static final String FAILURE_RESOLVED = "FailureResolved";
 }
