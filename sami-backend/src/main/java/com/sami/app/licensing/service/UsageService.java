@@ -40,11 +40,13 @@ public class UsageService {
     private final UsageMeterRegistry meterRegistry;
     private final EntitlementService entitlements;
     private final ApplicationEventPublisher eventPublisher;
+    private final LicensingScope scope;
 
     /** Checks one limit; publishes {@code UsageLimitExceeded} when breached. */
     @Transactional(readOnly = true)
     public UsageCheck check(String limitTypeCode, Long tenantId) {
-        Entitlement ent = entitlements.resolve(tenantId);
+        Long trustedTenantId = scope.resolveTenant(tenantId);
+        Entitlement ent = entitlements.resolve(trustedTenantId);
         long current = measure(limitTypeCode, ent.tenantId());
         Long limit = resolveLimit(limitTypeCode, ent.licenseId());
 

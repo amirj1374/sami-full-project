@@ -6,7 +6,6 @@ import com.sami.app.licensing.domain.FeatureState;
 import com.sami.app.licensing.domain.License;
 import com.sami.app.licensing.domain.LicenseFeature;
 import com.sami.app.licensing.domain.SubscriptionPlan;
-import com.sami.app.licensing.domain.Tenant;
 import com.sami.app.licensing.repository.FeatureRepository;
 import com.sami.app.licensing.repository.LicenseRepository;
 import com.sami.app.licensing.repository.SubscriptionPlanRepository;
@@ -46,7 +45,6 @@ public class EntitlementService {
     private final LicensingProperties properties;
 
     private final Map<Long, CachedEntitlement> cache = new ConcurrentHashMap<>();
-    private static final Long SINGLE_TENANT_KEY = -1L;
 
     /** Drops cached snapshots so licence/feature changes apply immediately. */
     public void invalidate() {
@@ -55,7 +53,10 @@ public class EntitlementService {
 
     @Transactional(readOnly = true)
     public Entitlement resolve(Long tenantId) {
-        Long key = tenantId == null ? SINGLE_TENANT_KEY : tenantId;
+        if (tenantId == null) {
+            return Entitlement.unlicensed(null);
+        }
+        Long key = tenantId;
         CachedEntitlement cached = cache.get(key);
         Instant now = Instant.now();
         if (cached != null && cached.expiresAt().isAfter(now)) {
@@ -127,11 +128,10 @@ public class EntitlementService {
 
     /** Beta opt-in lives in the tenant's configuration: {@code betaFeatures: [...]}. */
     private boolean hasOptedIn(String featureCode, Long tenantId) {
-        Long id = tenantId != null ? tenantId : singleTenantId();
-        if (id == null) {
+        if (tenantId == null) {
             return false;
         }
-        return tenantRepository.findWithStatusById(id)
+        return tenantRepository.findWithStatusById(tenantId)
                 .map(t -> t.getConfig().get("betaFeatures"))
                 .filter(v -> v instanceof java.util.List<?>)
                 .map(v -> ((java.util.List<?>) v).stream()
@@ -144,11 +144,10 @@ public class EntitlementService {
         if (feature.getTrialDays() <= 0) {
             return false;
         }
-        Long id = tenantId != null ? tenantId : singleTenantId();
-        if (id == null) {
+        if (tenantId == null) {
             return false;
         }
-        List<License> licenses = licenseRepository.findForTenant(id);
+        List<License> licenses = licenseRepository.findForTenant(tenantId);
         if (licenses.isEmpty()) {
             return false;
         }
@@ -160,13 +159,12 @@ public class EntitlementService {
     }
 
     private Entitlement compute(Long tenantId, Instant now) {
-        Long effectiveTenantId = tenantId != null ? tenantId : singleTenantId();
-        if (effectiveTenantId == null) {
+        if (tenantId == null) {
             return Entitlement.unlicensed(null);
         }
-        List<License> licenses = licenseRepository.findForTenant(effectiveTenantId);
+        List<License> licenses = licenseRepository.findForTenant(tenantId);
         if (licenses.isEmpty()) {
-            return Entitlement.unlicensed(effectiveTenantId);
+            return Entitlement.unlicensed(tenantId);
         }
         License license = licenses.get(0);
 
@@ -181,7 +179,7 @@ public class EntitlementService {
         boolean writesAllowed = accessGranted
                 || expiryRegistry.find(behavior).map(h -> h.permitsWrites(withinGrace)).orElse(false);
 
-        return new Entitlement(effectiveTenantId, license.getId(), license.getCode(),
+        return new Entitlement(tenantId, license.getId(), license.getCode(),
                 effectiveFeatures(license), true, accessGranted, withinGrace, writesAllowed, behavior);
     }
 
@@ -202,14 +200,6 @@ public class EntitlementService {
             }
         }
         return Set.copyOf(codes);
-    }
-
-    /** On-premise installs run one tenant; that tenant is implicit. */
-    private Long singleTenantId() {
-        if (tenantRepository.count() != 1) {
-            return null;
-        }
-        return tenantRepository.findAll().stream().findFirst().map(Tenant::getId).orElse(null);
     }
 
     private record CachedEntitlement(Entitlement entitlement, Instant expiresAt) {

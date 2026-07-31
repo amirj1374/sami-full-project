@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class CsvEncodingTest {
 
-    private final LicenseReportService reports = new LicenseReportService(null, null, null, null, null);
+    private final LicenseReportService reports = new LicenseReportService(null, null, null, null, null, null);
 
     @Test
     void csvStartsWithUtf8BomAndPreservesPersianAndMixedText() {

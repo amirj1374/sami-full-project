@@ -15,9 +15,9 @@ public interface SubscriptionPlanRepository extends JpaRepository<SubscriptionPl
 
     Optional<SubscriptionPlan> findByIsDefaultTrue();
 
-    @EntityGraph(attributePaths = {"status", "features", "limits"})
+    @EntityGraph(attributePaths = {"status", "features", "limits", "limits.limitType", "billingCycle"})
     Optional<SubscriptionPlan> findWithDetailsById(Long id);
 
-    @EntityGraph(attributePaths = {"status"})
+    @EntityGraph(attributePaths = {"status", "features", "limits", "limits.limitType", "billingCycle"})
     List<SubscriptionPlan> findAllByOrderByDisplayOrderAsc();
 }

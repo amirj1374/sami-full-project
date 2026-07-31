@@ -29,6 +29,9 @@ public class LicenseAuditLog {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "tenant_id", nullable = false)
+    private Long tenantId;
+
     @Column(name = "entity_type", nullable = false, length = 32)
     private String entityType;
 

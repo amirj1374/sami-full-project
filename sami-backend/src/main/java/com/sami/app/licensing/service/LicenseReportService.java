@@ -31,11 +31,12 @@ public class LicenseReportService {
     private final SubscriptionPlanRepository planRepository;
     private final FeatureRepository featureRepository;
     private final UsageService usageService;
+    private final LicensingScope scope;
 
     /** Counts by licence status, plan and activation mode. */
     @Transactional(readOnly = true)
     public Map<String, Object> licenseSummary() {
-        List<License> licenses = licenseRepository.findAllBy();
+        List<License> licenses = visibleLicenses();
         Map<String, Object> summary = new LinkedHashMap<>();
         summary.put("total", licenses.size());
         summary.put("byStatus", licenses.stream().collect(Collectors.groupingBy(
@@ -52,7 +53,10 @@ public class LicenseReportService {
     @Transactional(readOnly = true)
     public List<Map<String, Object>> activeTenants() {
         List<Map<String, Object>> rows = new ArrayList<>();
-        for (Tenant tenant : tenantRepository.findAllBy()) {
+        List<Tenant> visibleTenants = scope.tenantFilter()
+                .map(id -> tenantRepository.findWithStatusById(id).stream().toList())
+                .orElseGet(tenantRepository::findAllBy);
+        for (Tenant tenant : visibleTenants) {
             rows.add(new LinkedHashMap<>(Map.of(
                     "tenantCode", tenant.getCode(),
                     "name", tenant.getName(),
@@ -67,7 +71,7 @@ public class LicenseReportService {
     public List<Map<String, Object>> expiring(int withinDays) {
         Instant horizon = Instant.now().plus(withinDays, ChronoUnit.DAYS);
         List<Map<String, Object>> rows = new ArrayList<>();
-        for (License license : licenseRepository.findAllBy()) {
+        for (License license : visibleLicenses()) {
             Instant expires = license.getExpirationDate();
             if (expires == null || expires.isAfter(horizon)) {
                 continue;
@@ -88,14 +92,11 @@ public class LicenseReportService {
     /** How many licences grant each feature (plan bundle ∪ overrides). */
     @Transactional(readOnly = true)
     public List<Map<String, Object>> featureUsage() {
-        List<License> licenses = licenseRepository.findAllBy();
+        List<License> licenses = visibleLicenses();
         List<Map<String, Object>> rows = new ArrayList<>();
         featureRepository.findAllByOrderByDisplayOrderAsc().forEach(feature -> {
             long granted = licenses.stream()
-                    .filter(l -> planRepository.findWithDetailsById(l.getPlan().getId())
-                            .map(p -> p.getFeatures().stream()
-                                    .anyMatch(f -> f.getCode().equals(feature.getCode())))
-                            .orElse(false))
+                    .filter(l -> grantsFeature(l, feature.getCode()))
                     .count();
             Map<String, Object> row = new LinkedHashMap<>();
             row.put("featureCode", feature.getCode());
@@ -165,5 +166,23 @@ public class LicenseReportService {
             return "\"" + text.replace("\"", "\"\"") + "\"";
         }
         return text;
+    }
+
+    private List<License> visibleLicenses() {
+        return scope.tenantFilter()
+                .map(licenseRepository::findByTenant_IdOrderByCreatedAtDesc)
+                .orElseGet(licenseRepository::findAllBy);
+    }
+
+    private boolean grantsFeature(License license, String featureCode) {
+        boolean grantedByPlan = planRepository.findWithDetailsById(license.getPlan().getId())
+                .map(plan -> plan.getFeatures().stream().anyMatch(feature -> featureCode.equals(feature.getCode())))
+                .orElse(false);
+        return licenseRepository.findWithDetailsById(license.getId())
+                .flatMap(detail -> detail.getFeatureOverrides().stream()
+                        .filter(override -> featureCode.equals(override.getFeature().getCode()))
+                        .findFirst())
+                .map(override -> override.isEnabled())
+                .orElse(grantedByPlan);
     }
 }
