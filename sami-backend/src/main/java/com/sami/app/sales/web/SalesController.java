@@ -15,6 +15,7 @@ public class SalesController {
  @PostMapping @ResponseStatus(HttpStatus.CREATED) @PreAuthorize("@authz.has('sales:create')") public ApiResponse<SaleResponse> create(@Valid @RequestBody SaleRequest request){return ApiResponse.ok(service.create(request));}
  @PutMapping("/{id}") @PreAuthorize("@authz.has('sales:edit')") public ApiResponse<SaleResponse> update(@PathVariable Long id,@Valid @RequestBody SaleRequest request){return ApiResponse.ok(service.update(id,request));}
  @PostMapping("/{id}/discounts") @PreAuthorize("@authz.has('sales:edit')") public ApiResponse<SaleResponse> discount(@PathVariable Long id,@Valid @RequestBody DiscountRequest request){return ApiResponse.ok(service.requestDiscount(id,request));}
+ @GetMapping("/{id}/discounts") @PreAuthorize("@authz.has('sales:view')") public ApiResponse<List<DiscountResponse>> discounts(@PathVariable Long id){return ApiResponse.ok(service.discountHistory(id));}
  @PostMapping("/{id}/discounts/{discountId}/decision") @PreAuthorize("@authz.has('sales:approve-discount')") public ApiResponse<SaleResponse> decide(@PathVariable Long id,@PathVariable Long discountId,@RequestBody DecisionRequest request){return ApiResponse.ok(service.decideDiscount(id,discountId,request));}
  @PostMapping("/{id}/payments") @PreAuthorize("@authz.has('sales:payment')") public ApiResponse<SaleResponse> payment(@PathVariable Long id,@Valid @RequestBody PaymentRequest request){return ApiResponse.ok(service.addPayment(id,request));}
  @PostMapping("/{id}/confirm") @PreAuthorize("@authz.has('sales:confirm')") public ApiResponse<SaleResponse> confirm(@PathVariable Long id){return ApiResponse.ok(service.confirm(id));}
@@ -24,4 +25,5 @@ public class SalesController {
  @GetMapping("/{id}/audit") @PreAuthorize("@authz.has('sales:view-audit')") public ApiResponse<List<AuditResponse>> audit(@PathVariable Long id){return ApiResponse.ok(service.audit(id));}
  @GetMapping("/dashboard") @PreAuthorize("@authz.has('sales:report')") public ApiResponse<DashboardResponse> dashboard(){return ApiResponse.ok(service.dashboard());}
  @GetMapping(value="/reports/export.csv",produces="text/csv;charset=UTF-8") @PreAuthorize("@authz.has('sales:export')") public ResponseEntity<byte[]> export(){return ResponseEntity.ok().contentType(MediaType.parseMediaType("text/csv;charset=UTF-8")).header(HttpHeaders.CONTENT_DISPOSITION,"attachment; filename*=UTF-8''sales-report.csv").body(service.exportCsv());}
+ @PostMapping("/ai/recommendation") @PreAuthorize("@authz.has('sales:view')") public ApiResponse<AiResponse> recommend(@Valid @RequestBody AiRequest request){return ApiResponse.ok(service.recommend(request));}
 }
