@@ -1176,5 +1176,30 @@
       "interval": "فاصله ثابت",
       "once": "اجرای یک‌باره"
     }
+  },
+  "files": {
+    "eyebrow": "مدیریت محتوا",
+    "title": "فایل‌ها",
+    "upload": "بارگذاری فایل",
+    "uploaded": "فایل با موفقیت بارگذاری شد.",
+    "newFolder": "پوشه جدید",
+    "folderCreated": "پوشه با موفقیت ایجاد شد.",
+    "deleted": "فایل به موارد حذف‌شده منتقل شد.",
+    "allFolders": "همه پوشه‌ها",
+    "category": "دسته‌بندی",
+    "folder": "پوشه",
+    "download": "دریافت",
+    "empty": "فایلی یافت نشد",
+    "emptyDescription": "یک فایل بارگذاری کنید یا فیلترها را تغییر دهید.",
+    "chooseFile": "انتخاب فایل",
+    "displayName": "نام نمایشی",
+    "description": "توضیحات",
+    "folderName": "نام پوشه",
+    "status": "وضعیت",
+    "versions": "تاریخچه نسخه‌ها",
+    "current": "فعلی",
+    "noVersions": "نسخه‌ای موجود نیست",
+    "deleteTitle": "فایل حذف شود؟",
+    "deleteMessage": "فایل «{name}» به موارد حذف‌شده منتقل می‌شود."
   }
 }

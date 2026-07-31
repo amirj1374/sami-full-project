@@ -1176,5 +1176,30 @@
       "interval": "Fixed interval",
       "once": "One-time run"
     }
+  },
+  "files": {
+    "eyebrow": "Content management",
+    "title": "Files",
+    "upload": "Upload file",
+    "uploaded": "File uploaded successfully.",
+    "newFolder": "New folder",
+    "folderCreated": "Folder created successfully.",
+    "deleted": "File moved to deleted items.",
+    "allFolders": "All folders",
+    "category": "Category",
+    "folder": "Folder",
+    "download": "Download",
+    "empty": "No files found",
+    "emptyDescription": "Upload a file or adjust the current filters.",
+    "chooseFile": "Choose file",
+    "displayName": "Display name",
+    "description": "Description",
+    "folderName": "Folder name",
+    "status": "Status",
+    "versions": "Version history",
+    "current": "Current",
+    "noVersions": "No versions available",
+    "deleteTitle": "Delete file?",
+    "deleteMessage": "The file “{name}” will be moved to deleted items."
   }
 }

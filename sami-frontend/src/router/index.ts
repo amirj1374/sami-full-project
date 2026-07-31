@@ -95,6 +95,12 @@ const routes: RouteRecordRaw[] = [
         meta: { requiresAuth: true, permission: 'data-quality:view' },
       },
       {
+        path: 'files',
+        name: 'files',
+        component: () => import('@/views/FilesView.vue'),
+        meta: { requiresAuth: true, permission: 'files:view' },
+      },
+      {
         path: 'users',
         name: 'users',
         component: () => import('@/views/admin/UsersView.vue'),
