@@ -29,6 +29,27 @@ export function useServerLabel() {
     return te(key) ? t(key) : name
   }
 
+  const permissionLabel = (code?: string | null, fallback?: string): string => {
+    if (!code) return fallback ?? ''
+    const [moduleCode, actionCode] = code.split(':')
+    if (!moduleCode || !actionCode) return fallback ?? code
+    const actionKey = `server.action.${actionCode}`
+    const action = te(actionKey) ? t(actionKey) : (fallback ?? actionCode)
+    return `${moduleLabel(moduleCode, moduleCode)} — ${action}`
+  }
+
+  const actionLabel = (actionCode?: string | null): string => {
+    if (!actionCode) return ''
+    const key = `server.action.${actionCode}`
+    return te(key) ? t(key) : actionCode
+  }
+
+  const enumLabel = (value?: string | null): string => {
+    if (!value) return ''
+    const key = `server.enum.${value}`
+    return te(key) ? t(key) : text(value)
+  }
+
   return {
     moduleLabel,
     text,
@@ -36,5 +57,8 @@ export function useServerLabel() {
     roleLabel: text,
     typeLabel: text,
     lookupLabel: text,
+    permissionLabel,
+    actionLabel,
+    enumLabel,
   }
 }

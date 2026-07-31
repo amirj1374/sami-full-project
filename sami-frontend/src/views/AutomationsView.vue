@@ -19,6 +19,7 @@ import { automationRuleSchema } from '@/schemas/automation'
 import { useApiError } from '@/composables/useApiError'
 import { useFormat } from '@/composables/useFormat'
 import { usePermission } from '@/composables/usePermission'
+import { useServerLabel } from '@/composables/useServerLabel'
 import AppEmptyState from '@/components/AppEmptyState.vue'
 import AppPageHeader from '@/components/AppPageHeader.vue'
 
@@ -26,6 +27,7 @@ const { t } = useI18n()
 const { xs } = useDisplay()
 const { formatDateTime, formatNumber } = useFormat()
 const { can } = usePermission()
+const { enumLabel, statusLabel } = useServerLabel()
 const { message: errorMessage, set: setError, clear: clearError } = useApiError()
 
 const loading = ref(false)
@@ -281,9 +283,9 @@ onMounted(async () => {
               <div class="flex-grow-1 min-width-0">
                 <div class="d-flex align-center flex-wrap ga-2">
                   <span class="font-weight-bold">{{ row.name }}</span>
-                  <v-chip size="x-small" label variant="tonal">{{ row.statusName }}</v-chip>
+                  <v-chip size="x-small" label variant="tonal">{{ statusLabel(row.statusName) }}</v-chip>
                 </div>
-                <div class="text-caption text-medium-emphasis">{{ row.code }} · {{ row.triggerType }}</div>
+                <div class="text-caption text-medium-emphasis">{{ row.code }} · {{ enumLabel(row.triggerType) }}</div>
               </div>
               <v-menu>
                 <template #activator="{ props }"><v-btn v-bind="props" icon="mdi-dots-vertical" variant="text" /></template>
@@ -361,7 +363,7 @@ onMounted(async () => {
           <v-progress-linear v-if="historyLoading" indeterminate />
           <v-list v-else-if="executions.length">
             <v-list-item v-for="execution in executions" :key="execution.id" :title="execution.executionNumber" :subtitle="formatDateTime(execution.startedAt)" @click="openLogs(execution)">
-              <template #append><v-chip size="x-small" variant="tonal">{{ execution.status }}</v-chip></template>
+              <template #append><v-chip size="x-small" variant="tonal">{{ enumLabel(execution.status) }}</v-chip></template>
             </v-list-item>
           </v-list>
           <AppEmptyState v-else dense :title="t('automation.noExecutions')" />
@@ -370,7 +372,7 @@ onMounted(async () => {
     </v-dialog>
 
     <v-dialog v-model="logsOpen" max-width="680" :fullscreen="xs">
-      <v-card :rounded="xs ? 0 : 'xl'"><v-card-title class="px-5 pt-5">{{ t('automation.executionLogs') }}</v-card-title><v-card-text class="px-5"><v-timeline side="end" density="compact"><v-timeline-item v-for="log in logs" :key="log.id" size="small"><div class="font-weight-medium">{{ log.actionType }} · {{ log.status }}</div><div class="text-body-2 text-medium-emphasis">{{ log.message }}</div><div class="text-caption">{{ formatDateTime(log.occurredAt) }}</div></v-timeline-item></v-timeline></v-card-text></v-card>
+      <v-card :rounded="xs ? 0 : 'xl'"><v-card-title class="px-5 pt-5">{{ t('automation.executionLogs') }}</v-card-title><v-card-text class="px-5"><v-timeline side="end" density="compact"><v-timeline-item v-for="log in logs" :key="log.id" size="small"><div class="font-weight-medium">{{ enumLabel(log.actionType) }} · {{ enumLabel(log.status) }}</div><div class="text-body-2 text-medium-emphasis">{{ log.message }}</div><div class="text-caption">{{ formatDateTime(log.occurredAt) }}</div></v-timeline-item></v-timeline></v-card-text></v-card>
     </v-dialog>
 
     <v-dialog :model-value="!!deleteTarget" max-width="420" @update:model-value="deleteTarget = undefined">

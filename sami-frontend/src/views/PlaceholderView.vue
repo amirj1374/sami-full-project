@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useMenuStore } from '@/stores/menu'
+import { useServerLabel } from '@/composables/useServerLabel'
 
 const { t, te } = useI18n()
 
@@ -22,9 +23,10 @@ const { t, te } = useI18n()
  */
 const route = useRoute()
 const menu = useMenuStore()
+const { moduleLabel, statusLabel } = useServerLabel()
 
 const moduleItem = computed(() => menu.items.find((item) => item.path === route.path) ?? null)
-const moduleName = computed(() => moduleItem.value?.name ?? t('placeholder.defaultName'))
+const moduleName = computed(() => moduleLabel(moduleItem.value?.code, moduleItem.value?.name ?? t('placeholder.defaultName')))
 const moduleIcon = computed(() => moduleItem.value?.icon ?? 'mdi-view-module')
 
 const backendStatus = computed(() => moduleItem.value?.backendStatus ?? null)
@@ -90,7 +92,7 @@ const statusIcon = computed(() => overallStatus.value?.icon ?? moduleIcon.value)
             :color="backendStatus.color ?? undefined"
             :prepend-icon="backendStatus.icon ?? 'mdi-server'"
           >
-            {{ t('placeholder.axis.backend') }}: {{ backendStatus.name }}
+            {{ t('placeholder.axis.backend') }}: {{ statusLabel(backendStatus.name) }}
           </v-chip>
           <v-chip
             size="small"
@@ -98,7 +100,7 @@ const statusIcon = computed(() => overallStatus.value?.icon ?? moduleIcon.value)
             :color="frontendStatus.color ?? undefined"
             :prepend-icon="frontendStatus.icon ?? 'mdi-monitor'"
           >
-            {{ t('placeholder.axis.frontend') }}: {{ frontendStatus.name }}
+            {{ t('placeholder.axis.frontend') }}: {{ statusLabel(frontendStatus.name) }}
           </v-chip>
           <v-chip v-if="releaseVersion" size="small" variant="tonal" prepend-icon="mdi-tag-outline">
             {{ t('placeholder.axis.release') }}: {{ releaseVersion }}

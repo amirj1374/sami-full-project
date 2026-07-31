@@ -59,7 +59,7 @@ const pieSlices = computed(() => {
     </svg>
     <div class="text-caption">
       <div v-for="(s, i) in pieSlices" :key="i" class="d-flex align-center">
-        <span class="d-inline-block mr-1 rounded" :style="{ background: s.color, width: '10px', height: '10px' }" />
+        <span class="d-inline-block me-1 rounded" :style="{ background: s.color, width: '10px', height: '10px' }" />
         {{ s.label }}
       </div>
     </div>

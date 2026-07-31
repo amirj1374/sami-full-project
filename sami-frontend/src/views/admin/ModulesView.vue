@@ -9,9 +9,11 @@ import { useApiError } from '@/composables/useApiError'
 import AppPageHeader from '@/components/AppPageHeader.vue'
 import type { PageQuery } from '@/types/api'
 import type { AppModule, ModuleStatus } from '@/types/models'
+import { useServerLabel } from '@/composables/useServerLabel'
 
 const { t } = useI18n()
 const { message: errorMessage, set: setError, clear: clearError } = useApiError()
+const { moduleLabel, statusLabel } = useServerLabel()
 
 // --- Table state ----------------------------------------------------------
 interface SortItem {
@@ -29,7 +31,7 @@ const totalItems = ref(0)
 const loading = ref(false)
 const lastOptions = ref<TableOptions>({ page: 1, itemsPerPage: 10, sortBy: [] })
 
-const headers = [
+const headers = computed(() => [
   { title: t('modules.order'), key: 'displayOrder', align: 'end' as const },
   { title: t('modules.name'), key: 'name' },
   { title: t('modules.code'), key: 'code' },
@@ -37,7 +39,7 @@ const headers = [
   { title: t('modules.permissions'), key: 'permissionCount', sortable: false, align: 'end' as const },
   { title: t('modules.enabled'), key: 'enabled', sortable: false },
   { title: '', key: 'actions', sortable: false, align: 'end' as const },
-]
+])
 
 // ---------------------------------------------------------------------
 // Lifecycle management
@@ -357,9 +359,9 @@ async function confirmDelete() {
         @update:options="loadItems"
       >
         <template #[`item.name`]="{ item }">
-          <v-icon :icon="item.icon" size="small" class="mr-2" />
-          {{ item.name }}
-          <v-chip v-if="item.isSystem" size="small" variant="tonal" class="ml-2">{{ t('modules.system') }}</v-chip>
+          <v-icon :icon="item.icon" size="small" class="me-2" />
+          {{ moduleLabel(item.code, item.name) }}
+          <v-chip v-if="item.isSystem" size="small" variant="tonal" class="ms-2">{{ t('modules.system') }}</v-chip>
         </template>
         <template #[`item.code`]="{ item }">
           <code>{{ item.code }}</code>
@@ -372,10 +374,10 @@ async function confirmDelete() {
               :color="item.overallStatus.color ?? undefined"
               :prepend-icon="item.overallStatus.icon ?? undefined"
             >
-              {{ item.overallStatus.name }}
+              {{ statusLabel(item.overallStatus.name) }}
             </v-chip>
             <span class="text-caption text-medium-emphasis">
-              {{ item.backendStatus?.name }} / {{ item.frontendStatus?.name }}
+              {{ statusLabel(item.backendStatus?.name) }} / {{ statusLabel(item.frontendStatus?.name) }}
             </span>
             <v-progress-linear
               :model-value="item.progressPercentage ?? 0"

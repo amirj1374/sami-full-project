@@ -249,7 +249,7 @@ async function submit(ignoreDuplicates = false) {
         </v-alert>
         <v-alert v-if="duplicateWarning" type="warning" variant="tonal" class="mb-4">
           <p class="mb-2">{{ duplicateWarning }}</p>
-          <v-btn size="small" color="warning" :loading="saving" class="mr-2" @click="submit(true)">
+          <v-btn size="small" color="warning" :loading="saving" class="me-2" @click="submit(true)">
             {{ t('suppliers.form.saveAnyway') }}
           </v-btn>
           <v-btn size="small" variant="text" @click="duplicateWarning = null">{{ t('common.back') }}</v-btn>

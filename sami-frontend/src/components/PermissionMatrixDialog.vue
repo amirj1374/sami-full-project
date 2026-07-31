@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { permissionsApi } from '@/api/permissions'
 import { rolesApi } from '@/api/roles'
 import { useApiError } from '@/composables/useApiError'
+import { useServerLabel } from '@/composables/useServerLabel'
 import type { ModulePermissionsGroup, Permission, Role } from '@/types/models'
 
 const props = defineProps<{
@@ -19,6 +20,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const { message: errorMessage, set: setError, clear: clearError } = useApiError()
+const { actionLabel, moduleLabel } = useServerLabel()
 const loading = ref(false)
 const saving = ref(false)
 const groups = ref<ModulePermissionsGroup[]>([])
@@ -158,13 +160,13 @@ async function save() {
                 <th>{{ t('roles.matrixModule') }}</th>
                 <th class="text-center">{{ t('common.all') }}</th>
                 <th v-for="action in actions" :key="action" class="text-center text-capitalize">
-                  {{ action }}
+                  {{ actionLabel(action) }}
                 </th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="group in groups" :key="group.moduleId">
-                <td class="text-no-wrap">{{ group.moduleName }}</td>
+                <td class="text-no-wrap">{{ moduleLabel(group.moduleCode, group.moduleName) }}</td>
                 <td class="text-center">
                   <v-checkbox-btn
                     :model-value="isRowAllSelected(group)"

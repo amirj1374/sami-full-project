@@ -342,7 +342,7 @@ function statusColor(status: UserStatus): string {
         <div v-if="selected.length > 0">
           <v-divider />
           <div class="d-flex align-center flex-wrap px-4 py-2 ga-2">
-            <span class="text-body-2 mr-2">{{
+            <span class="text-body-2 me-2">{{
               t('common.selectedCount', { count: selected.length })
             }}</span>
             <v-select

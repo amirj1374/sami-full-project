@@ -428,7 +428,7 @@ function statusColor(status: CustomerStatus): string {
             size="x-small"
             variant="tonal"
             :color="tag.color ?? undefined"
-            class="mr-1"
+            class="me-1"
           >
             {{ srvLabel(tag.name) }}
           </v-chip>

@@ -5,6 +5,7 @@ import { purchasesApi } from '@/api/purchases'
 import { useApiError } from '@/composables/useApiError'
 import { usePermission } from '@/composables/usePermission'
 import { useFormat } from '@/composables/useFormat'
+import { useServerLabel } from '@/composables/useServerLabel'
 import type {
   PurCancelReason,
   PurIdentifierType,
@@ -40,6 +41,7 @@ const { t } = useI18n()
 const { can } = usePermission()
 const { message: errorMessage, set: setError, clear: clearError } = useApiError()
 const { formatDateTime } = useFormat()
+const { lookupLabel } = useServerLabel()
 
 const detail = ref<PurchaseDetail | null>(null)
 const tab = ref<'items' | 'history' | 'attachments'>('items')
@@ -224,14 +226,14 @@ const status = computed(() => detail.value?.purchase.status)
     <v-card v-if="detail" rounded="lg">
       <v-card-title class="text-h6 pt-4 px-6 d-flex align-center flex-wrap">
         {{ detail.purchase.purchaseNumber }}
-        <v-chip size="small" variant="tonal" class="ml-3">{{ detail.purchase.type.name }}</v-chip>
+        <v-chip size="small" variant="tonal" class="ms-3">{{ lookupLabel(detail.purchase.type.name) }}</v-chip>
         <v-chip
           size="small"
           variant="tonal"
-          class="ml-2"
+          class="ms-2"
           :color="status?.isTerminal ? (status?.isCompletedState ? 'success' : 'error') : 'info'"
         >
-          {{ status?.name }}
+          {{ lookupLabel(status?.name) }}
         </v-chip>
         <v-spacer />
         <span class="text-subtitle-1">{{ detail.purchase.totalAmount.toFixed(2) }}</span>
@@ -239,7 +241,7 @@ const status = computed(() => detail.value?.purchase.status)
 
       <v-card-subtitle class="px-6">
         {{ t('purchases.detail.supplier') }}: {{ detail.purchase.supplierName }} ({{ detail.purchase.supplierCode }})
-        <template v-if="detail.purchase.warehouse"> · {{ detail.purchase.warehouse.name }}</template>
+        <template v-if="detail.purchase.warehouse"> · {{ lookupLabel(detail.purchase.warehouse.name) }}</template>
         <template v-if="detail.cancelReason"> · {{ t('purchases.detail.cancelled') }}: {{ detail.cancelReason }}</template>
       </v-card-subtitle>
 
@@ -348,7 +350,7 @@ const status = computed(() => detail.value?.purchase.status)
                   <td class="text-right">{{ item.returnedQuantity }}</td>
                   <td class="text-right">{{ item.remainingQuantity }}</td>
                   <td>
-                    <v-chip v-if="item.requiresSerial" size="x-small" variant="tonal" class="mr-1">{{ t('purchases.detail.flags.sn') }}</v-chip>
+                    <v-chip v-if="item.requiresSerial" size="x-small" variant="tonal" class="me-1">{{ t('purchases.detail.flags.sn') }}</v-chip>
                     <v-chip v-if="item.requiresImei" size="x-small" variant="tonal">{{ t('purchases.detail.flags.imei') }}</v-chip>
                   </td>
                 </tr>
@@ -385,7 +387,7 @@ const status = computed(() => detail.value?.purchase.status)
             <v-timeline density="compact" side="end" truncate-line="both">
               <v-timeline-item v-for="log in logs" :key="log.id" size="x-small">
                 <div class="d-flex align-center flex-wrap">
-                  <v-chip size="x-small" variant="tonal" class="mr-2">{{ log.action }}</v-chip>
+                  <v-chip size="x-small" variant="tonal" class="me-2">{{ log.action }}</v-chip>
                   <span class="text-caption text-medium-emphasis">
                     {{ formatDateTime(log.occurredAt) }}
                     <template v-if="log.actorEmail"> · {{ log.actorEmail }}</template>
@@ -496,7 +498,7 @@ const status = computed(() => detail.value?.purchase.status)
               <div
                 v-for="(unit, ui) in line.units"
                 :key="ui"
-                class="d-flex align-center ga-2 mt-2 ml-6"
+                class="d-flex align-center ga-2 mt-2 ms-6"
               >
                 <span class="text-caption" style="min-width: 48px">{{ t('purchases.receiving.unit', { number: ui + 1 }) }}</span>
                 <v-text-field

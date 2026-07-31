@@ -147,11 +147,11 @@ async function removeShare(share: DashboardShare): Promise<void> {
         <v-list v-else density="compact">
           <v-list-item v-for="share in shares" :key="share.id" class="px-0">
             <template #prepend>
-              <v-icon :icon="share.targetType === 'USER' ? 'mdi-account' : 'mdi-shield-account'" size="small" class="mr-2" />
+              <v-icon :icon="share.targetType === 'USER' ? 'mdi-account' : 'mdi-shield-account'" size="small" class="me-2" />
             </template>
             <v-list-item-title class="text-body-2">
               {{ share.targetUserEmail ?? share.targetRoleName }}
-              <v-chip v-if="share.canEdit" size="x-small" variant="tonal" color="primary" class="ml-1">
+              <v-chip v-if="share.canEdit" size="x-small" variant="tonal" color="primary" class="ms-1">
                 {{ t('dash.canEdit') }}
               </v-chip>
             </v-list-item-title>

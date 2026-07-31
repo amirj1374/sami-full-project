@@ -242,7 +242,7 @@ async function submit(ignoreDuplicates = false) {
     <v-card rounded="lg">
       <v-card-title class="text-h6 pt-4 px-6">
         {{ isEdit ? t('customers.form.editTitle') : t('customers.form.newTitle') }}
-        <span v-if="customer" class="text-body-2 text-medium-emphasis ml-2">
+        <span v-if="customer" class="text-body-2 text-medium-emphasis ms-2">
           {{ customer.customer.customerCode }}
         </span>
       </v-card-title>
@@ -263,7 +263,7 @@ async function submit(ignoreDuplicates = false) {
         <!-- Duplicate confirmation panel -->
         <v-alert v-if="duplicates" type="warning" variant="tonal" class="mb-4">
           <p class="font-weight-medium mb-2">{{ t('customers.form.duplicates.heading') }}</p>
-          <ul class="ml-4 mb-2">
+          <ul class="ms-4 mb-2">
             <li v-for="m in duplicates" :key="m.customerId">
               <strong>{{ m.customerCode }}</strong> — {{ m.displayName }}
               <span class="text-caption">({{ m.matchedOn.join(', ') }})</span>
@@ -272,7 +272,7 @@ async function submit(ignoreDuplicates = false) {
           <p class="text-body-2 mb-2">
             {{ t('customers.form.duplicates.hint') }}
           </p>
-          <v-btn size="small" color="warning" :loading="saving" class="mr-2" @click="submit(true)">
+          <v-btn size="small" color="warning" :loading="saving" class="me-2" @click="submit(true)">
             {{ t('customers.form.duplicates.saveAnyway') }}
           </v-btn>
           <v-btn size="small" variant="text" @click="duplicates = null">{{ t('common.back') }}</v-btn>

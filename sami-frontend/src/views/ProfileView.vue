@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useServerLabel } from '@/composables/useServerLabel'
 import AppPageHeader from '@/components/AppPageHeader.vue'
 import ChangePasswordDialog from '@/components/ChangePasswordDialog.vue'
 import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
@@ -9,6 +10,7 @@ import { useFormat } from '@/composables/useFormat'
 import { useThemeMode, type ThemeMode } from '@/composables/useThemeMode'
 
 const { t } = useI18n()
+const { roleLabel } = useServerLabel()
 const auth = useAuthStore()
 const { formatDate } = useFormat()
 const { mode, apply } = useThemeMode()
@@ -33,7 +35,7 @@ const themeItems = computed(() => [
               <div class="min-width-0"><h2 class="text-h6 text-truncate">{{ user?.fullName }}</h2><div class="text-body-2 text-medium-emphasis text-truncate">{{ user?.email }}</div></div>
             </div>
             <v-list bg-color="transparent">
-              <v-list-item prepend-icon="mdi-shield-account-outline" :title="t('profile.role')" :subtitle="user?.role.name" />
+              <v-list-item prepend-icon="mdi-shield-account-outline" :title="t('profile.role')" :subtitle="roleLabel(user?.role.name)" />
               <v-list-item prepend-icon="mdi-calendar-outline" :title="t('profile.memberSince')" :subtitle="user ? formatDate(user.createdAt) : '—'" />
               <v-list-item prepend-icon="mdi-key-chain" :title="t('profile.permissions')" :subtitle="user?.isSuperAdmin ? t('profile.fullAccess') : t('profile.permissionCount', { count: user?.permissions.length ?? 0 })" />
             </v-list>

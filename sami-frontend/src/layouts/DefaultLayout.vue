@@ -38,6 +38,10 @@ const themeOptions: { value: ThemeMode; icon: string; label: string }[] = [
 
 const TITLE_KEYS: Record<string, string> = {
   dashboard: 'dashboard.title',
+  dashboards: 'dash.dashboards',
+  'dashboard-reports': 'dash.reports',
+  'dashboard-viewer': 'dash.dashboards',
+  kpis: 'dash.kpis',
   products: 'products.title',
   suppliers: 'suppliers.title',
   purchases: 'purchases.title',
@@ -50,6 +54,7 @@ const TITLE_KEYS: Record<string, string> = {
   roles: 'roles.title',
   permissions: 'permissions.title',
   modules: 'modules.title',
+  forbidden: 'apiError.forbidden',
 }
 
 const isDashboard = computed(() => route.name === 'dashboard')
@@ -73,7 +78,7 @@ const filteredItems = computed<MenuItem[]>(() => {
   const q = navQuery.value.trim().toLowerCase()
   if (!q) return menu.items
   return menu.items.filter(
-    (m) => m.name.toLowerCase().includes(q) || m.code.toLowerCase().includes(q),
+    (m) => moduleLabel(m.code, m.name).toLocaleLowerCase().includes(q) || m.code.toLowerCase().includes(q),
   )
 })
 const favoriteItems = computed<MenuItem[]>(() =>

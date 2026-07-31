@@ -8,12 +8,14 @@ import { dataQualityApi } from '@/api/dataQuality'
 import { useApiError } from '@/composables/useApiError'
 import { useFormat } from '@/composables/useFormat'
 import { usePermission } from '@/composables/usePermission'
+import { useServerLabel } from '@/composables/useServerLabel'
 import type { QualityCatalog, QualityIssue, QualityIssueSummary, QualityRule, QualityRulePayload } from '@/types/dataQuality'
 
 const { t } = useI18n()
 const { xs } = useDisplay()
 const { can } = usePermission()
 const { formatDateTime, formatNumber } = useFormat()
+const { enumLabel, moduleLabel } = useServerLabel()
 const { message: errorMessage, set: setError, clear: clearError } = useApiError()
 
 const tab = ref('issues')
@@ -183,8 +185,8 @@ onMounted(async () => {
         <div v-if="issues.length" class="quality-grid pa-3 pa-sm-4">
           <v-card v-for="issue in issues" :key="issue.id" variant="tonal" rounded="lg">
             <v-card-text>
-              <div class="d-flex align-start ga-3"><v-icon icon="mdi-alert-circle-outline" color="warning" /><div class="flex-grow-1 min-width-0"><div class="font-weight-bold">{{ issue.message }}</div><div class="text-caption">{{ issue.moduleCode }} / {{ issue.entityCode }} · {{ issue.fieldName || '—' }}</div></div><v-chip size="x-small" label>{{ issue.severityCode }}</v-chip></div>
-              <div class="text-caption text-medium-emphasis mt-3">{{ formatDateTime(issue.createdAt) }} · {{ issue.status }}</div>
+              <div class="d-flex align-start ga-3"><v-icon icon="mdi-alert-circle-outline" color="warning" /><div class="flex-grow-1 min-width-0"><div class="font-weight-bold">{{ issue.message }}</div><div class="text-caption">{{ moduleLabel(issue.moduleCode, issue.moduleCode) }} / {{ issue.entityCode }} · {{ issue.fieldName || '—' }}</div></div><v-chip size="x-small" label>{{ enumLabel(issue.severityCode) }}</v-chip></div>
+              <div class="text-caption text-medium-emphasis mt-3">{{ formatDateTime(issue.createdAt) }} · {{ enumLabel(issue.status) }}</div>
               <div v-if="can('data-quality:resolve')" class="d-flex ga-2 mt-4"><v-btn size="small" color="primary" variant="tonal" @click="openIssueAction(issue, 'resolve')">{{ t('dataQuality.resolve') }}</v-btn><v-btn size="small" variant="text" @click="openIssueAction(issue, 'ignore')">{{ t('dataQuality.ignore') }}</v-btn></div>
             </v-card-text>
           </v-card>
@@ -197,10 +199,10 @@ onMounted(async () => {
         <div v-if="rules.length" class="quality-grid pa-3 pa-sm-4">
           <v-card v-for="rule in rules" :key="rule.id" variant="tonal" rounded="lg">
             <v-card-text>
-              <div class="d-flex align-start"><div class="flex-grow-1 min-width-0"><div class="font-weight-bold">{{ rule.name }}</div><div class="text-caption">{{ rule.code }} · {{ rule.validationType }}</div></div><v-menu><template #activator="{ props }"><v-btn v-bind="props" icon="mdi-dots-vertical" variant="text" /></template><v-list density="compact"><v-list-item v-if="can('data-quality:delete')" base-color="error" prepend-icon="mdi-delete-outline" :title="t('common.delete')" @click="deleteTarget = rule" /></v-list></v-menu></div>
+              <div class="d-flex align-start"><div class="flex-grow-1 min-width-0"><div class="font-weight-bold">{{ rule.name }}</div><div class="text-caption">{{ rule.code }} · {{ enumLabel(rule.validationType) }}</div></div><v-menu><template #activator="{ props }"><v-btn v-bind="props" icon="mdi-dots-vertical" variant="text" /></template><v-list density="compact"><v-list-item v-if="can('data-quality:delete')" base-color="error" prepend-icon="mdi-delete-outline" :title="t('common.delete')" @click="deleteTarget = rule" /></v-list></v-menu></div>
               <p class="text-body-2 text-medium-emphasis mt-3">{{ rule.description || `${rule.moduleCode} / ${rule.entityCode}` }}</p>
               <v-select v-if="can('data-quality:edit')" :model-value="rule.statusCode" :items="statusItems" density="compact" hide-details class="mt-3" @update:model-value="changeStatus(rule, $event)" />
-              <v-chip v-else size="small" class="mt-3">{{ rule.statusCode }}</v-chip>
+              <v-chip v-else size="small" class="mt-3">{{ enumLabel(rule.statusCode) }}</v-chip>
             </v-card-text>
           </v-card>
         </div>

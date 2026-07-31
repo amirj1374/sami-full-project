@@ -7,6 +7,7 @@ import type { ScheduledJob, SchedulerExecution, SchedulerHandler, SchedulerStatu
 import { useApiError } from '@/composables/useApiError'
 import { useFormat } from '@/composables/useFormat'
 import { usePermission } from '@/composables/usePermission'
+import { useServerLabel } from '@/composables/useServerLabel'
 import AppEmptyState from '@/components/AppEmptyState.vue'
 import AppLoadingState from '@/components/AppLoadingState.vue'
 import AppErrorState from '@/components/AppErrorState.vue'
@@ -16,6 +17,7 @@ const { t } = useI18n()
 const { xs } = useDisplay()
 const { formatDateTime, formatNumber } = useFormat()
 const { can } = usePermission()
+const { enumLabel, statusLabel } = useServerLabel()
 const { message: errorMessage, set: setError, clear: clearError } = useApiError()
 const loading = ref(false)
 const saving = ref(false)
@@ -213,7 +215,7 @@ onMounted(load)
             </v-menu>
           </div>
           <div class="d-flex flex-wrap ga-2 mt-4">
-            <v-chip size="x-small" variant="tonal">{{ job.statusName }}</v-chip>
+            <v-chip size="x-small" variant="tonal">{{ statusLabel(job.statusName) }}</v-chip>
             <v-chip v-if="!job.handlerRegistered" size="x-small" color="error" variant="tonal">{{ t('scheduler.missingHandler') }}</v-chip>
             <v-chip v-if="job.system" size="x-small" variant="outlined">{{ t('scheduler.system') }}</v-chip>
           </div>
@@ -248,9 +250,9 @@ onMounted(load)
       <v-list-item :title="t('scheduler.handler')" :subtitle="detail?.handlerKey"/><v-list-item :title="t('scheduler.scheduleKind')" :subtitle="detail?.schedule"/><v-list-item :title="t('scheduler.lastRun')" :subtitle="detail?.lastRunAt ? formatDateTime(detail.lastRunAt) : '—'"/><v-list-item :title="t('scheduler.failures')" :subtitle="formatNumber(detail?.consecutiveFailures ?? 0)"/>
     </v-list></v-card-text></v-card></v-dialog>
 
-    <v-dialog :model-value="!!historyJob" max-width="760" :fullscreen="xs" @update:model-value="historyJob=undefined"><v-card :rounded="xs?0:'xl'"><v-card-title class="d-flex px-5 pt-5">{{ t('scheduler.history') }}<v-spacer/><v-btn icon="mdi-close" variant="text" @click="historyJob=undefined"/></v-card-title><v-card-text class="px-5"><v-progress-linear v-if="historyLoading" indeterminate/><v-list v-else-if="executions.length"><v-list-item v-for="item in executions" :key="item.id" :title="item.executionNumber" :subtitle="`${formatDateTime(item.startedAt)} · ${item.durationMs ?? 0} ms`"><template #append><v-chip size="x-small" variant="tonal">{{ item.status }}</v-chip></template><v-alert v-if="item.errorMessage" type="error" density="compact" variant="tonal" class="mt-2">{{ item.errorMessage }}</v-alert></v-list-item></v-list><AppEmptyState v-else dense :title="t('scheduler.noExecutions')"/></v-card-text></v-card></v-dialog>
+    <v-dialog :model-value="!!historyJob" max-width="760" :fullscreen="xs" @update:model-value="historyJob=undefined"><v-card :rounded="xs?0:'xl'"><v-card-title class="d-flex px-5 pt-5">{{ t('scheduler.history') }}<v-spacer/><v-btn icon="mdi-close" variant="text" @click="historyJob=undefined"/></v-card-title><v-card-text class="px-5"><v-progress-linear v-if="historyLoading" indeterminate/><v-list v-else-if="executions.length"><v-list-item v-for="item in executions" :key="item.id" :title="item.executionNumber" :subtitle="`${formatDateTime(item.startedAt)} · ${item.durationMs ?? 0} ms`"><template #append><v-chip size="x-small" variant="tonal">{{ enumLabel(item.status) }}</v-chip></template><v-alert v-if="item.errorMessage" type="error" density="compact" variant="tonal" class="mt-2">{{ item.errorMessage }}</v-alert></v-list-item></v-list><AppEmptyState v-else dense :title="t('scheduler.noExecutions')"/></v-card-text></v-card></v-dialog>
 
-    <v-dialog v-model="showingRecentExecutions" max-width="760" :fullscreen="xs"><v-card :rounded="xs?0:'xl'"><v-card-title class="d-flex px-5 pt-5">{{ t('scheduler.history') }}<v-spacer/><v-btn icon="mdi-close" variant="text" @click="showingRecentExecutions=false"/></v-card-title><v-card-text class="px-5"><v-progress-linear v-if="historyLoading" indeterminate/><v-list v-else-if="executions.length"><v-list-item v-for="item in executions" :key="item.id" :title="item.executionNumber" :subtitle="formatDateTime(item.startedAt)"><template #append><v-chip size="x-small" variant="tonal">{{ item.status }}</v-chip></template></v-list-item></v-list><AppEmptyState v-else dense :title="t('scheduler.noExecutions')"/></v-card-text></v-card></v-dialog>
+    <v-dialog v-model="showingRecentExecutions" max-width="760" :fullscreen="xs"><v-card :rounded="xs?0:'xl'"><v-card-title class="d-flex px-5 pt-5">{{ t('scheduler.history') }}<v-spacer/><v-btn icon="mdi-close" variant="text" @click="showingRecentExecutions=false"/></v-card-title><v-card-text class="px-5"><v-progress-linear v-if="historyLoading" indeterminate/><v-list v-else-if="executions.length"><v-list-item v-for="item in executions" :key="item.id" :title="item.executionNumber" :subtitle="formatDateTime(item.startedAt)"><template #append><v-chip size="x-small" variant="tonal">{{ enumLabel(item.status) }}</v-chip></template></v-list-item></v-list><AppEmptyState v-else dense :title="t('scheduler.noExecutions')"/></v-card-text></v-card></v-dialog>
 
     <v-dialog :model-value="!!deleteTarget" max-width="420" @update:model-value="deleteTarget=undefined"><v-card rounded="xl"><v-card-title class="px-5 pt-5">{{ t('scheduler.deleteTitle') }}</v-card-title><v-card-text class="px-5">{{ t('scheduler.deleteMessage',{name:deleteTarget?.name}) }}</v-card-text><v-card-actions class="px-5 pb-5"><v-spacer/><v-btn variant="text" @click="deleteTarget=undefined">{{ t('common.cancel') }}</v-btn><v-btn color="error" @click="remove">{{ t('common.delete') }}</v-btn></v-card-actions></v-card></v-dialog>
   </div>

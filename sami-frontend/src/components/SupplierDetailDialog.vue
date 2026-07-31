@@ -150,14 +150,14 @@ const row = computed<SupplierRow | null>(() => detail.value?.supplier ?? null)
     <v-card v-if="row" rounded="lg">
       <v-card-title class="text-h6 pt-4 px-6 d-flex align-center flex-wrap">
         {{ row.displayName }}
-        <span class="text-body-2 text-medium-emphasis ml-2">{{ row.supplierCode }}</span>
-        <v-chip size="small" variant="tonal" class="ml-3">{{ srvLabel(row.type.name) }}</v-chip>
-        <v-chip size="small" variant="tonal" class="ml-2" :color="row.status.isBlocking ? 'error' : 'success'">
+        <span class="text-body-2 text-medium-emphasis ms-2">{{ row.supplierCode }}</span>
+        <v-chip size="small" variant="tonal" class="ms-3">{{ srvLabel(row.type.name) }}</v-chip>
+        <v-chip size="small" variant="tonal" class="ms-2" :color="row.status.isBlocking ? 'error' : 'success'">
           {{ srvLabel(row.status.name) }}
         </v-chip>
         <v-spacer />
         <v-rating :model-value="row.ratingAvg ?? 0" density="compact" size="small" half-increments readonly />
-        <span v-if="row.ratingAvg != null" class="text-body-2 ml-1">{{ row.ratingAvg.toFixed(2) }}</span>
+        <span v-if="row.ratingAvg != null" class="text-body-2 ms-1">{{ row.ratingAvg.toFixed(2) }}</span>
       </v-card-title>
 
       <v-tabs v-model="tab" class="px-4" density="compact">
@@ -278,7 +278,7 @@ const row = computed<SupplierRow | null>(() => detail.value?.supplier ?? null)
               <v-list-item v-for="doc in documents" :key="doc.id">
                 <v-list-item-title>
                   {{ doc.fileName }}
-                  <v-chip v-if="doc.docType" size="x-small" variant="tonal" class="ml-1">{{ doc.docType }}</v-chip>
+                  <v-chip v-if="doc.docType" size="x-small" variant="tonal" class="ms-1">{{ doc.docType }}</v-chip>
                 </v-list-item-title>
                 <v-list-item-subtitle>
                   {{ t('suppliers.documents.size', { size: (doc.fileSize / 1024).toFixed(1) }) }} · {{ doc.uploadedByEmail ?? t('suppliers.documents.system') }} · {{ formatDateTime(doc.createdAt) }}
@@ -295,7 +295,7 @@ const row = computed<SupplierRow | null>(() => detail.value?.supplier ?? null)
             <v-timeline density="compact" side="end" truncate-line="both">
               <v-timeline-item v-for="log in logs" :key="log.id" size="x-small">
                 <div class="d-flex align-center flex-wrap">
-                  <v-chip size="x-small" variant="tonal" class="mr-2">{{ log.action }}</v-chip>
+                  <v-chip size="x-small" variant="tonal" class="me-2">{{ log.action }}</v-chip>
                   <span class="text-caption text-medium-emphasis">
                     {{ formatDateTime(log.occurredAt) }}
                     <template v-if="log.actorEmail"> · {{ log.actorEmail }}</template>

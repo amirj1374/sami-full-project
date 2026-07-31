@@ -469,7 +469,7 @@ const historyMax = computed(() =>
         <strong>{{ preview.kpi.name }}</strong>
         <template v-if="!Number.isNaN(preview.value)">
           : {{ formatNumber(preview.value) }}
-          <v-chip v-if="preview.level" size="x-small" class="ml-1">{{ preview.level }}</v-chip>
+          <v-chip v-if="preview.level" size="x-small" class="ms-1">{{ preview.level }}</v-chip>
         </template>
         <template v-else> — {{ preview.level }}</template>
       </template>

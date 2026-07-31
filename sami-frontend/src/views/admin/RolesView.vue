@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
@@ -32,13 +32,13 @@ const totalItems = ref(0)
 const loading = ref(false)
 const lastOptions = ref<TableOptions>({ page: 1, itemsPerPage: 10, sortBy: [] })
 
-const headers = [
+const headers = computed(() => [
   { title: t('roles.name'), key: 'name' },
   { title: t('roles.description'), key: 'description', sortable: false },
   { title: t('roles.attributes'), key: 'attributes', sortable: false },
   { title: t('roles.users'), key: 'userCount', sortable: false, align: 'end' as const },
   { title: '', key: 'actions', sortable: false, align: 'end' as const },
-]
+])
 
 async function loadItems(options: TableOptions) {
   lastOptions.value = options
@@ -218,14 +218,14 @@ async function confirmDelete() {
           <span class="text-medium-emphasis">{{ item.description ?? '—' }}</span>
         </template>
         <template #[`item.attributes`]="{ item }">
-          <v-chip v-if="item.isSystem" size="small" variant="tonal" class="mr-1">{{ t('roles.system') }}</v-chip>
+          <v-chip v-if="item.isSystem" size="small" variant="tonal" class="me-1">{{ t('roles.system') }}</v-chip>
           <v-chip
             v-if="item.isSuperAdmin"
             color="warning"
             size="small"
             variant="tonal"
             prepend-icon="mdi-shield-crown"
-            class="mr-1"
+            class="me-1"
           >
             {{ t('roles.superAdmin') }}
           </v-chip>
