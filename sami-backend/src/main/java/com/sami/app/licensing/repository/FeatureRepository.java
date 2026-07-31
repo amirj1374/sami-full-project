@@ -11,9 +11,10 @@ public interface FeatureRepository extends JpaRepository<Feature, Long> {
 
     boolean existsByCode(String code);
 
-    @EntityGraph(attributePaths = {"dependencies"})
+    @EntityGraph(attributePaths = {"dependencies", "state"})
     Optional<Feature> findByCode(String code);
 
+    @EntityGraph(attributePaths = {"dependencies", "state"})
     List<Feature> findAllByOrderByDisplayOrderAsc();
 
     List<Feature> findByModuleCodeOrderByDisplayOrderAsc(String moduleCode);

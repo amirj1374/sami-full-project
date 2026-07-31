@@ -9,6 +9,7 @@ import com.sami.app.licensing.domain.License;
 import com.sami.app.licensing.domain.LicenseFeature;
 import com.sami.app.licensing.domain.LicenseType;
 import com.sami.app.licensing.domain.LicenseTransfer;
+import com.sami.app.licensing.domain.LicenseAuditLog;
 import com.sami.app.licensing.domain.LicensingStatus;
 import com.sami.app.licensing.domain.PaymentStatus;
 import com.sami.app.licensing.domain.SubscriptionPlan;
@@ -19,12 +20,14 @@ import com.sami.app.licensing.repository.FeatureRepository;
 import com.sami.app.licensing.repository.LicenseRepository;
 import com.sami.app.licensing.repository.LicenseTypeRepository;
 import com.sami.app.licensing.repository.LicenseTransferRepository;
+import com.sami.app.licensing.repository.LicenseAuditLogRepository;
 import com.sami.app.licensing.repository.LicensingStatusRepository;
 import com.sami.app.licensing.repository.PaymentStatusRepository;
 import com.sami.app.licensing.repository.SubscriptionPlanRepository;
 import com.sami.app.licensing.repository.TenantRepository;
 import com.sami.app.licensing.spi.LicenseActivationProvider;
 import com.sami.app.licensing.spi.LicenseActivationRegistry;
+import com.sami.app.licensing.dto.LicensingDtos.LicenseUpdateRequest;
 import com.sami.app.security.CurrentActor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -56,20 +59,26 @@ public class LicenseService {
     private final FeatureRepository featureRepository;
     private final TenantRepository tenantRepository;
     private final LicenseTransferRepository transferRepository;
+    private final LicenseAuditLogRepository auditRepository;
     private final PaymentStatusRepository paymentStatusRepository;
     private final LicenseActivationRegistry activationRegistry;
     private final EntitlementService entitlements;
     private final LicenseAuditService audit;
     private final ApplicationEventPublisher eventPublisher;
+    private final LicensingScope scope;
 
     @Transactional(readOnly = true)
     public List<License> list() {
-        return licenseRepository.findAllBy();
+        return scope.tenantFilter()
+                .map(licenseRepository::findByTenant_IdOrderByCreatedAtDesc)
+                .orElseGet(licenseRepository::findAllBy);
     }
 
     @Transactional(readOnly = true)
     public License get(Long id) {
-        return licenseRepository.findWithDetailsById(id)
+        return scope.tenantFilter()
+                .map(tenantId -> licenseRepository.findWithDetailsByIdAndTenant_Id(id, tenantId))
+                .orElseGet(() -> licenseRepository.findWithDetailsById(id))
                 .orElseThrow(() -> new ResourceNotFoundException("License not found: " + id));
     }
 
@@ -77,15 +86,16 @@ public class LicenseService {
     public License create(String code, String licenseKey, String typeCode, Long tenantId, Long companyId,
                           String planCode, String expiryBehaviorCode, Integer graceDays,
                           Instant expirationDate, Map<String, Object> limitOverrides) {
-        if (licenseRepository.existsByCode(code)) {
+        Long trustedTenantId = scope.resolveTenant(tenantId);
+        if (licenseRepository.existsByTenant_IdAndCode(trustedTenantId, code)) {
             throw new ApiException(ErrorCode.RESOURCE_CONFLICT, "License code already exists: " + code);
         }
         String key = (licenseKey == null || licenseKey.isBlank()) ? generateKey() : licenseKey;
         if (licenseRepository.existsByLicenseKey(key)) {
             throw new ApiException(ErrorCode.RESOURCE_CONFLICT, "License key already exists");
         }
-        Tenant tenant = tenantRepository.findWithStatusById(tenantId)
-                .orElseThrow(() -> new ApiException(ErrorCode.BAD_REQUEST, "Unknown tenant: " + tenantId));
+        Tenant tenant = tenantRepository.findWithStatusById(trustedTenantId)
+                .orElseThrow(() -> new ApiException(ErrorCode.BAD_REQUEST, "Unknown tenant: " + trustedTenantId));
         LicenseType type = licenseTypeRepository.findByCode(typeCode)
                 .or(licenseTypeRepository::findByIsDefaultTrue)
                 .orElseThrow(() -> new ApiException(ErrorCode.BAD_REQUEST, "Unknown license type: " + typeCode));
@@ -112,8 +122,8 @@ public class LicenseService {
                 .createdByEmail(CurrentActor.email())
                 .build();
         License saved = licenseRepository.save(license);
-        audit.record("LICENSE", saved.getId(), "CREATED", null,
-                Map.of("code", code, "plan", planCode, "tenantId", tenantId));
+        audit.recordForTenant(trustedTenantId, "LICENSE", saved.getId(), "CREATED", null,
+                Map.of("code", code, "plan", planCode, "tenantId", trustedTenantId));
         entitlements.invalidate();
         return saved;
     }
@@ -144,7 +154,7 @@ public class LicenseService {
         }
         License saved = licenseRepository.save(license);
 
-        audit.record("LICENSE", id, "ACTIVATED", null,
+        audit.recordForTenant(saved.getTenant().getId(), "LICENSE", id, "ACTIVATED", null,
                 Map.of("status", "active", "expiresAt", String.valueOf(saved.getExpirationDate())));
         publish(LicenseDomainEvent.LICENSE_ACTIVATED, saved, Map.of("plan", saved.getPlan().getCode()));
         entitlements.invalidate();
@@ -154,7 +164,10 @@ public class LicenseService {
     /** Extends the term (renewal during grace simply resumes an active licence). */
     @Transactional
     public License renew(Long id, Integer days, String planCode) {
-        License license = get(id);
+        return renewLicense(get(id), days, planCode);
+    }
+
+    private License renewLicense(License license, Integer days, String planCode) {
         Instant now = Instant.now();
         if (planCode != null && !planCode.isBlank()) {
             license.setPlan(planRepository.findByCode(planCode)
@@ -167,7 +180,7 @@ public class LicenseService {
         license.setStatus(licenseStatus("active"));
         License saved = licenseRepository.save(license);
 
-        audit.record("LICENSE", id, "RENEWED", null,
+        audit.recordForTenant(saved.getTenant().getId(), "LICENSE", saved.getId(), "RENEWED", null,
                 Map.of("expiresAt", String.valueOf(saved.getExpirationDate()), "days", extension));
         publish(LicenseDomainEvent.SUBSCRIPTION_RENEWED, saved,
                 Map.of("expiresAt", String.valueOf(saved.getExpirationDate())));
@@ -181,10 +194,37 @@ public class LicenseService {
         String from = license.getStatus().getCode();
         license.setStatus(licenseStatus(statusCode));
         License saved = licenseRepository.save(license);
-        audit.record("LICENSE", id, "STATUS_CHANGED", Map.of("status", from), Map.of("status", statusCode));
+        audit.recordForTenant(saved.getTenant().getId(), "LICENSE", id, "STATUS_CHANGED",
+                Map.of("status", from), Map.of("status", statusCode));
         if (saved.getStatus().isBlockedState()) {
             publish(LicenseDomainEvent.LICENSE_SUSPENDED, saved, Map.of("status", statusCode));
         }
+        entitlements.invalidate();
+        return saved;
+    }
+
+    @Transactional
+    public License update(Long id, LicenseUpdateRequest request) {
+        License license = get(id);
+        if (request.expectedVersion() != null && request.expectedVersion() != license.getVersion()) {
+            throw new ApiException(ErrorCode.RESOURCE_CONFLICT,
+                    "License was modified by another user; reload and retry");
+        }
+        Map<String, Object> before = snapshot(license);
+        license.setPlan(planRepository.findByCode(request.planCode())
+                .orElseThrow(() -> new ApiException(ErrorCode.BAD_REQUEST,
+                        "Unknown plan: " + request.planCode())));
+        license.setExpiryBehavior(request.expiryBehaviorCode() == null ? null
+                : expiryBehaviorRepository.findByCode(request.expiryBehaviorCode())
+                .orElseThrow(() -> new ApiException(ErrorCode.BAD_REQUEST,
+                        "Unknown expiry behavior: " + request.expiryBehaviorCode())));
+        license.setGraceDays(request.graceDays() == null ? 0 : request.graceDays());
+        license.setExpirationDate(request.expirationDate());
+        license.setAutoRenew(request.autoRenew());
+        license.setLimitOverrides(request.limitOverrides() == null
+                ? new HashMap<>() : new HashMap<>(request.limitOverrides()));
+        License saved = licenseRepository.save(license);
+        audit.recordForTenant(saved.getTenant().getId(), "LICENSE", id, "UPDATED", before, snapshot(saved));
         entitlements.invalidate();
         return saved;
     }
@@ -206,7 +246,8 @@ public class LicenseService {
                                 .license(license).feature(feature).enabled(enabled).build()));
         License saved = licenseRepository.save(license);
 
-        audit.record("LICENSE", licenseId, enabled ? "FEATURE_ENABLED" : "FEATURE_DISABLED",
+        audit.recordForTenant(saved.getTenant().getId(), "LICENSE", licenseId,
+                enabled ? "FEATURE_ENABLED" : "FEATURE_DISABLED",
                 null, Map.of("feature", featureCode));
         publish(enabled ? LicenseDomainEvent.FEATURE_ENABLED : LicenseDomainEvent.FEATURE_DISABLED,
                 saved, Map.of("feature", featureCode));
@@ -221,6 +262,7 @@ public class LicenseService {
         if (license == null) {
             return LicenseValidation.invalid("Unknown license key");
         }
+        scope.requireAccessTo(license.getTenant().getId());
         Instant now = Instant.now();
         boolean withinTerm = license.withinTerm(now);
         boolean withinGrace = license.withinGrace(now);
@@ -257,7 +299,8 @@ public class LicenseService {
             }
             license.setStatus(expired);
             licenseRepository.save(license);
-            audit.record("LICENSE", license.getId(), "EXPIRED", null, Map.of("status", "expired"));
+            audit.recordForTenant(license.getTenant().getId(), "LICENSE", license.getId(),
+                    "EXPIRED", null, Map.of("status", "expired"));
             publish(LicenseDomainEvent.SUBSCRIPTION_EXPIRED, license, Map.of());
         }
         entitlements.invalidate();
@@ -298,7 +341,7 @@ public class LicenseService {
         }
         License saved = licenseRepository.save(license);
 
-        audit.record("LICENSE", id, "ACTIVATED_" + mode, null,
+        audit.recordForTenant(saved.getTenant().getId(), "LICENSE", id, "ACTIVATED_" + mode, null,
                 Map.of("mode", mode, "emergencyUntil", String.valueOf(saved.getEmergencyUntil())));
         publish(LicenseDomainEvent.LICENSE_ACTIVATED, saved, Map.of("mode", mode));
         entitlements.invalidate();
@@ -312,6 +355,7 @@ public class LicenseService {
      */
     @Transactional
     public License transfer(Long id, Long toTenantId, String reason) {
+        scope.requirePlatform();
         License license = get(id);
         Long fromTenantId = license.getTenant().getId();
         if (fromTenantId.equals(toTenantId)) {
@@ -337,7 +381,7 @@ public class LicenseService {
         license.setTransferCount(license.getTransferCount() + 1);
         License saved = licenseRepository.save(license);
 
-        audit.record("LICENSE", id, "TRANSFERRED",
+        audit.recordForTenant(toTenantId, "LICENSE", id, "TRANSFERRED",
                 Map.of("tenantId", fromTenantId), Map.of("tenantId", toTenantId));
         entitlements.invalidate();
         return saved;
@@ -352,7 +396,7 @@ public class LicenseService {
         String from = license.getPaymentStatus() == null ? null : license.getPaymentStatus().getCode();
         license.setPaymentStatus(status);
         License saved = licenseRepository.save(license);
-        audit.record("LICENSE", id, "PAYMENT_STATUS_CHANGED",
+        audit.recordForTenant(saved.getTenant().getId(), "LICENSE", id, "PAYMENT_STATUS_CHANGED",
                 Map.of("paymentStatus", String.valueOf(from)), Map.of("paymentStatus", statusCode));
         entitlements.invalidate();
         return saved;
@@ -367,7 +411,7 @@ public class LicenseService {
             if (!license.isAutoRenew()) {
                 continue;
             }
-            renew(license.getId(), null, null);
+            renewLicense(license, null, null);
             renewed++;
         }
         return renewed;
@@ -375,7 +419,15 @@ public class LicenseService {
 
     @Transactional(readOnly = true)
     public List<LicenseTransfer> transfers(Long licenseId) {
+        get(licenseId);
         return transferRepository.findByLicenseIdOrderByTransferredAtDesc(licenseId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<LicenseAuditLog> audit(Long licenseId) {
+        License license = get(licenseId);
+        return auditRepository.findByTenantIdAndEntityTypeAndEntityIdOrderByCreatedAtDesc(
+                license.getTenant().getId(), "LICENSE", licenseId);
     }
 
     private void requireDependencies(Feature feature) {
@@ -402,5 +454,16 @@ public class LicenseService {
         String raw = UUID.randomUUID().toString().replace("-", "").toUpperCase();
         return "SAMI-" + raw.substring(0, 5) + "-" + raw.substring(5, 10)
                 + "-" + raw.substring(10, 15) + "-" + raw.substring(15, 20);
+    }
+
+    private Map<String, Object> snapshot(License license) {
+        Map<String, Object> snapshot = new HashMap<>();
+        snapshot.put("code", license.getCode());
+        snapshot.put("tenantId", license.getTenant().getId());
+        snapshot.put("plan", license.getPlan().getCode());
+        snapshot.put("status", license.getStatus().getCode());
+        snapshot.put("expirationDate", String.valueOf(license.getExpirationDate()));
+        snapshot.put("autoRenew", license.isAutoRenew());
+        return snapshot;
     }
 }

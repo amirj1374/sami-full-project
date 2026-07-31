@@ -2,17 +2,24 @@ package com.sami.app.licensing.web;
 
 import com.sami.app.common.api.ApiResponse;
 import com.sami.app.licensing.dto.LicensingDtos.ActivateRequest;
+import com.sami.app.licensing.dto.LicensingDtos.ActivationModeRequest;
+import com.sami.app.licensing.dto.LicensingDtos.AuditResponse;
 import com.sami.app.licensing.dto.LicensingDtos.CatalogResponse;
 import com.sami.app.licensing.dto.LicensingDtos.FeatureResponse;
 import com.sami.app.licensing.dto.LicensingDtos.FeatureToggleRequest;
+import com.sami.app.licensing.dto.LicensingDtos.FeatureRequest;
 import com.sami.app.licensing.dto.LicensingDtos.LicenseRequest;
 import com.sami.app.licensing.dto.LicensingDtos.LicenseResponse;
+import com.sami.app.licensing.dto.LicensingDtos.LicenseUpdateRequest;
 import com.sami.app.licensing.dto.LicensingDtos.LookupResponse;
 import com.sami.app.licensing.dto.LicensingDtos.PlanResponse;
+import com.sami.app.licensing.dto.LicensingDtos.PlanRequest;
 import com.sami.app.licensing.dto.LicensingDtos.RenewRequest;
 import com.sami.app.licensing.dto.LicensingDtos.StatusChangeRequest;
 import com.sami.app.licensing.dto.LicensingDtos.TenantRequest;
 import com.sami.app.licensing.dto.LicensingDtos.TenantResponse;
+import com.sami.app.licensing.dto.LicensingDtos.TenantUpdateRequest;
+import com.sami.app.licensing.dto.LicensingDtos.TransferRequest;
 import com.sami.app.licensing.domain.LicensingStatus;
 import com.sami.app.licensing.repository.ExpiryBehaviorRepository;
 import com.sami.app.licensing.repository.FeatureRepository;
@@ -20,14 +27,19 @@ import com.sami.app.licensing.repository.LicenseTypeRepository;
 import com.sami.app.licensing.repository.LicensingStatusRepository;
 import com.sami.app.licensing.repository.SubscriptionPlanRepository;
 import com.sami.app.licensing.repository.UsageLimitTypeRepository;
+import com.sami.app.licensing.repository.PaymentStatusRepository;
+import com.sami.app.licensing.repository.BillingCycleRepository;
+import com.sami.app.licensing.repository.FeatureStateRepository;
 import com.sami.app.licensing.service.LicenseReportService;
 import com.sami.app.licensing.service.LicenseService;
+import com.sami.app.licensing.service.LicensingCatalogService;
 import com.sami.app.licensing.service.LicenseValidation;
 import com.sami.app.licensing.service.TenantService;
 import com.sami.app.licensing.service.UsageCheck;
 import com.sami.app.licensing.service.UsageService;
 import com.sami.app.licensing.spi.ExpiryBehaviorRegistry;
 import com.sami.app.licensing.spi.UsageMeterRegistry;
+import com.sami.app.licensing.spi.LicenseActivationRegistry;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -38,6 +50,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -61,14 +74,19 @@ public class LicensingController {
     private final LicenseReportService reportService;
     private final TenantService tenantService;
     private final UsageService usageService;
+    private final LicensingCatalogService catalogService;
     private final LicensingStatusRepository statusRepository;
     private final LicenseTypeRepository licenseTypeRepository;
     private final ExpiryBehaviorRepository expiryBehaviorRepository;
     private final UsageLimitTypeRepository limitTypeRepository;
     private final SubscriptionPlanRepository planRepository;
     private final FeatureRepository featureRepository;
+    private final PaymentStatusRepository paymentStatusRepository;
+    private final BillingCycleRepository billingCycleRepository;
+    private final FeatureStateRepository featureStateRepository;
     private final UsageMeterRegistry meterRegistry;
     private final ExpiryBehaviorRegistry expiryRegistry;
+    private final LicenseActivationRegistry activationRegistry;
 
     // ---- Licences -----------------------------------------------------------
 
@@ -123,6 +141,14 @@ public class LicensingController {
         return ApiResponse.ok(LicenseResponse.from(licenseService.changeStatus(id, request.statusCode())));
     }
 
+    @PutMapping("/licenses/{id}")
+    @PreAuthorize("@authz.has('licensing:edit')")
+    @Operation(summary = "Update editable licence terms")
+    public ApiResponse<LicenseResponse> updateLicense(@PathVariable Long id,
+                                                      @Valid @RequestBody LicenseUpdateRequest request) {
+        return ApiResponse.ok(LicenseResponse.from(licenseService.update(id, request)));
+    }
+
     @PostMapping("/licenses/{id}/features")
     @PreAuthorize("@authz.has('licensing:manage-features')")
     @Operation(summary = "Enable or disable a feature for a licence (takes effect immediately)")
@@ -165,6 +191,14 @@ public class LicensingController {
                 request.contactEmail(), request.config())));
     }
 
+    @PutMapping("/tenants/{id}")
+    @PreAuthorize("@authz.has('licensing:manage-tenants') and @licensingScope.platform()")
+    @Operation(summary = "Update a tenant")
+    public ApiResponse<TenantResponse> updateTenant(@PathVariable Long id,
+                                                    @Valid @RequestBody TenantUpdateRequest request) {
+        return ApiResponse.ok(TenantResponse.from(tenantService.update(id, request)));
+    }
+
     @PostMapping("/tenants/{id}/activate")
     @PreAuthorize("@authz.has('licensing:manage-tenants')")
     @Operation(summary = "Activate a tenant")
@@ -185,16 +219,48 @@ public class LicensingController {
     @PreAuthorize("@authz.has('licensing:view')")
     @Operation(summary = "List subscription plans")
     public ApiResponse<List<PlanResponse>> plans() {
-        return ApiResponse.ok(planRepository.findAllByOrderByDisplayOrderAsc()
+        return ApiResponse.ok(catalogService.plans()
                 .stream().map(PlanResponse::from).toList());
+    }
+
+    @PostMapping("/plans")
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("@authz.has('licensing:manage-plans') and @licensingScope.platform()")
+    @Operation(summary = "Create a subscription plan / edition")
+    public ApiResponse<PlanResponse> createPlan(@Valid @RequestBody PlanRequest request) {
+        return ApiResponse.ok(PlanResponse.from(catalogService.createPlan(request)));
+    }
+
+    @PutMapping("/plans/{id}")
+    @PreAuthorize("@authz.has('licensing:manage-plans') and @licensingScope.platform()")
+    @Operation(summary = "Update a subscription plan / edition")
+    public ApiResponse<PlanResponse> updatePlan(@PathVariable Long id,
+                                                @Valid @RequestBody PlanRequest request) {
+        return ApiResponse.ok(PlanResponse.from(catalogService.updatePlan(id, request)));
     }
 
     @GetMapping("/features")
     @PreAuthorize("@authz.has('licensing:view')")
     @Operation(summary = "List the feature catalogue")
     public ApiResponse<List<FeatureResponse>> features() {
-        return ApiResponse.ok(featureRepository.findAllByOrderByDisplayOrderAsc()
+        return ApiResponse.ok(catalogService.features()
                 .stream().map(FeatureResponse::from).toList());
+    }
+
+    @PostMapping("/features")
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("@authz.has('licensing:manage-features') and @licensingScope.platform()")
+    @Operation(summary = "Create a licensable feature")
+    public ApiResponse<FeatureResponse> createFeature(@Valid @RequestBody FeatureRequest request) {
+        return ApiResponse.ok(FeatureResponse.from(catalogService.createFeature(request)));
+    }
+
+    @PutMapping("/features/{id}")
+    @PreAuthorize("@authz.has('licensing:manage-features') and @licensingScope.platform()")
+    @Operation(summary = "Update a licensable feature")
+    public ApiResponse<FeatureResponse> updateFeature(@PathVariable Long id,
+                                                      @Valid @RequestBody FeatureRequest request) {
+        return ApiResponse.ok(FeatureResponse.from(catalogService.updateFeature(id, request)));
     }
 
     @GetMapping("/usage")
@@ -219,6 +285,13 @@ public class LicensingController {
                         .stream().map(LookupResponse::from).toList(),
                 limitTypeRepository.findAllByOrderByDisplayOrderAsc()
                         .stream().map(LookupResponse::from).toList(),
+                paymentStatusRepository.findAllByOrderByDisplayOrderAsc()
+                        .stream().map(LookupResponse::from).toList(),
+                billingCycleRepository.findAllByOrderByDisplayOrderAsc()
+                        .stream().map(LookupResponse::from).toList(),
+                featureStateRepository.findAllByOrderByDisplayOrderAsc()
+                        .stream().map(LookupResponse::from).toList(),
+                activationRegistry.modes(),
                 meterRegistry.meteredTypes(),
                 expiryRegistry.codes()));
     }
@@ -231,21 +304,21 @@ public class LicensingController {
     public ApiResponse<LicenseResponse> activateWithMode(
             @PathVariable Long id,
             @PathVariable String mode,
-            @RequestBody(required = false) java.util.Map<String, Object> body) {
-        String fingerprint = body == null ? null : (String) body.get("fingerprint");
+            @Valid @RequestBody(required = false) ActivationModeRequest request) {
+        String fingerprint = request == null ? null : request.fingerprint();
+        java.util.Map<String, Object> context = request == null || request.grantDays() == null
+                ? java.util.Map.of() : java.util.Map.of("grantDays", request.grantDays());
         return ApiResponse.ok(LicenseResponse.from(
-                licenseService.activateWithMode(id, mode.toUpperCase(), fingerprint, body)));
+                licenseService.activateWithMode(id, mode.toUpperCase(), fingerprint, context)));
     }
 
     @PostMapping("/licenses/{id}/transfer")
     @PreAuthorize("@authz.has('licensing:transfer')")
     @Operation(summary = "Transfer a licence to another tenant")
     public ApiResponse<LicenseResponse> transfer(@PathVariable Long id,
-                                                 @RequestBody java.util.Map<String, Object> body) {
-        Object target = body.get("toTenantId");
-        Long toTenantId = target instanceof Number n ? n.longValue() : Long.valueOf(String.valueOf(target));
+                                                 @Valid @RequestBody TransferRequest request) {
         return ApiResponse.ok(LicenseResponse.from(
-                licenseService.transfer(id, toTenantId, (String) body.get("reason"))));
+                licenseService.transfer(id, request.toTenantId(), request.reason())));
     }
 
     @PatchMapping("/licenses/{id}/payment-status")
@@ -278,24 +351,31 @@ public class LicensingController {
                 .toList());
     }
 
+    @GetMapping("/licenses/{id}/audit")
+    @PreAuthorize("@authz.has('licensing:view')")
+    @Operation(summary = "License lifecycle and activation audit history")
+    public ApiResponse<List<AuditResponse>> audit(@PathVariable Long id) {
+        return ApiResponse.ok(licenseService.audit(id).stream().map(AuditResponse::from).toList());
+    }
+
     // ---- Reports ------------------------------------------------------------
 
     @GetMapping("/reports/summary")
-    @PreAuthorize("@authz.has('licensing:view')")
+    @PreAuthorize("@authz.has('licensing:report')")
     @Operation(summary = "Licence summary report")
     public ApiResponse<java.util.Map<String, Object>> reportSummary() {
         return ApiResponse.ok(reportService.licenseSummary());
     }
 
     @GetMapping("/reports/tenants")
-    @PreAuthorize("@authz.has('licensing:view')")
+    @PreAuthorize("@authz.has('licensing:report')")
     @Operation(summary = "Active tenants report")
     public ApiResponse<List<java.util.Map<String, Object>>> reportTenants() {
         return ApiResponse.ok(reportService.activeTenants());
     }
 
     @GetMapping("/reports/expiring")
-    @PreAuthorize("@authz.has('licensing:view')")
+    @PreAuthorize("@authz.has('licensing:report')")
     @Operation(summary = "Expired / expiring licences")
     public ApiResponse<List<java.util.Map<String, Object>>> reportExpiring(
             @RequestParam(defaultValue = "30") int withinDays) {
@@ -303,14 +383,14 @@ public class LicensingController {
     }
 
     @GetMapping("/reports/feature-usage")
-    @PreAuthorize("@authz.has('licensing:view')")
+    @PreAuthorize("@authz.has('licensing:report')")
     @Operation(summary = "Feature usage across licences")
     public ApiResponse<List<java.util.Map<String, Object>>> reportFeatureUsage() {
         return ApiResponse.ok(reportService.featureUsage());
     }
 
     @GetMapping("/reports/plan-comparison")
-    @PreAuthorize("@authz.has('licensing:view')")
+    @PreAuthorize("@authz.has('licensing:report')")
     @Operation(summary = "Plan comparison (features and limits)")
     public ApiResponse<List<java.util.Map<String, Object>>> reportPlanComparison() {
         return ApiResponse.ok(reportService.planComparison());

@@ -19,19 +19,20 @@ import org.springframework.stereotype.Component;
 public class FeatureGate {
 
     private final EntitlementService entitlements;
+    private final LicensingScope scope;
 
     /** True when the feature is available for the current (implicit) tenant. */
     public boolean enabled(String featureCode) {
-        return entitlements.isFeatureEnabled(featureCode, null);
+        return entitlements.isFeatureEnabled(featureCode, scope.currentTenantId());
     }
 
     /** True when the feature is available for an explicit tenant. */
     public boolean enabledFor(String featureCode, Long tenantId) {
-        return entitlements.isFeatureEnabled(featureCode, tenantId);
+        return entitlements.isFeatureEnabled(featureCode, scope.resolveTenant(tenantId));
     }
 
     /** False when a lapsed licence has put the system into a read-only mode. */
     public boolean writesAllowed() {
-        return entitlements.resolve(null).writesAllowed();
+        return entitlements.resolve(scope.currentTenantId()).writesAllowed();
     }
 }

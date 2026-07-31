@@ -12,26 +12,32 @@ import java.util.Optional;
 
 public interface LicenseRepository extends JpaRepository<License, Long>, JpaSpecificationExecutor<License> {
 
-    boolean existsByCode(String code);
+    boolean existsByTenant_IdAndCode(Long tenantId, String code);
 
-    @EntityGraph(attributePaths = {"status", "plan", "tenant", "licenseType", "paymentStatus", "expiryBehavior"})
+    @EntityGraph(attributePaths = {"status", "plan", "tenant", "licenseType", "paymentStatus", "expiryBehavior", "featureOverrides", "featureOverrides.feature"})
     List<License> findAllBy();
+
+    @EntityGraph(attributePaths = {"status", "plan", "tenant", "licenseType", "paymentStatus", "expiryBehavior", "featureOverrides", "featureOverrides.feature"})
+    List<License> findByTenant_IdOrderByCreatedAtDesc(Long tenantId);
 
     boolean existsByLicenseKey(String licenseKey);
 
     @EntityGraph(attributePaths = {"status", "plan", "tenant", "licenseType", "expiryBehavior", "paymentStatus"})
     Optional<License> findByLicenseKey(String licenseKey);
 
-    @EntityGraph(attributePaths = {"status", "plan", "tenant", "licenseType", "expiryBehavior", "paymentStatus", "featureOverrides"})
+    @EntityGraph(attributePaths = {"status", "plan", "tenant", "licenseType", "expiryBehavior", "paymentStatus", "featureOverrides", "featureOverrides.feature"})
     Optional<License> findWithDetailsById(Long id);
 
+    @EntityGraph(attributePaths = {"status", "plan", "tenant", "licenseType", "expiryBehavior", "paymentStatus", "featureOverrides", "featureOverrides.feature"})
+    Optional<License> findWithDetailsByIdAndTenant_Id(Long id, Long tenantId);
+
     /**
-     * Licences covering a tenant, most specific first: a company-scoped licence
-     * outranks the tenant-wide one. Callers pick the first match.
+     * Tenant-wide licences only. Company-scoped licences are deliberately not
+     * selected without a trusted company context.
      */
     @EntityGraph(attributePaths = {"status", "plan", "licenseType", "expiryBehavior", "paymentStatus"})
-    @Query("SELECT l FROM License l WHERE l.tenant.id = :tenantId "
-            + "ORDER BY CASE WHEN l.companyId IS NULL THEN 1 ELSE 0 END, l.expirationDate DESC NULLS FIRST")
+    @Query("SELECT l FROM License l WHERE l.tenant.id = :tenantId AND l.companyId IS NULL "
+            + "ORDER BY l.expirationDate DESC NULLS FIRST")
     List<License> findForTenant(Long tenantId);
 
     /** Licences past their term that are not yet marked expired (expiry sweep). */

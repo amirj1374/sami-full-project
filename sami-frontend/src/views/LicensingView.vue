@@ -12,15 +12,20 @@ import { usePermission } from "@/composables/usePermission";
 import { useServerLabel } from "@/composables/useServerLabel";
 import { licenseSchema } from "@/schemas/licensing";
 import type {
+  FeaturePayload,
+  LicenseAuditRecord,
   LicenseCatalog,
   LicenseFeature,
   LicensePayload,
   LicensePlan,
+  LicensingReportRow,
+  PlanPayload,
   LicenseRecord,
   LicenseSummary,
   LicenseTransfer,
   LicenseValidation,
   TenantRecord,
+  TenantPayload,
   UsageCheck,
 } from "@/types/licensing";
 
@@ -49,6 +54,10 @@ const catalog = ref<LicenseCatalog>({
   licenseTypes: [],
   expiryBehaviors: [],
   limitTypes: [],
+  paymentStatuses: [],
+  billingCycles: [],
+  featureStates: [],
+  activationModes: [],
   meteredLimitTypes: [],
   expiryHandlers: [],
 });
@@ -72,6 +81,27 @@ const pageSize = 12;
 const createOpen = ref(false);
 const detail = ref<LicenseRecord>();
 const transfers = ref<LicenseTransfer[]>([]);
+const audits = ref<LicenseAuditRecord[]>([]);
+const tenantDialog = ref(false);
+const planDialog = ref(false);
+const featureDialog = ref(false);
+const actionDialog = ref(false);
+const editingTenant = ref<TenantRecord>();
+const editingPlan = ref<LicensePlan>();
+const editingFeature = ref<LicenseFeature>();
+const actionTarget = ref<LicenseRecord>();
+const actionMode = ref("online");
+const actionTenantId = ref<number>();
+const actionPaymentStatus = ref("");
+const actionReason = ref("");
+const reportRows = ref<LicensingReportRow[]>([]);
+const reportType = ref("tenants");
+const tenantForm = ref<TenantPayload>({ code: "", name: "", description: "", contactEmail: "", config: {} });
+const planForm = ref<PlanPayload>({ code: "", name: "", description: "", statusCode: "active", durationDays: 365, renewalPolicy: "manual", defaultPlan: false, priceConfig: {}, featureCodes: [], limits: {} });
+const featureForm = ref<FeaturePayload>({ code: "", name: "", description: "", moduleCode: "", licenseRequired: true, core: false, active: true, stateCode: "enabled", trialDays: 0, dependencyCodes: [] });
+const configJson = ref("{}");
+const priceJson = ref("{}");
+const planLimitsJson = ref("{}");
 const renewTarget = ref<LicenseRecord>();
 const renewDays = ref(365);
 const validateOpen = ref(false);
@@ -255,7 +285,10 @@ async function openDetail(row: LicenseRecord): Promise<void> {
   loading.value = true;
   try {
     detail.value = await licensingApi.license(row.id);
-    transfers.value = await licensingApi.transfers(row.id);
+    [transfers.value, audits.value] = await Promise.all([
+      licensingApi.transfers(row.id),
+      licensingApi.audit(row.id),
+    ]);
   } catch (e) {
     setError(e);
   } finally {
@@ -334,6 +367,51 @@ async function applyFeature(): Promise<void> {
   } finally {
     saving.value = false;
   }
+}
+function openTenant(item?: TenantRecord): void {
+  editingTenant.value = item;
+  tenantForm.value = item ? { code: item.code, name: item.name, description: item.description ?? "", contactEmail: item.contactEmail ?? "", config: item.config } : { code: "", name: "", description: "", contactEmail: "", config: {} };
+  configJson.value = JSON.stringify(tenantForm.value.config, null, 2);
+  tenantDialog.value = true;
+}
+async function saveTenant(): Promise<void> {
+  saving.value = true;
+  try {
+    const config = JSON.parse(configJson.value || "{}");
+    if (editingTenant.value) await licensingApi.updateTenant(editingTenant.value.id, { name: tenantForm.value.name, description: tenantForm.value.description, contactEmail: tenantForm.value.contactEmail, config, expectedVersion: editingTenant.value.version });
+    else await licensingApi.createTenant({ ...tenantForm.value, config });
+    tenantDialog.value = false; notifications.success(t("licensing.saved")); await load();
+  } catch (e) { setError(e); } finally { saving.value = false; }
+}
+async function setTenantStatus(item: TenantRecord, active: boolean): Promise<void> {
+  try { active ? await licensingApi.activateTenant(item.id) : await licensingApi.suspendTenant(item.id); notifications.success(t("licensing.saved")); await load(); } catch (e) { setError(e); }
+}
+function openPlan(item?: LicensePlan): void {
+  editingPlan.value = item;
+  planForm.value = item ? { code: item.code, name: item.name, description: item.description ?? "", statusCode: item.statusCode, durationDays: item.durationDays, renewalPolicy: item.renewalPolicy, billingCycleCode: item.billingCycleCode ?? undefined, defaultPlan: item.isDefault, priceConfig: item.priceConfig, featureCodes: [...item.featureCodes], limits: item.limits, expectedVersion: item.version } : { code: "", name: "", description: "", statusCode: "active", durationDays: 365, renewalPolicy: "manual", defaultPlan: false, priceConfig: {}, featureCodes: [], limits: {} };
+  priceJson.value = JSON.stringify(planForm.value.priceConfig, null, 2); planLimitsJson.value = JSON.stringify(planForm.value.limits, null, 2); planDialog.value = true;
+}
+async function savePlan(): Promise<void> {
+  saving.value = true;
+  try { const payload = { ...planForm.value, priceConfig: JSON.parse(priceJson.value || "{}"), limits: JSON.parse(planLimitsJson.value || "{}") }; editingPlan.value ? await licensingApi.updatePlan(editingPlan.value.id, payload) : await licensingApi.createPlan(payload); planDialog.value = false; notifications.success(t("licensing.saved")); await load(); } catch (e) { setError(e); } finally { saving.value = false; }
+}
+function openFeature(item?: LicenseFeature): void {
+  editingFeature.value = item;
+  featureForm.value = item ? { code: item.code, name: item.name, description: item.description ?? "", moduleCode: item.moduleCode ?? "", licenseRequired: item.licenseRequired, core: item.core, active: item.active, stateCode: item.stateCode, trialDays: item.trialDays, dependencyCodes: [...item.dependencyCodes], expectedVersion: item.version } : { code: "", name: "", description: "", moduleCode: "", licenseRequired: true, core: false, active: true, stateCode: "enabled", trialDays: 0, dependencyCodes: [] };
+  featureDialog.value = true;
+}
+async function saveFeature(): Promise<void> {
+  saving.value = true;
+  try { editingFeature.value ? await licensingApi.updateFeature(editingFeature.value.id, featureForm.value) : await licensingApi.createFeature(featureForm.value); featureDialog.value = false; notifications.success(t("licensing.saved")); await load(); } catch (e) { setError(e); } finally { saving.value = false; }
+}
+function openActions(item: LicenseRecord): void { actionTarget.value = item; actionMode.value = ""; actionPaymentStatus.value = item.paymentStatus ?? ""; actionTenantId.value = undefined; actionReason.value = ""; actionDialog.value = true; }
+async function applyLicenseActions(): Promise<void> {
+  if (!actionTarget.value) return; saving.value = true;
+  try { if (actionMode.value) await licensingApi.activateMode(actionTarget.value.id, actionMode.value); if (actionPaymentStatus.value && actionPaymentStatus.value !== actionTarget.value.paymentStatus) await licensingApi.paymentStatus(actionTarget.value.id, actionPaymentStatus.value); if (actionTenantId.value) await licensingApi.transfer(actionTarget.value.id, actionTenantId.value, actionReason.value); actionDialog.value = false; notifications.success(t("licensing.saved")); await load(); } catch (e) { setError(e); } finally { saving.value = false; }
+}
+async function loadReport(): Promise<void> {
+  loading.value = true;
+  try { reportRows.value = reportType.value === "tenants" ? await licensingApi.tenantReport() : reportType.value === "feature-usage" ? await licensingApi.featureUsageReport() : reportType.value === "plan-comparison" ? await licensingApi.planComparisonReport() : await licensingApi.expiring(); } catch (e) { setError(e); } finally { loading.value = false; }
 }
 function percentage(item: UsageCheck): number {
   return item.unlimited || item.limit <= 0
@@ -452,9 +530,10 @@ onMounted(load);
       ><v-tab value="licenses">{{ t("licensing.licenses") }}</v-tab
       ><v-tab value="features">{{ t("licensing.features") }}</v-tab
       ><v-tab value="plans">{{ t("licensing.plans") }}</v-tab
+      ><v-tab v-if="can('licensing:manage-tenants')" value="tenants">{{ t("licensing.tenants") }}</v-tab
       ><v-tab v-if="can('licensing:view-usage')" value="usage">{{
         t("licensing.usage")
-      }}</v-tab></v-tabs
+      }}</v-tab><v-tab v-if="can('licensing:report')" value="reports">{{ t("licensing.reports") }}</v-tab></v-tabs
     ><v-progress-linear v-if="loading" indeterminate class="mb-2" />
     <template v-if="tab === 'licenses'"
       ><v-card rounded="xl"
@@ -533,7 +612,11 @@ onMounted(load);
                       v-if="can('licensing:renew')"
                       prepend-icon="mdi-calendar-refresh"
                       :title="t('licensing.renew')"
-                      @click="renewTarget = row" /></v-list
+                      @click="renewTarget = row" /><v-list-item
+                      v-if="can('licensing:activate') || can('licensing:transfer') || can('licensing:manage-billing')"
+                      prepend-icon="mdi-tune-variant"
+                      :title="t('licensing.operations')"
+                      @click="openActions(row)" /></v-list
                 ></v-menu>
               </div>
               <div class="d-flex justify-space-between align-center mt-4">
@@ -571,9 +654,7 @@ onMounted(load);
           :description="t('licensing.emptyDescription')" /></v-card
     ></template>
     <template v-else-if="tab === 'features'"
-      ><v-alert type="info" variant="tonal" class="mb-4">{{
-        t("licensing.featureReadLimitation")
-      }}</v-alert>
+      ><div class="d-flex justify-end mb-3"><v-btn v-if="can('licensing:manage-features')" color="primary" prepend-icon="mdi-plus" @click="openFeature()">{{ t("licensing.createFeature") }}</v-btn></div>
       <div class="license-grid">
         <v-card
           v-for="feature in features"
@@ -592,7 +673,7 @@ onMounted(load);
                 size="small"
                 :color="feature.active ? 'success' : undefined"
                 >{{
-                  feature.active ? t("common.active") : t("common.inactive")
+                  feature.active ? t("licensing.active") : t("licensing.inactive")
                 }}</v-chip
               >
             </div>
@@ -607,6 +688,7 @@ onMounted(load);
                 featureEnabled = true;
               "
               >{{ t("licensing.setOverride") }}</v-btn
+            ><v-btn v-if="can('licensing:manage-features')" variant="text" size="small" class="mt-3" prepend-icon="mdi-pencil" @click="openFeature(feature)">{{ t("common.edit") }}</v-btn
             ></v-card-text
           ></v-card
         >
@@ -616,7 +698,7 @@ onMounted(load);
         :title="t('licensing.noFeatures')"
     /></template>
     <template v-else-if="tab === 'plans'"
-      ><div class="license-grid">
+      ><div class="d-flex justify-end mb-3"><v-btn v-if="can('licensing:manage-plans')" color="primary" prepend-icon="mdi-plus" @click="openPlan()">{{ t("licensing.createPlan") }}</v-btn></div><div class="license-grid">
         <v-card
           v-for="plan in plans"
           :key="plan.id"
@@ -630,12 +712,17 @@ onMounted(load);
             </div>
             <v-chip size="small" class="mt-2">{{
               enumLabel(plan.renewalPolicy)
-            }}</v-chip></v-card-text
+            }}</v-chip><div class="text-caption mt-3">{{ plan.featureCodes.length }} {{ t("licensing.features") }} · {{ Object.keys(plan.limits).length }} {{ t("licensing.limits") }}</div><v-btn v-if="can('licensing:manage-plans')" variant="text" size="small" class="mt-2" prepend-icon="mdi-pencil" @click="openPlan(plan)">{{ t("common.edit") }}</v-btn></v-card-text
           ></v-card
         >
       </div></template
     >
-    <template v-else
+    <template v-else-if="tab === 'tenants'">
+      <div class="d-flex justify-end mb-3"><v-btn color="primary" prepend-icon="mdi-plus" @click="openTenant()">{{ t("licensing.createTenant") }}</v-btn></div>
+      <div class="license-grid"><v-card v-for="tenant in tenants" :key="tenant.id" rounded="xl" variant="tonal"><v-card-text><div class="d-flex align-start"><div class="flex-grow-1"><div class="font-weight-bold">{{ tenant.name }}</div><div class="text-caption">{{ tenant.code }} · {{ tenant.contactEmail }}</div></div><v-chip size="small">{{ statusLabel(tenant.statusName) }}</v-chip></div><div class="d-flex flex-wrap ga-2 mt-3"><v-btn size="small" variant="text" prepend-icon="mdi-pencil" @click="openTenant(tenant)">{{ t("common.edit") }}</v-btn><v-btn size="small" variant="text" @click="setTenantStatus(tenant, tenant.statusCode !== 'active')">{{ tenant.statusCode === 'active' ? t("licensing.suspend") : t("licensing.activate") }}</v-btn></div></v-card-text></v-card></div>
+      <AppEmptyState v-if="!tenants.length && !loading" :title="t('licensing.noTenants')" />
+    </template>
+    <template v-else-if="tab === 'usage'"
       ><v-card rounded="xl"
         ><v-card-text class="d-flex flex-column flex-sm-row ga-3"
           ><v-select
@@ -688,6 +775,7 @@ onMounted(load);
         </div>
         <AppEmptyState v-else :title="t('licensing.noUsage')" /></v-card
     ></template>
+    <template v-else-if="tab === 'reports'"><v-card rounded="xl"><v-card-text><div class="report-controls"><v-select v-model="reportType" :items="[{title:t('licensing.tenantReport'),value:'tenants'},{title:t('licensing.expiringReport'),value:'expiring'},{title:t('licensing.featureUsageReport'),value:'feature-usage'},{title:t('licensing.planComparisonReport'),value:'plan-comparison'}]" :label="t('licensing.reportType')" hide-details/><v-btn color="primary" @click="loadReport">{{ t("licensing.runReport") }}</v-btn><v-btn v-if="can('licensing:export')" variant="tonal" prepend-icon="mdi-download" @click="licensingApi.exportReport(reportType)">{{ t("common.export") }}</v-btn></div><div v-if="reportRows.length" class="report-list mt-4"><v-card v-for="(row,index) in reportRows" :key="index" variant="tonal"><v-card-text><div v-for="(value,key) in row" :key="String(key)" class="d-flex justify-space-between ga-4 py-1"><span class="text-caption">{{ enumLabel(String(key)) }}</span><strong class="text-end">{{ value }}</strong></div></v-card-text></v-card></div><AppEmptyState v-else :title="t('licensing.noReportData')" /></v-card-text></v-card></template>
     <v-dialog v-model="createOpen" :fullscreen="xs" max-width="760" scrollable
       ><v-card :rounded="xs ? 0 : 'xl'"
         ><v-card-title class="px-5 pt-5">{{
@@ -821,7 +909,7 @@ onMounted(load);
           ><AppEmptyState
             v-else
             dense
-            :title="t('licensing.noTransfers')" /></v-card-text></v-card
+            :title="t('licensing.noTransfers')" /><h3 class="text-subtitle-1 mt-6">{{ t("licensing.auditHistory") }}</h3><v-timeline v-if="audits.length" density="compact" side="end"><v-timeline-item v-for="item in audits" :key="item.id" dot-color="primary" size="x-small"><div class="font-weight-medium">{{ enumLabel(item.action) }}</div><div class="text-caption">{{ formatDateTime(item.createdAt) }} · {{ item.actorEmail }}</div></v-timeline-item></v-timeline><AppEmptyState v-else dense :title="t('licensing.noAudit')" /></v-card-text></v-card
     ></v-dialog>
     <v-dialog
       :model-value="!!renewTarget"
@@ -921,6 +1009,10 @@ onMounted(load);
         ></v-card
       ></v-dialog
     >
+    <v-dialog v-model="tenantDialog" :fullscreen="xs" max-width="680"><v-card :rounded="xs ? 0 : 'xl'"><v-card-title class="px-5 pt-5">{{ editingTenant ? t("licensing.editTenant") : t("licensing.createTenant") }}</v-card-title><v-card-text class="px-5"><v-row><v-col cols="12" sm="6"><v-text-field v-model="tenantForm.code" :disabled="!!editingTenant" :label="t('licensing.code')" /></v-col><v-col cols="12" sm="6"><v-text-field v-model="tenantForm.name" :label="t('common.name')" /></v-col><v-col cols="12"><v-text-field v-model="tenantForm.contactEmail" type="email" :label="t('licensing.contactEmail')" /></v-col><v-col cols="12"><v-textarea v-model="tenantForm.description" :label="t('common.description')" /></v-col><v-col cols="12"><v-textarea v-model="configJson" class="json-field" :label="t('licensing.configuration')" /></v-col></v-row></v-card-text><v-card-actions class="px-5 pb-5"><v-spacer/><v-btn @click="tenantDialog=false">{{ t("common.cancel") }}</v-btn><v-btn color="primary" :loading="saving" @click="saveTenant">{{ t("common.save") }}</v-btn></v-card-actions></v-card></v-dialog>
+    <v-dialog v-model="planDialog" :fullscreen="xs" max-width="760" scrollable><v-card :rounded="xs ? 0 : 'xl'"><v-card-title class="px-5 pt-5">{{ editingPlan ? t("licensing.editPlan") : t("licensing.createPlan") }}</v-card-title><v-card-text class="px-5"><v-row><v-col cols="12" sm="6"><v-text-field v-model="planForm.code" :disabled="!!editingPlan" :label="t('licensing.code')" /></v-col><v-col cols="12" sm="6"><v-text-field v-model="planForm.name" :label="t('common.name')" /></v-col><v-col cols="12" sm="6"><v-text-field v-model.number="planForm.durationDays" type="number" min="1" :label="t('licensing.durationDays')" /></v-col><v-col cols="12" sm="6"><v-select v-model="planForm.billingCycleCode" :items="catalog.billingCycles.map(x=>({title:lookupLabel(x.name),value:x.code}))" :label="t('licensing.billingCycle')" /></v-col><v-col cols="12"><v-select v-model="planForm.featureCodes" multiple chips :items="features.map(x=>({title:featureName(x),value:x.code}))" :label="t('licensing.features')" /></v-col><v-col cols="12" sm="6"><v-textarea v-model="planLimitsJson" class="json-field" :label="t('licensing.limits')" /></v-col><v-col cols="12" sm="6"><v-textarea v-model="priceJson" class="json-field" :label="t('licensing.pricing')" /></v-col><v-col cols="12"><v-switch v-model="planForm.defaultPlan" color="primary" :label="t('licensing.defaultPlan')" /></v-col></v-row></v-card-text><v-card-actions class="px-5 pb-5"><v-spacer/><v-btn @click="planDialog=false">{{ t("common.cancel") }}</v-btn><v-btn color="primary" :loading="saving" @click="savePlan">{{ t("common.save") }}</v-btn></v-card-actions></v-card></v-dialog>
+    <v-dialog v-model="featureDialog" :fullscreen="xs" max-width="720" scrollable><v-card :rounded="xs ? 0 : 'xl'"><v-card-title class="px-5 pt-5">{{ editingFeature ? t("licensing.editFeature") : t("licensing.createFeature") }}</v-card-title><v-card-text class="px-5"><v-row><v-col cols="12" sm="6"><v-text-field v-model="featureForm.code" :disabled="!!editingFeature" :label="t('licensing.code')" /></v-col><v-col cols="12" sm="6"><v-text-field v-model="featureForm.name" :label="t('common.name')" /></v-col><v-col cols="12" sm="6"><v-text-field v-model="featureForm.moduleCode" :label="t('licensing.moduleCode')" /></v-col><v-col cols="12" sm="6"><v-select v-model="featureForm.stateCode" :items="catalog.featureStates.map(x=>({title:lookupLabel(x.name),value:x.code}))" :label="t('licensing.state')" /></v-col><v-col cols="12"><v-select v-model="featureForm.dependencyCodes" multiple chips :items="features.filter(x=>x.id!==editingFeature?.id).map(x=>({title:featureName(x),value:x.code}))" :label="t('licensing.dependencies')" /></v-col><v-col cols="12" sm="6"><v-text-field v-model.number="featureForm.trialDays" type="number" min="0" :label="t('licensing.trialDays')" /></v-col><v-col cols="12" sm="6"><v-switch v-model="featureForm.active" color="primary" :label="t('common.active')" /></v-col><v-col cols="12"><v-textarea v-model="featureForm.description" :label="t('common.description')" /></v-col></v-row></v-card-text><v-card-actions class="px-5 pb-5"><v-spacer/><v-btn @click="featureDialog=false">{{ t("common.cancel") }}</v-btn><v-btn color="primary" :loading="saving" @click="saveFeature">{{ t("common.save") }}</v-btn></v-card-actions></v-card></v-dialog>
+    <v-dialog v-model="actionDialog" :fullscreen="xs" max-width="620"><v-card :rounded="xs ? 0 : 'xl'"><v-card-title class="px-5 pt-5">{{ t("licensing.operations") }} · {{ actionTarget?.code }}</v-card-title><v-card-text class="px-5"><v-select v-if="can('licensing:activate')" v-model="actionMode" clearable :items="catalog.activationModes" :label="t('licensing.changeActivation')" /><v-select v-if="can('licensing:manage-billing')" v-model="actionPaymentStatus" clearable :items="catalog.paymentStatuses.map(x=>({title:lookupLabel(x.name),value:x.code}))" :label="t('licensing.paymentStatus')" /><template v-if="can('licensing:transfer')"><v-select v-model="actionTenantId" clearable :items="tenantItems.filter(x=>x.value!==actionTarget?.tenantId)" :label="t('licensing.transferTo')" /><v-textarea v-if="actionTenantId" v-model="actionReason" :label="t('licensing.transferReason')" /></template></v-card-text><v-card-actions class="px-5 pb-5"><v-spacer/><v-btn @click="actionDialog=false">{{ t("common.cancel") }}</v-btn><v-btn color="primary" :loading="saving" @click="applyLicenseActions">{{ t("common.save") }}</v-btn></v-card-actions></v-card></v-dialog>
   </div>
 </template>
 <style scoped>
@@ -944,6 +1036,8 @@ onMounted(load);
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
   gap: 14px;
 }
+.report-controls { display: grid; grid-template-columns: minmax(220px, 1fr) auto auto; gap: 12px; align-items: center; }
+.report-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 14px; }
 .detail-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -981,5 +1075,6 @@ onMounted(load);
   .usage-grid {
     grid-template-columns: 1fr;
   }
+  .report-controls { grid-template-columns: 1fr; }
 }
 </style>

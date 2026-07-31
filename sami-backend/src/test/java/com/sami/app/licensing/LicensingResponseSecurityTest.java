@@ -19,4 +19,14 @@ class LicensingResponseSecurityTest {
         assertFalse(exposesLicenseKey,
                 "Normal license responses must not expose the raw license key");
     }
+
+    @Test
+    void normalLicenseResponseDoesNotExposeActivationFingerprint() {
+        boolean exposesFingerprint = Arrays.stream(LicenseResponse.class.getRecordComponents())
+                .map(RecordComponent::getName)
+                .anyMatch("activationFingerprint"::equals);
+
+        assertFalse(exposesFingerprint,
+                "Normal license responses must not expose the activation fingerprint");
+    }
 }
