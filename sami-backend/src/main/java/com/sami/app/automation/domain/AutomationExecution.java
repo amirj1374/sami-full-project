@@ -28,6 +28,9 @@ import java.util.Map;
 @Builder
 public class AutomationExecution extends BaseEntity {
 
+    @Column(name = "tenant_id", nullable = false)
+    private Long tenantId;
+
     public enum Status { RUNNING, SUCCEEDED, FAILED, SKIPPED }
 
     @Column(name = "execution_number", nullable = false, unique = true, length = 40)

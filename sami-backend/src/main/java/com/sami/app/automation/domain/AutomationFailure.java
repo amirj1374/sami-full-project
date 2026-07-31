@@ -32,6 +32,9 @@ import java.util.Map;
 @Builder
 public class AutomationFailure extends BaseEntity {
 
+    @Column(name = "tenant_id", nullable = false)
+    private Long tenantId;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "rule_id", nullable = false)
     private AutomationRule rule;

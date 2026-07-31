@@ -21,6 +21,7 @@ import java.util.Map;
  * must only act on committed data use {@code @TransactionalEventListener}.
  */
 public record CustomerDomainEvent(
+        Long tenantId,
         Long customerId,
         String eventType,
         String title,

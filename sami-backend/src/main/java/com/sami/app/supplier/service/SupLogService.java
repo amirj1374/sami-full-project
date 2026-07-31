@@ -1,6 +1,7 @@
 package com.sami.app.supplier.service;
 
 import com.sami.app.security.CurrentActor;
+import com.sami.app.common.tenancy.TenantContext;
 import com.sami.app.supplier.domain.SupLog;
 import com.sami.app.supplier.domain.Supplier;
 import com.sami.app.supplier.dto.SupplierDtos.LogResponse;
@@ -23,6 +24,7 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 public class SupLogService {
+    private final TenantContext tenantContext;
 
     public static final String CREATED = "CREATED";
     public static final String UPDATED = "UPDATED";
@@ -47,7 +49,7 @@ public class SupLogService {
                 .actorEmail(CurrentActor.email())
                 .build());
         eventPublisher.publishEvent(new SupplierDomainEvent(
-                supplier.getId(), supplier.getSupplierCode(), action,
+                tenantContext.requireTenantId(), supplier.getId(), supplier.getSupplierCode(), action,
                 log.getDetail(), log.getOccurredAt()));
     }
 

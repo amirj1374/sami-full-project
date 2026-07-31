@@ -14,6 +14,7 @@ import com.sami.app.dataquality.spi.ValidationOutcome;
 import com.sami.app.dataquality.spi.ValidationRule;
 import com.sami.app.dataquality.spi.ValidationRuleRegistry;
 import com.sami.app.security.CurrentActor;
+import com.sami.app.common.tenancy.TenantContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -45,6 +46,7 @@ public class ValidationEngine {
     private final QualityConditionEvaluator conditionEvaluator;
     private final QualityScoreService scoreService;
     private final ApplicationEventPublisher eventPublisher;
+    private final TenantContext tenantContext;
 
     /**
      * Validates one entity payload against its configured rules.
@@ -55,7 +57,8 @@ public class ValidationEngine {
     public ValidationReport validate(String moduleCode, String entityCode, Long entityId,
                                      Map<String, Object> data, boolean persist) {
         Instant started = Instant.now();
-        List<QualityRule> rules = ruleRepository.findActiveFor(moduleCode, entityCode);
+        Long tenantId = tenantContext.requireTenantId();
+        List<QualityRule> rules = ruleRepository.findActiveFor(tenantId, moduleCode, entityCode);
 
         List<ValidationReport.ValidationFinding> findings = new ArrayList<>();
         List<QualityIssue> issues = new ArrayList<>();
@@ -107,6 +110,7 @@ public class ValidationEngine {
             findings.add(new ValidationReport.ValidationFinding(
                     rule.getCode(), rule.getTargetField(), severity, dimension, outcome.message()));
             issues.add(QualityIssue.builder()
+                    .tenantId(tenantId)
                     .ruleId(rule.getId())
                     .moduleCode(moduleCode)
                     .entityCode(entityCode)
@@ -127,6 +131,7 @@ public class ValidationEngine {
         if (persist) {
             Instant ended = Instant.now();
             ValidationRun run = runRepository.save(ValidationRun.builder()
+                    .tenantId(tenantId)
                     .runNumber(runNumber)
                     .moduleCode(moduleCode)
                     .entityCode(entityCode)

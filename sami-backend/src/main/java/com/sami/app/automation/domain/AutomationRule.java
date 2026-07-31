@@ -41,6 +41,9 @@ import java.util.Map;
 @Builder
 public class AutomationRule extends BaseEntity {
 
+    @Column(name = "tenant_id", nullable = false)
+    private Long tenantId;
+
     @Column(nullable = false, unique = true, length = 64)
     private String code;
 

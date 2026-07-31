@@ -1,6 +1,7 @@
 package com.sami.app.dataquality.service;
 
 import com.sami.app.common.exception.ResourceNotFoundException;
+import com.sami.app.common.tenancy.TenantContext;
 import com.sami.app.dataquality.domain.QualityCorrection;
 import com.sami.app.dataquality.domain.QualityIssue;
 import com.sami.app.dataquality.event.DataQualityDomainEvent;
@@ -31,16 +32,18 @@ public class QualityIssueService {
     private final QualityCorrectionRepository correctionRepository;
     private final QualityAuditService audit;
     private final ApplicationEventPublisher eventPublisher;
+    private final TenantContext tenantContext;
 
     @Transactional(readOnly = true)
     public Page<QualityIssue> list(String status, Pageable pageable) {
-        return issueRepository.findByStatusOrderByCreatedAtDesc(
+        return issueRepository.findByTenantIdAndStatusOrderByCreatedAtDesc(tenantContext.requireTenantId(),
                 status == null ? QualityIssue.Status.OPEN.name() : status, pageable);
     }
 
     @Transactional(readOnly = true)
     public List<QualityIssue> forEntity(String moduleCode, String entityCode, Long entityId) {
-        return issueRepository.findByModuleCodeAndEntityCodeAndEntityId(moduleCode, entityCode, entityId);
+        return issueRepository.findByTenantIdAndModuleCodeAndEntityCodeAndEntityId(
+                tenantContext.requireTenantId(), moduleCode, entityCode, entityId);
     }
 
     @Transactional
@@ -80,6 +83,7 @@ public class QualityIssueService {
                                      boolean automatic, String note) {
         QualityIssue issue = load(issueId);
         QualityCorrection correction = correctionRepository.save(QualityCorrection.builder()
+                .tenantId(issue.getTenantId())
                 .issueId(issueId)
                 .fieldName(field == null ? issue.getFieldName() : field)
                 .oldValue(oldValue)
@@ -104,19 +108,20 @@ public class QualityIssueService {
 
     @Transactional(readOnly = true)
     public List<QualityCorrection> corrections(Long issueId) {
-        return correctionRepository.findByIssueIdOrderByAppliedAtDesc(issueId);
+        QualityIssue issue = load(issueId);
+        return correctionRepository.findByIssueIdAndTenantIdOrderByAppliedAtDesc(issue.getId(), issue.getTenantId());
     }
 
     @Transactional(readOnly = true)
     public Map<String, Long> summary() {
         return Map.of(
-                "open", issueRepository.countByStatus(QualityIssue.Status.OPEN.name()),
-                "resolved", issueRepository.countByStatus(QualityIssue.Status.RESOLVED.name()),
-                "ignored", issueRepository.countByStatus(QualityIssue.Status.IGNORED.name()));
+                "open", issueRepository.countByTenantIdAndStatus(tenantContext.requireTenantId(), QualityIssue.Status.OPEN.name()),
+                "resolved", issueRepository.countByTenantIdAndStatus(tenantContext.requireTenantId(), QualityIssue.Status.RESOLVED.name()),
+                "ignored", issueRepository.countByTenantIdAndStatus(tenantContext.requireTenantId(), QualityIssue.Status.IGNORED.name()));
     }
 
     private QualityIssue load(Long id) {
-        return issueRepository.findById(id)
+        return issueRepository.findByIdAndTenantId(id, tenantContext.requireTenantId())
                 .orElseThrow(() -> new ResourceNotFoundException("Quality issue not found: " + id));
     }
 }

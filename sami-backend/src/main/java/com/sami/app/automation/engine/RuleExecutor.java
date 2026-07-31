@@ -58,7 +58,7 @@ public class RuleExecutor {
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void execute(Long ruleId, AutomationContext ctx) {
-        AutomationRule rule = ruleRepository.findWithActionsById(ruleId).orElse(null);
+        AutomationRule rule = ruleRepository.findWithActionsByIdAndTenantId(ruleId, ctx.tenantId()).orElse(null);
         if (rule == null) {
             return;
         }
@@ -148,6 +148,7 @@ public class RuleExecutor {
     private AutomationExecution startExecution(AutomationRule rule, AutomationContext ctx) {
         String number = "AUTO-" + String.format("%08d", executionRepository.nextNumber());
         return executionRepository.save(AutomationExecution.builder()
+                .tenantId(ctx.tenantId())
                 .executionNumber(number)
                 .rule(rule)
                 .triggerType(ctx.triggerType())
@@ -180,6 +181,7 @@ public class RuleExecutor {
             if (boolVal(policy.get("retryOnFailure"), false)) {
                 long backoff = longVal(policy.get("retryDelaySeconds"), 60);
                 failureRepository.save(AutomationFailure.builder()
+                        .tenantId(ctx.tenantId())
                         .rule(rule)
                         .executionId(execution.getId())
                         .reason(failureMessage)

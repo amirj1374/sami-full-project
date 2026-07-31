@@ -11,11 +11,13 @@ import java.util.List;
 public interface QualityIssueRepository
         extends JpaRepository<QualityIssue, Long>, JpaSpecificationExecutor<QualityIssue> {
 
-    Page<QualityIssue> findByStatusOrderByCreatedAtDesc(String status, Pageable pageable);
+    Page<QualityIssue> findByTenantIdAndStatusOrderByCreatedAtDesc(Long tenantId, String status, Pageable pageable);
 
-    List<QualityIssue> findByModuleCodeAndEntityCodeAndEntityId(String moduleCode, String entityCode, Long entityId);
+    List<QualityIssue> findByTenantIdAndModuleCodeAndEntityCodeAndEntityId(Long tenantId, String moduleCode, String entityCode, Long entityId);
 
-    long countByStatus(String status);
+    long countByTenantIdAndStatus(Long tenantId, String status);
 
-    long countByModuleCodeAndStatus(String moduleCode, String status);
+    long countByTenantIdAndModuleCodeAndStatus(Long tenantId, String moduleCode, String status);
+
+    java.util.Optional<QualityIssue> findByIdAndTenantId(Long id, Long tenantId);
 }

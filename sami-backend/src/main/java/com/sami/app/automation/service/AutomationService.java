@@ -27,6 +27,7 @@ import com.sami.app.automation.spi.TriggerRegistry;
 import com.sami.app.common.exception.ApiException;
 import com.sami.app.common.exception.ErrorCode;
 import com.sami.app.common.exception.ResourceNotFoundException;
+import com.sami.app.common.tenancy.TenantContext;
 import com.sami.app.security.CurrentActor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -61,12 +62,13 @@ public class AutomationService {
     private final AutomationEngine engine;
     private final AutomationAuditService audit;
     private final ApplicationEventPublisher eventPublisher;
+    private final TenantContext tenantContext;
 
     // ---- Read ---------------------------------------------------------------
 
     @Transactional(readOnly = true)
     public Page<RuleResponse> list(RuleFilter filter, Pageable pageable) {
-        return ruleRepository.findAll(toSpecification(filter), pageable).map(RuleResponse::row);
+        return ruleRepository.findAll(toSpecification(filter, tenantContext.requireTenantId()), pageable).map(RuleResponse::row);
     }
 
     @Transactional(readOnly = true)
@@ -76,12 +78,15 @@ public class AutomationService {
 
     @Transactional(readOnly = true)
     public Page<ExecutionResponse> executions(Long ruleId, Pageable pageable) {
-        return executionRepository.findByRuleIdOrderByStartedAtDesc(ruleId, pageable)
+        AutomationRule rule = loadRule(ruleId);
+        return executionRepository.findByRuleIdAndTenantIdOrderByStartedAtDesc(rule.getId(), rule.getTenantId(), pageable)
                 .map(ExecutionResponse::from);
     }
 
     @Transactional(readOnly = true)
     public List<ExecutionLogResponse> executionLogs(Long executionId) {
+        executionRepository.findByIdAndTenantId(executionId, tenantContext.requireTenantId())
+                .orElseThrow(() -> new ResourceNotFoundException("Automation execution not found: " + executionId));
         return executionLogRepository.findByExecutionIdOrderByStepOrderAsc(executionId)
                 .stream().map(ExecutionLogResponse::from).toList();
     }
@@ -105,10 +110,12 @@ public class AutomationService {
 
     @Transactional
     public RuleResponse create(RuleRequest request) {
-        if (ruleRepository.existsByCode(request.code())) {
+        Long tenantId = tenantContext.requireTenantId();
+        if (ruleRepository.existsByTenantIdAndCode(tenantId, request.code())) {
             throw new ApiException(ErrorCode.RESOURCE_CONFLICT, "Automation code already exists: " + request.code());
         }
         AutomationRule rule = new AutomationRule();
+        rule.setTenantId(tenantId);
         // @Builder.Default leaves collections null under the no-args constructor.
         rule.setActions(new ArrayList<>());
         rule.setTriggerConfig(new HashMap<>());
@@ -182,7 +189,7 @@ public class AutomationService {
                 request != null ? request.entityType() : null,
                 request != null ? request.entityId() : null,
                 request != null && request.data() != null ? request.data() : Map.of(),
-                rule.getCompanyId(), rule.getBranchId(), CurrentActor.id(), Instant.now(), 0);
+                rule.getTenantId(), rule.getCompanyId(), rule.getBranchId(), CurrentActor.id(), Instant.now(), 0);
         engine.executeRule(id, ctx);
     }
 
@@ -245,7 +252,7 @@ public class AutomationService {
     }
 
     private AutomationRule loadRule(Long id) {
-        return ruleRepository.findWithActionsById(id)
+        return ruleRepository.findWithActionsByIdAndTenantId(id, tenantContext.requireTenantId())
                 .orElseThrow(() -> new ResourceNotFoundException("Automation rule not found: " + id));
     }
 
@@ -256,8 +263,9 @@ public class AutomationService {
         }
     }
 
-    private Specification<AutomationRule> toSpecification(RuleFilter filter) {
+    private Specification<AutomationRule> toSpecification(RuleFilter filter, Long tenantId) {
         return Specification.allOf(
+                (root, query, cb) -> cb.equal(root.get("tenantId"), tenantId),
                 searchSpec(filter == null ? null : filter.search()),
                 equalSpec("triggerType", filter == null ? null : filter.triggerType()),
                 statusSpec(filter == null ? null : filter.statusCode()),

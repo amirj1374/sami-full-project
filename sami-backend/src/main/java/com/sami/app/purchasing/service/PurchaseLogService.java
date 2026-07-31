@@ -6,6 +6,7 @@ import com.sami.app.purchasing.dto.PurchaseDtos.LogResponse;
 import com.sami.app.purchasing.event.PurchaseDomainEvent;
 import com.sami.app.purchasing.repository.PurchaseLogRepository;
 import com.sami.app.security.CurrentActor;
+import com.sami.app.common.tenancy.TenantContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
@@ -24,6 +25,7 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 public class PurchaseLogService {
+    private final TenantContext tenantContext;
 
     public static final String CREATED = "CREATED";
     public static final String UPDATED = "UPDATED";
@@ -50,7 +52,7 @@ public class PurchaseLogService {
                 .actorEmail(CurrentActor.email())
                 .build());
         eventPublisher.publishEvent(new PurchaseDomainEvent(
-                purchase.getId(), purchase.getPurchaseNumber(), action,
+                tenantContext.requireTenantId(), purchase.getId(), purchase.getPurchaseNumber(), action,
                 log.getDetail(), log.getOccurredAt()));
     }
 

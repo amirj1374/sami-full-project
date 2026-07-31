@@ -23,7 +23,11 @@ public class AutomationEngine {
 
     /** Fan a firing context out to every matching active rule. */
     public void dispatch(AutomationContext ctx) {
-        for (AutomationRule rule : ruleRepository.findActiveRules()) {
+        if (ctx == null || ctx.tenantId() == null) {
+            log.warn("Automation dispatch rejected because trusted tenant scope is missing");
+            return;
+        }
+        for (AutomationRule rule : ruleRepository.findActiveRules(ctx.tenantId())) {
             if (!triggerMatches(rule.getTriggerType(), ctx.triggerType())) {
                 continue;
             }
@@ -38,6 +42,9 @@ public class AutomationEngine {
 
     /** Run a specific rule directly (manual execution / testing), bypassing trigger match. */
     public void executeRule(Long ruleId, AutomationContext ctx) {
+        if (ctx == null || ctx.tenantId() == null) {
+            throw new IllegalArgumentException("Trusted tenant scope is required for automation execution");
+        }
         ruleExecutor.execute(ruleId, ctx);
     }
 

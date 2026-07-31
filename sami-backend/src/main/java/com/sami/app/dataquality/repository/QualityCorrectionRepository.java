@@ -7,5 +7,5 @@ import java.util.List;
 
 public interface QualityCorrectionRepository extends JpaRepository<QualityCorrection, Long> {
 
-    List<QualityCorrection> findByIssueIdOrderByAppliedAtDesc(Long issueId);
+    List<QualityCorrection> findByIssueIdAndTenantIdOrderByAppliedAtDesc(Long issueId, Long tenantId);
 }

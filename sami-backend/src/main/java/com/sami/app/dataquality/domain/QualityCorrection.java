@@ -26,6 +26,9 @@ import java.time.Instant;
 @Builder
 public class QualityCorrection extends BaseEntity {
 
+    @Column(name = "tenant_id", nullable = false)
+    private Long tenantId;
+
     @Column(name = "issue_id", nullable = false)
     private Long issueId;
 

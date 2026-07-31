@@ -12,18 +12,18 @@ import java.util.Optional;
 public interface AutomationRuleRepository
         extends JpaRepository<AutomationRule, Long>, JpaSpecificationExecutor<AutomationRule> {
 
-    boolean existsByCode(String code);
+    boolean existsByTenantIdAndCode(Long tenantId, String code);
 
     @EntityGraph(attributePaths = {"status", "actions"})
-    Optional<AutomationRule> findWithActionsById(Long id);
+    Optional<AutomationRule> findWithActionsByIdAndTenantId(Long id, Long tenantId);
 
     /**
      * All rules whose status is an active state, ordered by priority — the
      * candidate set the engine filters by trigger match on each dispatch.
      */
     @EntityGraph(attributePaths = {"status", "actions"})
-    @Query("SELECT r FROM AutomationRule r JOIN r.status s WHERE s.isActiveState = true ORDER BY r.priority ASC")
-    List<AutomationRule> findActiveRules();
+    @Query("SELECT r FROM AutomationRule r JOIN r.status s WHERE r.tenantId = :tenantId AND s.isActiveState = true ORDER BY r.priority ASC")
+    List<AutomationRule> findActiveRules(Long tenantId);
 
     @Override
     @EntityGraph(attributePaths = {"status"})

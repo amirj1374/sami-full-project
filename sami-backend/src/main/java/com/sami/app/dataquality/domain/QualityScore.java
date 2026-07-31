@@ -26,6 +26,9 @@ import java.util.Map;
 @Builder
 public class QualityScore extends BaseEntity {
 
+    @Column(name = "tenant_id", nullable = false)
+    private Long tenantId;
+
     @Column(name = "module_code", nullable = false, length = 64)
     private String moduleCode;
 

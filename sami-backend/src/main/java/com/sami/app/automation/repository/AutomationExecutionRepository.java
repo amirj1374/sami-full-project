@@ -10,7 +10,9 @@ import org.springframework.data.jpa.repository.Query;
 public interface AutomationExecutionRepository
         extends JpaRepository<AutomationExecution, Long>, JpaSpecificationExecutor<AutomationExecution> {
 
-    Page<AutomationExecution> findByRuleIdOrderByStartedAtDesc(Long ruleId, Pageable pageable);
+    Page<AutomationExecution> findByRuleIdAndTenantIdOrderByStartedAtDesc(Long ruleId, Long tenantId, Pageable pageable);
+
+    java.util.Optional<AutomationExecution> findByIdAndTenantId(Long id, Long tenantId);
 
     long countByRuleIdAndStatus(Long ruleId, String status);
 

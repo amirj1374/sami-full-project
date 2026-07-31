@@ -25,6 +25,9 @@ import java.util.Map;
 @Builder
 public class QualityIssue extends BaseEntity {
 
+    @Column(name = "tenant_id", nullable = false)
+    private Long tenantId;
+
     public enum Status { OPEN, RESOLVED, IGNORED }
 
     @Column(name = "run_id")

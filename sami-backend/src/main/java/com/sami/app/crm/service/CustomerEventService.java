@@ -5,6 +5,7 @@ import com.sami.app.crm.dto.CustomerEventResponse;
 import com.sami.app.crm.event.CustomerDomainEvent;
 import com.sami.app.crm.repository.CustomerEventRepository;
 import com.sami.app.security.CurrentActor;
+import com.sami.app.common.tenancy.TenantContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
@@ -26,6 +27,7 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 public class CustomerEventService {
+    private final TenantContext tenantContext;
 
     /** CRM-recorded event types. Other modules define their own constants. */
     public static final String CREATED = "CREATED";
@@ -78,7 +80,7 @@ public class CustomerEventService {
         // @EventListener (in-transaction) or @TransactionalEventListener
         // (after commit) without any dependency on CRM internals.
         eventPublisher.publishEvent(new CustomerDomainEvent(
-                customerId, eventType, title, event.getDetail(), sourceModule,
+                tenantContext.requireTenantId(), customerId, eventType, title, event.getDetail(), sourceModule,
                 event.getOccurredAt()));
     }
 

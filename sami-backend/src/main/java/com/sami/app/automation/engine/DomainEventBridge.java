@@ -34,7 +34,7 @@ public class DomainEventBridge {
         engine.dispatch(new AutomationContext(
                 "crm.customer." + event.eventType(), "crm", "customer", event.customerId(),
                 data(event.detail(), "title", event.title(), "sourceModule", event.sourceModule()),
-                null, null, null, event.occurredAt(), 0));
+                event.tenantId(), null, null, null, event.occurredAt(), 0));
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -42,7 +42,7 @@ public class DomainEventBridge {
         engine.dispatch(new AutomationContext(
                 "purchasing.purchase." + event.action(), "purchasing", "purchase", event.purchaseId(),
                 data(event.detail(), "purchaseNumber", event.purchaseNumber()),
-                null, null, null, event.occurredAt(), 0));
+                event.tenantId(), null, null, null, event.occurredAt(), 0));
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -50,7 +50,7 @@ public class DomainEventBridge {
         engine.dispatch(new AutomationContext(
                 "supplier.supplier." + event.action(), "supplier", "supplier", event.supplierId(),
                 data(event.detail(), "supplierCode", event.supplierCode()),
-                null, null, null, event.occurredAt(), 0));
+                event.tenantId(), null, null, null, event.occurredAt(), 0));
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -58,7 +58,7 @@ public class DomainEventBridge {
         engine.dispatch(new AutomationContext(
                 "dashboard." + event.entityType() + "." + event.eventType(), "dashboard",
                 event.entityType(), event.entityId(),
-                data(event.payload()), event.companyId(), event.branchId(), event.userId(),
+                data(event.payload()), event.tenantId(), event.companyId(), event.branchId(), event.userId(),
                 event.occurredAt(), 0));
     }
 
