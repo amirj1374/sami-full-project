@@ -5,6 +5,7 @@ import type {
   AutomationExecutionLog,
   AutomationRule,
   AutomationRulePayload,
+  AutomationRunPayload,
   AutomationStatus,
   AutomationTrigger,
 } from '@/types/automation'
@@ -29,7 +30,8 @@ export const automationsApi = {
   changeStatus: (id: number, statusCode: string, expectedVersion: number): Promise<AutomationRule> =>
     unwrap(http.patch<ApiResponse<AutomationRule>>(`/v1/automations/${id}/status`, { statusCode, expectedVersion })),
   remove: (id: number): Promise<void> => http.delete(`/v1/automations/${id}`).then(() => undefined),
-  run: (id: number): Promise<void> => http.post(`/v1/automations/${id}/run`).then(() => undefined),
+  run: (id: number, payload?: AutomationRunPayload): Promise<void> =>
+    http.post(`/v1/automations/${id}/run`, payload).then(() => undefined),
   executions: (id: number, params: PageQuery = {}): Promise<PageResponse<AutomationExecution>> =>
     unwrap(http.get<ApiResponse<PageResponse<AutomationExecution>>>(`/v1/automations/${id}/executions`, { params })),
   executionLogs: (id: number): Promise<AutomationExecutionLog[]> =>

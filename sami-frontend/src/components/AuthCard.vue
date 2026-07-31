@@ -28,24 +28,22 @@ defineProps<{
   position: relative;
   width: 100%;
   overflow: hidden;
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.1);
-  background: rgba(var(--v-theme-surface), 0.96);
+  border: 1px solid rgba(var(--v-border-color), 0.12);
+  background: rgb(var(--v-theme-surface));
   box-shadow: var(--app-shadow-lg);
 }
 .auth-card__accent {
-  height: 4px;
-  background: linear-gradient(
-    90deg,
-    rgb(var(--v-theme-primary)),
-    rgb(var(--v-theme-accent))
-  );
+  height: 5px;
+  background: rgb(var(--v-theme-primary));
+  box-shadow: inset 88px 0 0 rgb(var(--v-theme-accent));
 }
+[dir='rtl'] .auth-card__accent { box-shadow: inset -88px 0 0 rgb(var(--v-theme-accent)); }
 .auth-card__heading {
   padding: 28px 28px 12px;
 }
 .auth-card__title {
-  font-size: 1.5rem;
-  font-weight: 750;
+  font-size: 1.65rem;
+  font-weight: 760;
   line-height: 1.35;
   white-space: normal;
 }

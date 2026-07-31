@@ -77,7 +77,8 @@ const routes: RouteRecordRaw[] = [
         meta: { requiresAuth: true, permission: 'customers:view' },
       },
       {
-        path: 'automations',
+        path: 'automation',
+        alias: 'automations',
         name: 'automations',
         component: () => import('@/views/AutomationsView.vue'),
         meta: { requiresAuth: true, permission: 'automation:view' },
@@ -105,6 +106,12 @@ const routes: RouteRecordRaw[] = [
         name: 'appointments',
         component: () => import('@/views/AppointmentsView.vue'),
         meta: { requiresAuth: true, permission: 'appointments:view' },
+      },
+      {
+        path: 'licensing',
+        name: 'licensing',
+        component: () => import('@/views/LicensingView.vue'),
+        meta: { requiresAuth: true, permission: 'licensing:view' },
       },
       {
         path: 'users',

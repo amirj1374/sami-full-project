@@ -58,6 +58,11 @@ const kpis = computed(() => [
     sub: `${formatNumber(purchaseValue.value)} ${t('dashboard.currencyUnit')}`,
   },
 ])
+const quickActions = computed(() => [
+  can('customers:create') ? { key: 'customer', icon: 'mdi-account-plus-outline', to: '/customers' } : null,
+  can('purchasing:create') ? { key: 'purchase', icon: 'mdi-cart-plus', to: '/purchases' } : null,
+  can('products:create') ? { key: 'product', icon: 'mdi-package-variant-plus', to: '/products' } : null,
+].filter((item): item is { key: string; icon: string; to: string } => item !== null))
 
 // --- Purchase-status donut --------------------------------------------------
 const R = 42
@@ -150,13 +155,31 @@ onMounted(load)
       </template>
     </AppPageHeader>
 
-    <p class="text-body-2 text-medium-emphasis mb-5 mt-n3">
-      <i18n-t keypath="dashboard.welcome" tag="span">
-        <template #name>
-          <strong class="text-high-emphasis">{{ auth.user?.fullName }}</strong>
-        </template>
-      </i18n-t>
-    </p>
+    <section class="dashboard-command mb-6">
+      <div class="dashboard-command__copy">
+        <div class="text-caption dashboard-command__date">{{ formatDate(new Date().toISOString()) }}</div>
+        <h2 class="dashboard-command__title">
+          <i18n-t keypath="dashboard.welcome" tag="span">
+            <template #name><strong>{{ auth.user?.fullName }}</strong></template>
+          </i18n-t>
+        </h2>
+        <p>{{ t('dashboard.commandDescription') }}</p>
+      </div>
+      <div v-if="quickActions.length" class="dashboard-command__actions">
+        <span class="text-caption">{{ t('dashboard.quickActions') }}</span>
+        <div class="d-flex flex-wrap ga-2 mt-2">
+          <v-btn
+            v-for="action in quickActions"
+            :key="action.key"
+            :to="action.to"
+            variant="tonal"
+            :prepend-icon="action.icon"
+          >
+            {{ t(`dashboard.quick.${action.key}`) }}
+          </v-btn>
+        </div>
+      </div>
+    </section>
 
     <v-alert
       v-if="errorMessage"
@@ -444,6 +467,39 @@ onMounted(load)
   letter-spacing: 0.4px;
   color: rgba(var(--v-theme-on-surface), 0.55) !important;
 }
+.dashboard-command {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  overflow: hidden;
+  padding: clamp(20px, 3vw, 30px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--app-radius-xl);
+  color: #f4f7fb;
+  background: var(--app-nav-bg);
+  box-shadow: 0 18px 44px rgba(10, 24, 44, 0.16);
+}
+.dashboard-command::after {
+  position: absolute;
+  width: 240px;
+  height: 240px;
+  inset-inline-end: -100px;
+  inset-block-start: -150px;
+  border: 52px solid rgba(184, 135, 70, 0.13);
+  border-radius: 50%;
+  content: '';
+  pointer-events: none;
+}
+.dashboard-command__copy { position: relative; z-index: 1; max-width: 660px; }
+.dashboard-command__date { color: #9fb0c6; }
+.dashboard-command__title { margin-top: 7px; font-size: clamp(1.3rem, 2.4vw, 2rem); font-weight: 500; line-height: 1.4; }
+.dashboard-command__title strong { color: #fff; font-weight: 760; }
+.dashboard-command__copy p { margin: 8px 0 0; color: #aebbd0; font-size: 0.88rem; }
+.dashboard-command__actions { position: relative; z-index: 1; min-width: 290px; }
+.dashboard-command__actions > span { color: #aebbd0; }
+.dashboard-command__actions :deep(.v-btn) { color: #fff; background: rgba(255,255,255,0.09); }
 .min-width-0 {
   min-width: 0;
 }
@@ -451,6 +507,9 @@ onMounted(load)
   border: 1px solid rgba(var(--v-theme-on-surface), 0.08);
 }
 @media (max-width: 599px) {
+  .dashboard-command { align-items: flex-start; flex-direction: column; gap: 18px; }
+  .dashboard-command__actions { width: 100%; min-width: 0; }
+  .dashboard-command__actions :deep(.v-btn) { flex: 1 1 calc(50% - 8px); }
   .kpi-card :deep(.v-card-text) {
     min-height: 138px;
     padding: 14px;

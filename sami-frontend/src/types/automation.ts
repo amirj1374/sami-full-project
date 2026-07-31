@@ -53,6 +53,12 @@ export interface AutomationRulePayload {
   expectedVersion?: number
 }
 
+export interface AutomationRunPayload {
+  entityType?: string
+  entityId?: number
+  data: Record<string, unknown>
+}
+
 export interface AutomationExecution {
   id: number
   executionNumber: string
