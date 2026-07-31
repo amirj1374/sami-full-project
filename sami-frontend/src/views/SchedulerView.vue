@@ -29,6 +29,7 @@ const formOpen = ref(false)
 const editing = ref<ScheduledJob>()
 const deleteTarget = ref<ScheduledJob>()
 const historyJob = ref<ScheduledJob>()
+const showingRecentExecutions = ref(false)
 const executions = ref<SchedulerExecution[]>([])
 const historyLoading = ref(false)
 const formError = ref('')
@@ -152,10 +153,20 @@ async function run(job: ScheduledJob): Promise<void> {
   } catch (error) { setError(error) }
 }
 async function openHistory(job: ScheduledJob): Promise<void> {
+  showingRecentExecutions.value = false
   historyJob.value = job
   historyLoading.value = true
   try {
     executions.value = (await schedulerApi.executions(job.id, { size: 50, sort: 'startedAt,desc' })).content
+  } catch (error) { setError(error) }
+  finally { historyLoading.value = false }
+}
+async function openRecentExecutions(): Promise<void> {
+  historyJob.value = undefined
+  showingRecentExecutions.value = true
+  historyLoading.value = true
+  try {
+    executions.value = (await schedulerApi.recentExecutions({ size: 50, sort: 'startedAt,desc' })).content
   } catch (error) { setError(error) }
   finally { historyLoading.value = false }
 }
@@ -173,7 +184,7 @@ onMounted(load)
 <template>
   <div>
     <AppPageHeader icon="mdi-calendar-clock-outline" :eyebrow="t('scheduler.eyebrow')" :title="t('scheduler.title')">
-      <template #actions><v-btn v-if="can('scheduler:create')" color="primary" prepend-icon="mdi-plus" @click="openForm()">{{ t('scheduler.create') }}</v-btn></template>
+      <template #actions><div class="d-flex flex-wrap ga-2"><v-btn variant="tonal" prepend-icon="mdi-history" @click="openRecentExecutions">{{ t('scheduler.history') }}</v-btn><v-btn v-if="can('scheduler:create')" color="primary" prepend-icon="mdi-plus" @click="openForm()">{{ t('scheduler.create') }}</v-btn></div></template>
     </AppPageHeader>
     <AppErrorState v-if="errorMessage" class="mb-4" :title="errorMessage" :retry-label="t('common.retry')" @retry="load" />
     <v-card rounded="xl" class="mb-4"><v-card-text class="d-flex flex-column flex-sm-row ga-3">
@@ -238,6 +249,8 @@ onMounted(load)
     </v-list></v-card-text></v-card></v-dialog>
 
     <v-dialog :model-value="!!historyJob" max-width="760" :fullscreen="xs" @update:model-value="historyJob=undefined"><v-card :rounded="xs?0:'xl'"><v-card-title class="d-flex px-5 pt-5">{{ t('scheduler.history') }}<v-spacer/><v-btn icon="mdi-close" variant="text" @click="historyJob=undefined"/></v-card-title><v-card-text class="px-5"><v-progress-linear v-if="historyLoading" indeterminate/><v-list v-else-if="executions.length"><v-list-item v-for="item in executions" :key="item.id" :title="item.executionNumber" :subtitle="`${formatDateTime(item.startedAt)} · ${item.durationMs ?? 0} ms`"><template #append><v-chip size="x-small" variant="tonal">{{ item.status }}</v-chip></template><v-alert v-if="item.errorMessage" type="error" density="compact" variant="tonal" class="mt-2">{{ item.errorMessage }}</v-alert></v-list-item></v-list><AppEmptyState v-else dense :title="t('scheduler.noExecutions')"/></v-card-text></v-card></v-dialog>
+
+    <v-dialog v-model="showingRecentExecutions" max-width="760" :fullscreen="xs"><v-card :rounded="xs?0:'xl'"><v-card-title class="d-flex px-5 pt-5">{{ t('scheduler.history') }}<v-spacer/><v-btn icon="mdi-close" variant="text" @click="showingRecentExecutions=false"/></v-card-title><v-card-text class="px-5"><v-progress-linear v-if="historyLoading" indeterminate/><v-list v-else-if="executions.length"><v-list-item v-for="item in executions" :key="item.id" :title="item.executionNumber" :subtitle="formatDateTime(item.startedAt)"><template #append><v-chip size="x-small" variant="tonal">{{ item.status }}</v-chip></template></v-list-item></v-list><AppEmptyState v-else dense :title="t('scheduler.noExecutions')"/></v-card-text></v-card></v-dialog>
 
     <v-dialog :model-value="!!deleteTarget" max-width="420" @update:model-value="deleteTarget=undefined"><v-card rounded="xl"><v-card-title class="px-5 pt-5">{{ t('scheduler.deleteTitle') }}</v-card-title><v-card-text class="px-5">{{ t('scheduler.deleteMessage',{name:deleteTarget?.name}) }}</v-card-text><v-card-actions class="px-5 pb-5"><v-spacer/><v-btn variant="text" @click="deleteTarget=undefined">{{ t('common.cancel') }}</v-btn><v-btn color="error" @click="remove">{{ t('common.delete') }}</v-btn></v-card-actions></v-card></v-dialog>
   </div>

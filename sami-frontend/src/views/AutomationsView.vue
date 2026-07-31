@@ -57,6 +57,7 @@ const triggerConfig = ref('{}')
 const conditionConfig = ref('{}')
 const executionPolicy = ref('{}')
 const actions = ref<AutomationAction[]>([])
+const actionConfigDrafts = ref<string[]>([])
 
 const { handleSubmit, defineField, errors, resetForm } = useForm({
   validationSchema: computed(() => toTypedSchema(automationRuleSchema(t))),
@@ -75,6 +76,14 @@ function parseObject(value: string): Record<string, unknown> {
   const parsed: unknown = JSON.parse(value || '{}')
   if (!parsed || Array.isArray(parsed) || typeof parsed !== 'object') throw new Error()
   return parsed as Record<string, unknown>
+}
+
+function validateActionConfigs(): AutomationAction[] {
+  return actions.value.map((action, index) => ({
+    ...action,
+    stepOrder: index + 1,
+    config: parseObject(actionConfigDrafts.value[index] ?? '{}'),
+  }))
 }
 
 async function load(): Promise<void> {
@@ -120,6 +129,7 @@ async function openForm(row?: AutomationRule): Promise<void> {
   conditionConfig.value = JSON.stringify(value?.conditionConfig ?? {}, null, 2)
   executionPolicy.value = JSON.stringify(value?.executionPolicy ?? {}, null, 2)
   actions.value = (value?.actions ?? []).map((action) => ({ ...action }))
+  actionConfigDrafts.value = actions.value.map((action) => JSON.stringify(action.config ?? {}, null, 2))
   formOpen.value = true
 }
 
@@ -136,6 +146,12 @@ function addAction(): void {
     retryCount: 0,
     timeoutSeconds: null,
   })
+  actionConfigDrafts.value.push('{}')
+}
+
+function removeAction(index: number): void {
+  actions.value.splice(index, 1)
+  actionConfigDrafts.value.splice(index, 1)
 }
 
 const submit = handleSubmit(async (values) => {
@@ -153,7 +169,7 @@ const submit = handleSubmit(async (values) => {
       triggerConfig: parseObject(triggerConfig.value),
       conditionConfig: parseObject(conditionConfig.value),
       executionPolicy: parseObject(executionPolicy.value),
-      actions: actions.value.map((action, index) => ({ ...action, stepOrder: index + 1 })),
+      actions: validateActionConfigs(),
       expectedVersion: editing.value?.version,
     }
     if (editing.value) await automationsApi.update(editing.value.id, payload)
@@ -326,10 +342,10 @@ onMounted(async () => {
             <v-card-text>
               <div class="d-flex ga-3 align-start">
                 <v-select v-model="action.actionType" :items="actionItems" :label="t('automation.actionType')" class="flex-grow-1" />
-                <v-btn icon="mdi-delete-outline" variant="text" color="error" @click="actions.splice(index, 1)" />
+                <v-btn icon="mdi-delete-outline" variant="text" color="error" @click="removeAction(index)" />
               </div>
               <v-text-field v-model="action.name" :label="t('automation.actionName')" />
-              <v-textarea :model-value="JSON.stringify(action.config, null, 2)" rows="3" :label="t('automation.configuration')" @update:model-value="value => { try { action.config = parseObject(value) } catch {} }" />
+              <v-textarea v-model="actionConfigDrafts[index]" rows="3" :label="t('automation.configuration')" />
               <div class="d-flex flex-wrap ga-3"><v-switch v-model="action.continueOnError" :label="t('automation.continueOnError')" /><v-text-field v-model.number="action.retryCount" type="number" min="0" :label="t('automation.retries')" class="small-number" /></div>
             </v-card-text>
           </v-card>

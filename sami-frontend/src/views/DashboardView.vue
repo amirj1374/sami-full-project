@@ -12,12 +12,14 @@ import type { Product, PurchaseRow } from '@/types/models'
 import AppPageHeader from '@/components/AppPageHeader.vue'
 import AppEmptyState from '@/components/AppEmptyState.vue'
 import { useApiError } from '@/composables/useApiError'
+import { usePermission } from '@/composables/usePermission'
 
 const { t } = useI18n()
 const auth = useAuthStore()
 const { formatNumber, formatDate } = useFormat()
 const { statusLabel } = useServerLabel()
 const { message: errorMessage, set: setError, clear: clearError } = useApiError()
+const { can } = usePermission()
 
 const loading = ref(true)
 const counts = ref({ products: 0, activeProducts: 0, customers: 0, suppliers: 0, purchases: 0 })
@@ -101,26 +103,26 @@ async function load(): Promise<void> {
   clearError()
   try {
     const [products, active, customers, suppliers, purchasePage, low] = await Promise.all([
-      productsApi.list({ size: 1 }),
-      productsApi.list({ size: 1, active: true }),
-      customersApi.list({ size: 1 }),
-      suppliersApi.list({ size: 1 }),
-      purchasesApi.list({ size: 400, sort: 'createdAt,desc' }),
-      productsApi.list({ size: 5, active: true, sort: 'stockQuantity,asc' }),
+      can('products:view') ? productsApi.list({ size: 1 }) : undefined,
+      can('products:view') ? productsApi.list({ size: 1, active: true }) : undefined,
+      can('customers:view') ? customersApi.list({ size: 1 }) : undefined,
+      can('suppliers:view') ? suppliersApi.list({ size: 1 }) : undefined,
+      can('purchasing:view') ? purchasesApi.list({ size: 400, sort: 'createdAt,desc' }) : undefined,
+      can('products:view') ? productsApi.list({ size: 5, active: true, sort: 'stockQuantity,asc' }) : undefined,
     ])
-    const rows = purchasePage.content
+    const rows = purchasePage?.content ?? []
     counts.value = {
-      products: products.totalElements,
-      activeProducts: active.totalElements,
-      customers: customers.totalElements,
-      suppliers: suppliers.totalElements,
-      purchases: purchasePage.totalElements,
+      products: products?.totalElements ?? 0,
+      activeProducts: active?.totalElements ?? 0,
+      customers: customers?.totalElements ?? 0,
+      suppliers: suppliers?.totalElements ?? 0,
+      purchases: purchasePage?.totalElements ?? 0,
     }
     purchaseValue.value = rows.reduce((s, r) => s + Number(r.totalAmount), 0)
     recentPurchases.value = rows.slice(0, 6)
     monthly.value = buildMonthly(rows)
     statusDist.value = buildStatusDist(rows)
-    lowStock.value = low.content
+    lowStock.value = low?.content ?? []
   } catch (error) {
     setError(error)
   } finally {
