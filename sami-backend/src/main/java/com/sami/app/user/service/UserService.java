@@ -95,7 +95,7 @@ public class UserService {
         List<User> users = userRepository.findAll(toSpecification(filter),
                 Sort.by(Sort.Direction.ASC, "id"));
         StringBuilder csv = new StringBuilder(
-                "id,email,fullName,firstName,lastName,phoneNumber,employeeCode,nationalCode,status,role,createdAt\n");
+                "\uFEFFid,email,fullName,firstName,lastName,phoneNumber,employeeCode,nationalCode,status,role,createdAt\n");
         for (User user : users) {
             UserProfile p = user.getProfile();
             csv.append(csvRow(

@@ -55,7 +55,7 @@ public class KpiController {
     @Operation(summary = "Export the executive KPI summary as CSV")
     public org.springframework.http.ResponseEntity<String> export() {
         return org.springframework.http.ResponseEntity.ok()
-                .contentType(org.springframework.http.MediaType.parseMediaType("text/csv"))
+                .contentType(org.springframework.http.MediaType.parseMediaType("text/csv;charset=UTF-8"))
                 .header("Content-Disposition", "attachment; filename=\"kpi-report.csv\"")
                 .body(kpiService.exportCsv());
     }

@@ -423,7 +423,7 @@ public class FileController {
         return ApiResponse.ok(reportService.run(report));
     }
 
-    @GetMapping(value = "/reports/{report}/export.csv", produces = "text/csv")
+    @GetMapping(value = "/reports/{report}/export.csv", produces = "text/csv;charset=UTF-8")
     @PreAuthorize("@authz.has('files:export')")
     @Operation(summary = "Export a storage report as CSV")
     public ResponseEntity<String> exportReport(@PathVariable String report) {

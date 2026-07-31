@@ -154,10 +154,10 @@ public class KnowledgeReportService {
 
     public String toCsv(List<Map<String, Object>> rows) {
         if (rows.isEmpty()) {
-            return "";
+            return "\uFEFF";
         }
         List<String> headers = new ArrayList<>(rows.get(0).keySet());
-        StringBuilder csv = new StringBuilder(String.join(",", headers)).append('\n');
+        StringBuilder csv = new StringBuilder("\uFEFF").append(String.join(",", headers)).append('\n');
         for (Map<String, Object> row : rows) {
             csv.append(headers.stream().map(h -> escape(row.get(h)))
                     .collect(Collectors.joining(","))).append('\n');

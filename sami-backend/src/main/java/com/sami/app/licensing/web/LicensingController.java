@@ -316,7 +316,7 @@ public class LicensingController {
         return ApiResponse.ok(reportService.planComparison());
     }
 
-    @GetMapping(value = "/reports/{report}/export.csv", produces = "text/csv")
+    @GetMapping(value = "/reports/{report}/export.csv", produces = "text/csv;charset=UTF-8")
     @PreAuthorize("@authz.has('licensing:export')")
     @Operation(summary = "Export a report as CSV")
     public org.springframework.http.ResponseEntity<String> exportCsv(
@@ -332,7 +332,7 @@ public class LicensingController {
             default -> List.of();
         };
         return org.springframework.http.ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType("text/csv"))
+                .contentType(MediaType.parseMediaType("text/csv;charset=UTF-8"))
                 .header("Content-Disposition", "attachment; filename=\"" + report + ".csv\"")
                 .body(reportService.toCsv(rows));
     }

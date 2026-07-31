@@ -146,7 +146,7 @@ public class KpiService {
     @Transactional(readOnly = true)
     public String exportCsv() {
         StringBuilder csv = new StringBuilder(
-                "code,name,status,latestValue,thresholdLevel,target,unit,computedAt\n");
+                "\uFEFFcode,name,status,latestValue,thresholdLevel,target,unit,computedAt\n");
         for (KpiDefinition kpi : kpiRepository.findAll()) {
             var latest = calculationService.latest(kpi.getId()).orElse(null);
             csv.append(csvRow(

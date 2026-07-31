@@ -335,7 +335,7 @@ public class KnowledgeController {
         return ApiResponse.ok(reportService.run(report));
     }
 
-    @GetMapping(value = "/reports/{report}/export.csv", produces = "text/csv")
+    @GetMapping(value = "/reports/{report}/export.csv", produces = "text/csv;charset=UTF-8")
     @PreAuthorize("@authz.has('knowledge:export')")
     @Operation(summary = "Export a knowledge report as CSV")
     public ResponseEntity<String> exportReport(@PathVariable String report) {

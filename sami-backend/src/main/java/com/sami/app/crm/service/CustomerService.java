@@ -87,7 +87,7 @@ public class CustomerService {
         List<Customer> customers = customerRepository.findAll(toSpecification(filter),
                 Sort.by(Sort.Direction.ASC, "id"));
         StringBuilder csv = new StringBuilder(
-                "code,displayName,firstName,lastName,company,nationalCode,defaultPhone,defaultEmail,type,status,source,createdAt\n");
+                "\uFEFFcode,displayName,firstName,lastName,company,nationalCode,defaultPhone,defaultEmail,type,status,source,createdAt\n");
         for (Customer c : customers) {
             csv.append(csvRow(
                     c.getCustomerCode(), c.getDisplayName(), c.getFirstName(), c.getLastName(),

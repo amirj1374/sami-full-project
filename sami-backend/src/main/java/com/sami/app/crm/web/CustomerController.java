@@ -69,7 +69,7 @@ public class CustomerController {
     @Operation(summary = "Export customers matching the current filters as CSV")
     public ResponseEntity<String> export(CustomerFilter filter) {
         return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType("text/csv"))
+                .contentType(MediaType.parseMediaType("text/csv;charset=UTF-8"))
                 .header("Content-Disposition", "attachment; filename=\"customers.csv\"")
                 .body(customerService.exportCsv(filter));
     }
