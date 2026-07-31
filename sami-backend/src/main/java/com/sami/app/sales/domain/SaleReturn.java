@@ -1,0 +1,4 @@
+package com.sami.app.sales.domain;
+import com.sami.app.common.domain.BaseEntity; import jakarta.persistence.*; import lombok.*; import java.math.BigDecimal; import java.util.*;
+@Entity @Table(name="sale_returns") @Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
+public class SaleReturn extends BaseEntity { @ManyToOne(fetch=FetchType.LAZY) @JoinColumn(name="sale_id") private Sale sale; @Column(name="tenant_id") private Long tenantId; @Column(name="return_number") private String returnNumber; @Column private String reason; @Column(name="refund_method") private String refundMethod; @Column(name="total_amount") private BigDecimal totalAmount; @Column(name="created_by") private Long createdBy; @OneToMany(mappedBy="saleReturn",cascade=CascadeType.ALL,orphanRemoval=true) @Builder.Default private List<SaleReturnItem> items=new ArrayList<>(); }

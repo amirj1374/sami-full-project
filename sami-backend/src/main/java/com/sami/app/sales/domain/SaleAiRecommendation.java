@@ -1,0 +1,4 @@
+package com.sami.app.sales.domain;
+import com.sami.app.common.domain.BaseEntity; import jakarta.persistence.*; import lombok.*; import org.hibernate.annotations.JdbcTypeCode; import org.hibernate.type.SqlTypes; import java.util.*;
+@Entity @Table(name="sale_ai_recommendations") @Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
+public class SaleAiRecommendation extends BaseEntity { @Column(name="tenant_id",nullable=false) private Long tenantId; @Column(name="sale_id") private Long saleId; @Column(name="recommendation_type",nullable=false) private String recommendationType; @JdbcTypeCode(SqlTypes.JSON) @Column(name="request_data",nullable=false) private Map<String,Object> requestData; @JdbcTypeCode(SqlTypes.JSON) @Column(name="result_data",nullable=false) private Map<String,Object> resultData; @Column private Boolean accepted; @Column(name="model_key") private String modelKey; @Column(name="created_by") private Long createdBy; }
