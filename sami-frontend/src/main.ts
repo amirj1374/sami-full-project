@@ -17,6 +17,7 @@ import {
   PUSH_NOTIFICATION_CLICK_MESSAGE,
   PUSH_SUBSCRIPTION_CHANGED_MESSAGE,
 } from './types/pushNotifications'
+import { exposeBuildInfo } from './buildInfo'
 
 // Apply the persisted (or default Persian) locale, setting <html lang/dir> before mount.
 setLocale(getStoredLocale())
@@ -52,6 +53,7 @@ registerAuthRefreshHandler((user) => {
  * flag is off, none of this runs and startup is byte-for-byte the original.
  */
 async function bootstrap(): Promise<void> {
+  exposeBuildInfo()
   if (MOCK_MODE) {
     const { startMockWorker } = await import('./mocks/browser')
     await startMockWorker()

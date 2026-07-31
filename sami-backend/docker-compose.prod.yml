@@ -45,6 +45,10 @@ services:
   backend:
     build:
       context: .
+      args:
+        BUILD_BRANCH: ${BUILD_BRANCH:-unknown}
+        BUILD_COMMIT: ${BUILD_COMMIT:-unknown}
+        APP_VERSION: ${APP_VERSION:-0.1.0}
     restart: unless-stopped
     depends_on:
       db:
@@ -79,6 +83,10 @@ services:
       context: ../sami-frontend
       args:
         VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api}
+        VITE_BUILD_BRANCH: ${BUILD_BRANCH:-unknown}
+        VITE_BUILD_COMMIT: ${BUILD_COMMIT:-unknown}
+        VITE_BUILD_TIMESTAMP: ${BUILD_TIMESTAMP:-unknown}
+        VITE_APP_VERSION: ${APP_VERSION:-0.1.0}
     restart: unless-stopped
     depends_on:
       backend:
