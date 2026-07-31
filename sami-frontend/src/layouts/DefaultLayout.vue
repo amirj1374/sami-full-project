@@ -42,6 +42,10 @@ const TITLE_KEYS: Record<string, string> = {
   suppliers: 'suppliers.title',
   purchases: 'purchases.title',
   customers: 'customers.title',
+  automations: 'automation.title',
+  scheduler: 'scheduler.title',
+  'data-quality': 'dataQuality.title',
+  profile: 'profile.title',
   users: 'users.title',
   roles: 'roles.title',
   permissions: 'permissions.title',
@@ -101,7 +105,10 @@ function onGlobalKey(e: KeyboardEvent): void {
 
 watch(
   () => route.path,
-  (path) => recordVisit(path),
+  (path) => {
+    recordVisit(path)
+    if (mobile.value) drawer.value = false
+  },
   { immediate: true },
 )
 
@@ -255,6 +262,10 @@ async function logout(): Promise<void> {
       @click="drawer = !drawer"
     />
 
+    <div v-if="mobile" class="app-mobile-title ms-1">
+      <span class="text-subtitle-1 font-weight-bold text-truncate">{{ pageTitle }}</span>
+    </div>
+
     <div class="d-none d-sm-flex flex-column justify-center ms-2">
       <v-breadcrumbs :items="breadcrumbs" density="compact" divider="/" class="pa-0 app-breadcrumbs">
         <template #title="{ item }">
@@ -288,7 +299,7 @@ async function logout(): Promise<void> {
     />
 
     <!-- Branch selector (single branch today) -->
-    <v-menu location="bottom end">
+    <v-menu v-if="!mobile" location="bottom end">
       <template #activator="{ props: p }">
         <v-btn variant="text" class="text-none d-none d-sm-flex" v-bind="p">
           <v-icon icon="mdi-store-outline" size="18" class="me-2" />
@@ -308,7 +319,7 @@ async function logout(): Promise<void> {
     </v-menu>
 
     <!-- Notifications -->
-    <v-menu location="bottom end" :close-on-content-click="false">
+    <v-menu v-if="!mobile" location="bottom end" :close-on-content-click="false">
       <template #activator="{ props: p }">
         <v-btn icon="mdi-bell-outline" variant="text" v-bind="p" :aria-label="t('layout.notifications')" />
       </template>
@@ -325,7 +336,7 @@ async function logout(): Promise<void> {
     </v-menu>
 
     <!-- Theme switch -->
-    <v-menu location="bottom end">
+    <v-menu v-if="!mobile" location="bottom end">
       <template #activator="{ props: p }">
         <v-btn
           :icon="isDark ? 'mdi-weather-night' : 'mdi-white-balance-sunny'"
@@ -347,7 +358,7 @@ async function logout(): Promise<void> {
       </v-list>
     </v-menu>
 
-    <LanguageSwitcher />
+    <LanguageSwitcher v-if="!mobile" />
 
     <!-- Profile -->
     <v-menu location="bottom end">
@@ -377,6 +388,12 @@ async function logout(): Promise<void> {
         <v-list density="compact" nav class="pa-2">
           <v-list-item
             rounded="lg"
+            prepend-icon="mdi-account-circle-outline"
+            :title="t('profile.title')"
+            :to="{ name: 'profile' }"
+          />
+          <v-list-item
+            rounded="lg"
             prepend-icon="mdi-lock-reset"
             :title="t('shell.changePassword')"
             @click="changePasswordOpen = true"
@@ -394,7 +411,7 @@ async function logout(): Promise<void> {
   </v-app-bar>
 
   <v-main class="app-main">
-    <v-container class="py-6">
+    <v-container class="app-content-container py-6">
       <router-view v-slot="{ Component }">
         <transition name="route-fade" mode="out-in">
           <component :is="Component" />
@@ -451,5 +468,19 @@ async function logout(): Promise<void> {
 .app-breadcrumbs :deep(.v-breadcrumbs-item) {
   font-size: 0.72rem;
   padding: 0;
+}
+.app-mobile-title {
+  min-width: 0;
+  max-width: 42vw;
+}
+@media (max-width: 599px) {
+  .app-topbar {
+    padding-top: env(safe-area-inset-top);
+  }
+  .app-content-container {
+    width: 100%;
+    max-width: none;
+    padding: 18px 14px max(24px, env(safe-area-inset-bottom)) !important;
+  }
 }
 </style>

@@ -2,11 +2,46 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#26375F" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="SAMI" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/icons/sami-app-icon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/sami-32.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/sami-180.png" />
     <title>Sami</title>
   </head>
   <body>
-    <div id="app"></div>
+    <div id="app">
+      <div class="app-boot" role="status" aria-label="Loading SAMI ERP">
+        <img src="/icons/sami-app-icon.svg" alt="" width="72" height="72" />
+        <span>SAMI ERP</span>
+      </div>
+    </div>
+    <style>
+      .app-boot {
+        align-items: center;
+        background: #f6f7fb;
+        color: #26375f;
+        display: flex;
+        flex-direction: column;
+        font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        font-weight: 700;
+        gap: 1rem;
+        inset: 0;
+        justify-content: center;
+        min-height: 100dvh;
+        position: fixed;
+      }
+
+      .app-boot img {
+        border-radius: 1.25rem;
+        box-shadow: 0 1rem 2.5rem rgba(38, 55, 95, 0.18);
+      }
+    </style>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

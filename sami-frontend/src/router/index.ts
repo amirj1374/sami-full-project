@@ -77,6 +77,24 @@ const routes: RouteRecordRaw[] = [
         meta: { requiresAuth: true, permission: 'customers:view' },
       },
       {
+        path: 'automations',
+        name: 'automations',
+        component: () => import('@/views/AutomationsView.vue'),
+        meta: { requiresAuth: true, permission: 'automation:view' },
+      },
+      {
+        path: 'scheduler',
+        name: 'scheduler',
+        component: () => import('@/views/SchedulerView.vue'),
+        meta: { requiresAuth: true, permission: 'scheduler:view' },
+      },
+      {
+        path: 'data-quality',
+        name: 'data-quality',
+        component: () => import('@/views/DataQualityView.vue'),
+        meta: { requiresAuth: true, permission: 'data-quality:view' },
+      },
+      {
         path: 'users',
         name: 'users',
         component: () => import('@/views/admin/UsersView.vue'),
@@ -104,6 +122,12 @@ const routes: RouteRecordRaw[] = [
         path: 'forbidden',
         name: 'forbidden',
         component: () => import('@/views/ForbiddenView.vue'),
+        meta: { requiresAuth: true },
+      },
+      {
+        path: 'profile',
+        name: 'profile',
+        component: () => import('@/views/ProfileView.vue'),
         meta: { requiresAuth: true },
       },
     ],

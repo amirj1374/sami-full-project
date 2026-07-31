@@ -12,6 +12,7 @@ import { useServerLabel } from '@/composables/useServerLabel'
 import { useApiError } from '@/composables/useApiError'
 import UserFormDialog from '@/components/UserFormDialog.vue'
 import UserAuditDialog from '@/components/UserAuditDialog.vue'
+import AppPageHeader from '@/components/AppPageHeader.vue'
 import type {
   AdminUser,
   BulkResult,
@@ -272,14 +273,12 @@ function statusColor(status: UserStatus): string {
 
 <template>
   <div>
-    <div class="d-flex align-center mb-4">
-      <h1 class="text-h4">{{ t('users.title') }}</h1>
-      <v-spacer />
+    <AppPageHeader icon="mdi-account-cog-outline" :title="t('users.title')">
+      <template #actions>
       <v-btn
         v-can="'users:export'"
         variant="tonal"
         prepend-icon="mdi-download"
-        class="mr-2"
         :loading="exporting"
         @click="exportCsv"
       >
@@ -288,13 +287,14 @@ function statusColor(status: UserStatus): string {
       <v-btn v-can="'users:create'" color="primary" prepend-icon="mdi-plus" @click="openCreate">
         {{ t('users.newUser') }}
       </v-btn>
-    </div>
+      </template>
+    </AppPageHeader>
 
     <v-alert v-if="errorMessage" type="error" variant="tonal" density="compact" class="mb-4">
       {{ errorMessage }}
     </v-alert>
 
-    <v-card rounded="lg" border flat>
+    <v-card rounded="lg" border flat class="app-data-surface">
       <v-card-text>
         <v-row dense align="center">
           <v-col cols="12" sm="4">

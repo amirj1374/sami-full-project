@@ -51,4 +51,30 @@ withDefaults(
   letter-spacing: 1.4px;
   line-height: 1.4;
 }
+@media (max-width: 599px) {
+  .app-page-header {
+    gap: 12px !important;
+    margin-bottom: 18px !important;
+  }
+  .app-page-header__badge {
+    width: 42px;
+    height: 42px;
+  }
+  .app-page-header__badge :deep(.v-icon) {
+    font-size: 22px !important;
+  }
+  .app-page-header__text {
+    min-width: calc(100% - 56px);
+  }
+  .app-page-header__text h1 {
+    font-size: 1.35rem !important;
+    line-height: 1.35;
+  }
+  .app-page-header__actions {
+    width: 100%;
+  }
+  .app-page-header__actions :deep(.v-btn) {
+    flex: 1;
+  }
+}
 </style>

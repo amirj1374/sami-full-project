@@ -7,6 +7,7 @@ import { usePermission } from '@/composables/usePermission'
 import { useApiError } from '@/composables/useApiError'
 import { useFormat } from '@/composables/useFormat'
 import ProductFormDialog from '@/components/ProductFormDialog.vue'
+import AppPageHeader from '@/components/AppPageHeader.vue'
 import type { Product } from '@/types/models'
 
 const { t } = useI18n()
@@ -115,19 +116,15 @@ function formatPrice(value: number): string {
 
 <template>
   <div>
-    <div class="d-flex align-center mb-4">
-      <h1 class="text-h4">{{ t('products.title') }}</h1>
-      <v-spacer />
-      <v-btn v-if="can('products:create')" color="primary" prepend-icon="mdi-plus" @click="openCreate">
-        {{ t('products.newProduct') }}
-      </v-btn>
-    </div>
+    <AppPageHeader icon="mdi-package-variant-closed" :title="t('products.title')">
+      <template #actions><v-btn v-if="can('products:create')" color="primary" prepend-icon="mdi-plus" @click="openCreate">{{ t('products.newProduct') }}</v-btn></template>
+    </AppPageHeader>
 
     <v-alert v-if="errorMessage" type="error" variant="tonal" density="compact" class="mb-4">
       {{ errorMessage }}
     </v-alert>
 
-    <v-card rounded="lg" border flat>
+    <v-card rounded="lg" border flat class="app-data-surface">
       <v-card-text>
         <v-row dense>
           <v-col cols="12" sm="6">

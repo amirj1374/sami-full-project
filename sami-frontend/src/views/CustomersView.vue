@@ -11,6 +11,7 @@ import { useFormat } from '@/composables/useFormat'
 import CustomerFormDialog from '@/components/CustomerFormDialog.vue'
 import CustomerProfileDialog from '@/components/CustomerProfileDialog.vue'
 import CustomerMergeDialog from '@/components/CustomerMergeDialog.vue'
+import AppPageHeader from '@/components/AppPageHeader.vue'
 import type {
   BlacklistReason,
   Customer,
@@ -309,9 +310,8 @@ function statusColor(status: CustomerStatus): string {
 
 <template>
   <div>
-    <div class="d-flex align-center mb-4">
-      <h1 class="text-h4">{{ t('customers.title') }}</h1>
-      <v-spacer />
+    <AppPageHeader icon="mdi-account-group-outline" :title="t('customers.title')">
+      <template #actions>
       <input
         ref="importInput"
         type="file"
@@ -323,7 +323,6 @@ function statusColor(status: CustomerStatus): string {
         v-can="'customers:import'"
         variant="tonal"
         prepend-icon="mdi-upload"
-        class="mr-2"
         :loading="importing"
         @click="importInput?.click()"
       >
@@ -333,7 +332,6 @@ function statusColor(status: CustomerStatus): string {
         v-can="'customers:export'"
         variant="tonal"
         prepend-icon="mdi-download"
-        class="mr-2"
         :loading="exporting"
         @click="exportCsv"
       >
@@ -342,13 +340,14 @@ function statusColor(status: CustomerStatus): string {
       <v-btn v-can="'customers:create'" color="primary" prepend-icon="mdi-plus" @click="openCreate">
         {{ t('customers.actions.newCustomer') }}
       </v-btn>
-    </div>
+      </template>
+    </AppPageHeader>
 
     <v-alert v-if="errorMessage" type="error" variant="tonal" density="compact" class="mb-4">
       {{ errorMessage }}
     </v-alert>
 
-    <v-card rounded="lg" border flat>
+    <v-card rounded="lg" border flat class="app-data-surface">
       <v-card-text>
         <v-row dense align="center">
           <v-col cols="12" sm="4">

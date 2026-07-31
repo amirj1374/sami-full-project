@@ -9,6 +9,7 @@ import { useApiError } from '@/composables/useApiError'
 import { useFormat } from '@/composables/useFormat'
 import PurchaseFormDialog from '@/components/PurchaseFormDialog.vue'
 import PurchaseDetailDialog from '@/components/PurchaseDetailDialog.vue'
+import AppPageHeader from '@/components/AppPageHeader.vue'
 import type {
   PurCancelReason,
   PurIdentifierType,
@@ -185,19 +186,15 @@ function statusColor(status: PurStatus): string {
 
 <template>
   <div>
-    <div class="d-flex align-center mb-4">
-      <h1 class="text-h4">{{ t('purchases.title') }}</h1>
-      <v-spacer />
-      <v-btn v-can="'purchasing:create'" color="primary" prepend-icon="mdi-plus" @click="openCreate">
-        {{ t('purchases.newPurchase') }}
-      </v-btn>
-    </div>
+    <AppPageHeader icon="mdi-cart-outline" :title="t('purchases.title')">
+      <template #actions><v-btn v-can="'purchasing:create'" color="primary" prepend-icon="mdi-plus" @click="openCreate">{{ t('purchases.newPurchase') }}</v-btn></template>
+    </AppPageHeader>
 
     <v-alert v-if="errorMessage" type="error" variant="tonal" density="compact" class="mb-4">
       {{ errorMessage }}
     </v-alert>
 
-    <v-card rounded="lg" border flat>
+    <v-card rounded="lg" border flat class="app-data-surface">
       <v-card-text>
         <v-row dense align="center">
           <v-col cols="12" sm="3">

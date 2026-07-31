@@ -6,6 +6,7 @@ import { toTypedSchema } from '@vee-validate/zod'
 import { moduleSchema } from '@/schemas/admin'
 import { modulesApi } from '@/api/modules'
 import { useApiError } from '@/composables/useApiError'
+import AppPageHeader from '@/components/AppPageHeader.vue'
 import type { PageQuery } from '@/types/api'
 import type { AppModule, ModuleStatus } from '@/types/models'
 
@@ -340,19 +341,13 @@ async function confirmDelete() {
 
 <template>
   <div>
-    <div class="d-flex align-center mb-4">
-      <h1 class="text-h4">{{ t('modules.title') }}</h1>
-      <v-spacer />
-      <v-btn v-can="'modules:create'" color="primary" prepend-icon="mdi-plus" @click="openCreate">
-        {{ t('modules.new') }}
-      </v-btn>
-    </div>
+    <AppPageHeader icon="mdi-view-grid-plus-outline" :title="t('modules.title')"><template #actions><v-btn v-can="'modules:create'" color="primary" prepend-icon="mdi-plus" @click="openCreate">{{ t('modules.new') }}</v-btn></template></AppPageHeader>
 
     <v-alert v-if="errorMessage" type="error" variant="tonal" density="compact" class="mb-4">
       {{ errorMessage }}
     </v-alert>
 
-    <v-card rounded="lg" border flat>
+    <v-card rounded="lg" border flat class="app-data-surface">
       <v-data-table-server
         :headers="headers"
         :items="items"

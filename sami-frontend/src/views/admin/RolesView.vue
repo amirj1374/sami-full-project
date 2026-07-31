@@ -8,6 +8,7 @@ import { rolesApi } from '@/api/roles'
 import { useApiError } from '@/composables/useApiError'
 import { useServerLabel } from '@/composables/useServerLabel'
 import PermissionMatrixDialog from '@/components/PermissionMatrixDialog.vue'
+import AppPageHeader from '@/components/AppPageHeader.vue'
 import type { PageQuery } from '@/types/api'
 import type { Role } from '@/types/models'
 
@@ -195,19 +196,13 @@ async function confirmDelete() {
 
 <template>
   <div>
-    <div class="d-flex align-center mb-4">
-      <h1 class="text-h4">{{ t('roles.title') }}</h1>
-      <v-spacer />
-      <v-btn v-can="'roles:create'" color="primary" prepend-icon="mdi-plus" @click="openCreate">
-        {{ t('roles.new') }}
-      </v-btn>
-    </div>
+    <AppPageHeader icon="mdi-shield-account-outline" :title="t('roles.title')"><template #actions><v-btn v-can="'roles:create'" color="primary" prepend-icon="mdi-plus" @click="openCreate">{{ t('roles.new') }}</v-btn></template></AppPageHeader>
 
     <v-alert v-if="errorMessage" type="error" variant="tonal" density="compact" class="mb-4">
       {{ errorMessage }}
     </v-alert>
 
-    <v-card rounded="lg" border flat>
+    <v-card rounded="lg" border flat class="app-data-surface">
       <v-data-table-server
         :headers="headers"
         :items="items"

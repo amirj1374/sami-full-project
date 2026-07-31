@@ -6,6 +6,7 @@ import { toTypedSchema } from '@vee-validate/zod'
 import { permissionSchema } from '@/schemas/admin'
 import { permissionsApi, type PermissionListParams } from '@/api/permissions'
 import { useApiError } from '@/composables/useApiError'
+import AppPageHeader from '@/components/AppPageHeader.vue'
 import type { ModulePermissionsGroup, Permission } from '@/types/models'
 
 const { t } = useI18n()
@@ -189,9 +190,7 @@ async function confirmDelete() {
 
 <template>
   <div>
-    <div class="d-flex align-center mb-4">
-      <h1 class="text-h4">{{ t('permissions.title') }}</h1>
-      <v-spacer />
+    <AppPageHeader icon="mdi-key-chain-variant" :title="t('permissions.title')"><template #actions>
       <v-btn
         v-can="'permissions:create'"
         color="primary"
@@ -200,13 +199,13 @@ async function confirmDelete() {
       >
         {{ t('permissions.new') }}
       </v-btn>
-    </div>
+    </template></AppPageHeader>
 
     <v-alert v-if="errorMessage" type="error" variant="tonal" density="compact" class="mb-4">
       {{ errorMessage }}
     </v-alert>
 
-    <v-card rounded="lg" border flat>
+    <v-card rounded="lg" border flat class="app-data-surface">
       <v-card-text>
         <v-row dense>
           <v-col cols="12" sm="6">

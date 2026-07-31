@@ -7,12 +7,15 @@ import { toTypedSchema } from '@vee-validate/zod'
 import { authApi } from '@/api/auth'
 import { useApiError } from '@/composables/useApiError'
 import { resetPasswordSchema } from '@/schemas/auth'
+import AuthCard from '@/components/AuthCard.vue'
 
 const { t } = useI18n()
 const route = useRoute()
 const { message: errorMessage, set: setError, clear: clearError } = useApiError()
 const loading = ref(false)
 const done = ref(false)
+const showNewPassword = ref(false)
+const showConfirmPassword = ref(false)
 
 /** The reset token arrives via the emailed link's `?token=` query parameter. */
 const token = computed(() =>
@@ -20,7 +23,7 @@ const token = computed(() =>
 )
 
 const { handleSubmit, defineField, errors } = useForm({
-  validationSchema: toTypedSchema(resetPasswordSchema(t)),
+  validationSchema: computed(() => toTypedSchema(resetPasswordSchema(t))),
   initialValues: { newPassword: '', confirmPassword: '' },
 })
 const [newPassword, newPasswordProps] = defineField('newPassword')
@@ -42,11 +45,7 @@ const onSubmit = handleSubmit(async (values) => {
 </script>
 
 <template>
-  <v-card elevation="4" rounded="lg">
-    <v-card-title class="text-h5 pt-6 px-6">{{ t('auth.resetTitle') }}</v-card-title>
-    <v-card-subtitle class="px-6">{{ t('auth.resetSubtitle') }}</v-card-subtitle>
-
-    <v-card-text class="px-6">
+  <AuthCard :title="t('auth.resetTitle')" :subtitle="t('auth.resetSubtitle')">
       <v-alert v-if="!token" type="warning" variant="tonal" density="compact" class="mb-4">
         {{ t('auth.resetInvalidLink') }}
       </v-alert>
@@ -66,18 +65,22 @@ const onSubmit = handleSubmit(async (values) => {
             v-bind="newPasswordProps"
             :error-messages="errors.newPassword"
             :label="t('auth.newPassword')"
-            type="password"
+            :type="showNewPassword ? 'text' : 'password'"
             autocomplete="new-password"
             prepend-inner-icon="mdi-lock-plus-outline"
+            :append-inner-icon="showNewPassword ? 'mdi-eye-off-outline' : 'mdi-eye-outline'"
+            @click:append-inner="showNewPassword = !showNewPassword"
           />
           <v-text-field
             v-model="confirmPassword"
             v-bind="confirmPasswordProps"
             :error-messages="errors.confirmPassword"
             :label="t('auth.confirmNewPassword')"
-            type="password"
+            :type="showConfirmPassword ? 'text' : 'password'"
             autocomplete="new-password"
             prepend-inner-icon="mdi-lock-check-outline"
+            :append-inner-icon="showConfirmPassword ? 'mdi-eye-off-outline' : 'mdi-eye-outline'"
+            @click:append-inner="showConfirmPassword = !showConfirmPassword"
           />
 
           <v-btn type="submit" color="primary" block size="large" :loading="loading" class="mt-2">
@@ -85,15 +88,13 @@ const onSubmit = handleSubmit(async (values) => {
           </v-btn>
         </v-form>
       </template>
-    </v-card-text>
-
-    <v-card-actions class="justify-center pb-6">
+    <template #actions>
       <v-btn v-if="!token" variant="text" :to="{ name: 'forgot-password' }" color="primary">
         {{ t('auth.requestNewLink') }}
       </v-btn>
       <v-btn v-else variant="text" :to="{ name: 'login' }" color="primary">
         {{ done ? t('auth.signInButton') : t('auth.backToSignIn') }}
       </v-btn>
-    </v-card-actions>
-  </v-card>
+    </template>
+  </AuthCard>
 </template>

@@ -11,11 +11,13 @@ import { purchasesApi } from '@/api/purchases'
 import type { Product, PurchaseRow } from '@/types/models'
 import AppPageHeader from '@/components/AppPageHeader.vue'
 import AppEmptyState from '@/components/AppEmptyState.vue'
+import { useApiError } from '@/composables/useApiError'
 
 const { t } = useI18n()
 const auth = useAuthStore()
 const { formatNumber, formatDate } = useFormat()
 const { statusLabel } = useServerLabel()
+const { message: errorMessage, set: setError, clear: clearError } = useApiError()
 
 const loading = ref(true)
 const counts = ref({ products: 0, activeProducts: 0, customers: 0, suppliers: 0, purchases: 0 })
@@ -96,6 +98,7 @@ function buildStatusDist(rows: PurchaseRow[]): { name: string; value: number; co
 
 async function load(): Promise<void> {
   loading.value = true
+  clearError()
   try {
     const [products, active, customers, suppliers, purchasePage, low] = await Promise.all([
       productsApi.list({ size: 1 }),
@@ -118,6 +121,8 @@ async function load(): Promise<void> {
     monthly.value = buildMonthly(rows)
     statusDist.value = buildStatusDist(rows)
     lowStock.value = low.content
+  } catch (error) {
+    setError(error)
   } finally {
     loading.value = false
   }
@@ -151,9 +156,23 @@ onMounted(load)
       </i18n-t>
     </p>
 
+    <v-alert
+      v-if="errorMessage"
+      type="error"
+      variant="tonal"
+      class="mb-5"
+      closable
+      @click:close="clearError"
+    >
+      <div class="d-flex flex-wrap align-center ga-3">
+        <span class="flex-grow-1">{{ errorMessage }}</span>
+        <v-btn size="small" variant="text" :loading="loading" @click="load">{{ t('common.refresh') }}</v-btn>
+      </div>
+    </v-alert>
+
     <!-- KPI cards -->
     <v-row>
-      <v-col v-for="kpi in kpis" :key="kpi.key" cols="12" sm="6" lg="3">
+      <v-col v-for="kpi in kpis" :key="kpi.key" cols="6" lg="3">
         <v-card rounded="lg" border flat class="kpi-card app-elevate h-100">
           <v-card-text class="d-flex align-center ga-4">
             <span :class="['kpi-icon', { 'kpi-icon--accent': kpi.accent }]">
@@ -257,7 +276,31 @@ onMounted(load)
             <div v-for="n in 5" :key="n" class="app-skeleton" style="height: 40px" />
           </div>
           <template v-else-if="recentPurchases.length">
-            <v-table density="comfortable" class="dash-table">
+            <div class="d-sm-none pa-3 d-flex flex-column ga-2">
+              <v-card
+                v-for="p in recentPurchases"
+                :key="p.id"
+                :to="{ name: 'purchases' }"
+                variant="tonal"
+                rounded="lg"
+                class="purchase-mobile-card"
+              >
+                <v-card-text class="pa-3">
+                  <div class="d-flex align-start justify-space-between ga-3">
+                    <div class="min-width-0">
+                      <div class="text-body-2 font-weight-bold">{{ p.purchaseNumber }}</div>
+                      <div class="text-caption text-medium-emphasis text-truncate">{{ p.supplierName }}</div>
+                    </div>
+                    <v-chip size="x-small" variant="tonal" label>{{ statusLabel(p.status.name) }}</v-chip>
+                  </div>
+                  <div class="d-flex align-center justify-space-between mt-3">
+                    <span class="text-caption text-medium-emphasis">{{ formatDate(p.createdAt) }}</span>
+                    <span class="text-body-2 font-weight-bold">{{ formatNumber(p.totalAmount) }}</span>
+                  </div>
+                </v-card-text>
+              </v-card>
+            </div>
+            <v-table density="comfortable" class="dash-table d-none d-sm-block">
               <thead>
                 <tr>
                   <th>{{ t('dashboard.colNumber') }}</th>
@@ -398,5 +441,29 @@ onMounted(load)
   text-transform: uppercase;
   letter-spacing: 0.4px;
   color: rgba(var(--v-theme-on-surface), 0.55) !important;
+}
+.min-width-0 {
+  min-width: 0;
+}
+.purchase-mobile-card {
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+}
+@media (max-width: 599px) {
+  .kpi-card :deep(.v-card-text) {
+    min-height: 138px;
+    padding: 14px;
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 10px !important;
+  }
+  .kpi-icon {
+    width: 42px;
+    height: 42px;
+  }
+  .donut-wrap,
+  .donut {
+    width: 144px;
+    height: 144px;
+  }
 }
 </style>
