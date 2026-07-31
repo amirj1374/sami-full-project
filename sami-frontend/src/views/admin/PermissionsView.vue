@@ -6,17 +6,20 @@ import { toTypedSchema } from '@vee-validate/zod'
 import { permissionSchema } from '@/schemas/admin'
 import { permissionsApi, type PermissionListParams } from '@/api/permissions'
 import { useApiError } from '@/composables/useApiError'
+import AppPageHeader from '@/components/AppPageHeader.vue'
 import type { ModulePermissionsGroup, Permission } from '@/types/models'
+import { useServerLabel } from '@/composables/useServerLabel'
 
 const { t } = useI18n()
 const { message: errorMessage, set: setError, clear: clearError } = useApiError()
+const { moduleLabel, permissionLabel } = useServerLabel()
 
 // --- Module options -------------------------------------------------------
 // Sourced from the grouped endpoint (permissions:view suffices) rather than
 // the modules list (which would require modules:view on top).
 const groups = ref<ModulePermissionsGroup[]>([])
 const moduleOptions = computed(() =>
-  groups.value.map((group) => ({ title: group.moduleName, value: group.moduleId })),
+  groups.value.map((group) => ({ title: moduleLabel(group.moduleCode, group.moduleName), value: group.moduleId })),
 )
 const moduleCodeById = computed(
   () => new Map(groups.value.map((group) => [group.moduleId, group.moduleCode])),
@@ -46,14 +49,14 @@ const totalItems = ref(0)
 const loading = ref(false)
 const lastOptions = ref<TableOptions>({ page: 1, itemsPerPage: 10, sortBy: [] })
 
-const headers = [
+const headers = computed(() => [
   { title: t('permissions.code'), key: 'code' },
   { title: t('permissions.name'), key: 'name' },
   { title: t('permissions.module'), key: 'module', sortable: false },
   { title: t('permissions.description'), key: 'description', sortable: false },
   { title: t('permissions.system'), key: 'isSystem', sortable: false },
   { title: '', key: 'actions', sortable: false, align: 'end' as const },
-]
+])
 
 // --- Filters --------------------------------------------------------------
 const moduleFilter = ref<number | null>(null)
@@ -189,9 +192,7 @@ async function confirmDelete() {
 
 <template>
   <div>
-    <div class="d-flex align-center mb-4">
-      <h1 class="text-h4">{{ t('permissions.title') }}</h1>
-      <v-spacer />
+    <AppPageHeader icon="mdi-key-chain-variant" :title="t('permissions.title')"><template #actions>
       <v-btn
         v-can="'permissions:create'"
         color="primary"
@@ -200,13 +201,13 @@ async function confirmDelete() {
       >
         {{ t('permissions.new') }}
       </v-btn>
-    </div>
+    </template></AppPageHeader>
 
     <v-alert v-if="errorMessage" type="error" variant="tonal" density="compact" class="mb-4">
       {{ errorMessage }}
     </v-alert>
 
-    <v-card rounded="lg" border flat>
+    <v-card rounded="lg" border flat class="app-data-surface">
       <v-card-text>
         <v-row dense>
           <v-col cols="12" sm="6">
@@ -232,7 +233,8 @@ async function confirmDelete() {
         <template #[`item.code`]="{ item }">
           <code>{{ item.code }}</code>
         </template>
-        <template #[`item.module`]="{ item }">{{ item.moduleName }}</template>
+        <template #[`item.name`]="{ item }">{{ permissionLabel(item.code, item.name) }}</template>
+        <template #[`item.module`]="{ item }">{{ moduleLabel(item.moduleCode, item.moduleName) }}</template>
         <template #[`item.description`]="{ item }">
           <span class="text-medium-emphasis">{{ item.description ?? '—' }}</span>
         </template>

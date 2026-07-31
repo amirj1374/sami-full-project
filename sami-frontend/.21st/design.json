@@ -1,0 +1,79 @@
+{
+  "version": 1,
+  "project": {
+    "name": "sami-frontend",
+    "productType": "enterprise ERP",
+    "stack": [
+      "vite",
+      "vue"
+    ]
+  },
+  "sources": {
+    "tokens": ["src/plugins/vuetify.ts", "src/styles/global.css"],
+    "components": ["src/components", "src/layouts"],
+    "assets": ["public/icons/sami-app-icon.svg"],
+    "instructions": ["../AGENTS.md", "../docs/21-ai-agent-guide.md"]
+  },
+  "design": {
+    "colorMode": "light and dark",
+    "colors": {
+      "identity": "authoritative navy with restrained brass accent",
+      "light": "warm cool-gray workspace with crisp white operational surfaces",
+      "dark": "deep ink workspace with lifted navy surfaces"
+    },
+    "typography": { "family": "Vazirmatn Variable", "character": "compact, legible, bilingual" },
+    "spacing": { "base": 4, "pageRhythm": 24 },
+    "radius": { "controls": 12, "surfaces": 16, "featureSurfaces": 20 },
+    "shadows": { "character": "low-alpha layered elevation" },
+    "motion": { "character": "short functional transitions with reduced-motion support" },
+    "density": "comfortable enterprise"
+  },
+  "components": {
+    "installed": [],
+    "preferredPrimitives": ["Vuetify 3", "AppPageHeader", "AppEmptyState", "AppLoadingState", "AppErrorState", "AppFormSection"],
+    "patterns": ["backend-driven navigation", "responsive data cards", "permission-aware actions", "fullscreen mobile forms"]
+  },
+  "constraints": {
+    "must": [
+      "Preserve Vue 3, Vuetify, API contracts, permissions, i18n and RTL",
+      "Use real backend data and supported routes only",
+      "Support light/dark and 360-430px widths",
+      "Keep status meaning textual and keyboard focus visible"
+    ],
+    "avoid": [
+      "Default Vuetify appearance",
+      "Decorative dashboard charts without real data",
+      "Excessive gradients, glass effects or motion",
+      "Fake pages for unsupported modules",
+      "Static navigation that bypasses backend permissions"
+    ]
+  },
+  "decisions": [
+    {
+      "name": "Operational Clarity",
+      "status": "selected",
+      "reason": "Balances executive confidence with high-frequency ERP density through a dark navigation anchor, quiet canvas, crisp operational surfaces and restrained brand accent."
+    },
+    {
+      "name": "Executive Canvas",
+      "status": "rejected",
+      "reason": "More spacious and presentation-led, but too low-density for all-day operational work."
+    },
+    {
+      "name": "Dense Command Center",
+      "status": "rejected",
+      "reason": "Maximizes scanning speed, but creates too much cognitive load for mixed-experience users and mobile."
+    }
+  ],
+  "evidence": [
+    {
+      "fact": "project.stack:vite",
+      "source": "package.json"
+    },
+    {
+      "fact": "project.stack:vue",
+      "source": "package.json"
+    }
+  ],
+  "generatedAt": "2026-07-31T14:32:21.516Z"
+}

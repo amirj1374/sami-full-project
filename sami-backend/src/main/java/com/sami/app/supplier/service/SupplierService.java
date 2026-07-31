@@ -85,7 +85,7 @@ public class SupplierService {
         List<Supplier> suppliers = supplierRepository.findAll(toSpecification(filter),
                 Sort.by(Sort.Direction.ASC, "id"));
         StringBuilder csv = new StringBuilder(
-                "code,companyName,displayName,city,type,status,paymentTerm,rating,defaultPhone,defaultEmail,taxNumber,createdAt\n");
+                "\uFEFFcode,companyName,displayName,city,type,status,paymentTerm,rating,defaultPhone,defaultEmail,taxNumber,createdAt\n");
         for (Supplier s : suppliers) {
             csv.append(csvRow(
                     s.getSupplierCode(), s.getCompanyName(), s.getDisplayName(), s.getCity(),

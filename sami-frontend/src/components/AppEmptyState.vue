@@ -11,16 +11,19 @@ withDefaults(
     description?: string
     actionLabel?: string
     actionIcon?: string
+    secondaryActionLabel?: string
+    secondaryActionIcon?: string
     dense?: boolean
+    kind?: 'empty' | 'search' | 'permission' | 'unavailable' | 'first-use'
   }>(),
-  { icon: 'mdi-inbox-outline', actionIcon: 'mdi-plus' },
+  { icon: 'mdi-inbox-outline', actionIcon: 'mdi-plus', kind: 'empty' },
 )
 
-defineEmits<{ (e: 'action'): void }>()
+defineEmits<{ (e: 'action'): void; (e: 'secondary-action'): void }>()
 </script>
 
 <template>
-  <div class="app-empty text-center" :class="{ 'app-empty--dense': dense }">
+  <div class="app-empty text-center" :class="[`app-empty--${kind}`, { 'app-empty--dense': dense }]" role="status">
     <div class="app-empty__medallion">
       <v-icon :icon="icon" :size="dense ? 30 : 40" />
     </div>
@@ -28,9 +31,12 @@ defineEmits<{ (e: 'action'): void }>()
     <div v-if="description" class="text-body-2 text-medium-emphasis mt-1 mx-auto app-empty__desc">
       {{ description }}
     </div>
-    <div v-if="actionLabel" class="mt-4">
-      <v-btn color="primary" :prepend-icon="actionIcon" @click="$emit('action')">
+    <div v-if="actionLabel || secondaryActionLabel" class="mt-4 d-flex justify-center flex-wrap ga-2">
+      <v-btn v-if="actionLabel" color="primary" :prepend-icon="actionIcon" @click="$emit('action')">
         {{ actionLabel }}
+      </v-btn>
+      <v-btn v-if="secondaryActionLabel" variant="tonal" :prepend-icon="secondaryActionIcon" @click="$emit('secondary-action')">
+        {{ secondaryActionLabel }}
       </v-btn>
     </div>
     <slot />
@@ -62,5 +68,11 @@ defineEmits<{ (e: 'action'): void }>()
 }
 .app-empty__desc {
   max-width: 420px;
+}
+.app-empty--permission .app-empty__medallion { color: rgb(var(--v-theme-warning)); }
+.app-empty--unavailable .app-empty__medallion { color: rgb(var(--v-theme-info)); }
+@media (max-width: 599px) {
+  .app-empty { padding: var(--app-space-6) var(--app-space-3); }
+  .app-empty__medallion { width: 68px; height: 68px; }
 }
 </style>

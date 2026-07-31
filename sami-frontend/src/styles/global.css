@@ -24,6 +24,16 @@
   --app-radius: 12px;
   --app-radius-lg: 16px;
   --app-radius-xl: 22px;
+  --app-control-height: 48px;
+  --app-border: rgba(var(--v-border-color), var(--v-border-opacity));
+  --app-surface-muted: rgb(var(--v-theme-surface-container));
+  --app-surface-raised: rgb(var(--v-theme-surface-bright));
+  --app-chart-1: rgb(var(--v-theme-primary));
+  --app-chart-2: rgb(var(--v-theme-accent));
+  --app-chart-3: rgb(var(--v-theme-info));
+  --app-chart-positive: rgb(var(--v-theme-success));
+  --app-chart-negative: rgb(var(--v-theme-error));
+  --app-chart-grid: rgba(var(--v-theme-on-surface), 0.1);
 
   /* Soft, layered elevation — premium, low-alpha */
   --app-shadow-sm: 0 1px 2px rgba(20, 28, 46, 0.06), 0 1px 1px rgba(20, 28, 46, 0.04);
@@ -37,6 +47,12 @@
   --app-dur: 0.22s;
   --app-sidebar-w: 264px;
   --app-sidebar-rail: 76px;
+  --app-content-max: 1540px;
+  --app-topbar-h: 72px;
+  --app-nav-bg: #101C2E;
+  --app-nav-surface: #17253A;
+  --app-nav-text: #EAF0F8;
+  --app-nav-muted: #93A4BC;
 }
 
 html,
@@ -55,13 +71,291 @@ body {
 .v-application {
   font-family: var(--app-font-family) !important;
   letter-spacing: 0.1px;
+  background: rgb(var(--v-theme-background));
+  color: rgb(var(--v-theme-on-background));
 }
 
 /* Tighten heading rhythm for a denser, more professional feel */
 .v-application h1,
 .v-application h2,
 .v-application h3 {
-  letter-spacing: -0.2px;
+  letter-spacing: -0.35px;
+  text-wrap: balance;
+}
+
+.v-application .text-h4 { font-weight: 740 !important; }
+.v-application .text-h5 { font-weight: 720 !important; }
+.v-application .text-subtitle-1 { letter-spacing: -0.08px !important; }
+
+/* ---- Enterprise inputs -------------------------------------------------- */
+.v-application .v-field {
+  transition:
+    border-color var(--app-dur-fast) var(--app-ease),
+    box-shadow var(--app-dur-fast) var(--app-ease),
+    background-color var(--app-dur-fast) var(--app-ease);
+}
+.v-application .v-field:not(.v-field--disabled) {
+  background: rgb(var(--v-theme-surface));
+}
+.v-application .v-field--focused {
+  box-shadow: 0 0 0 3px rgba(var(--v-theme-primary), 0.1);
+}
+.v-application .v-field--error {
+  box-shadow: 0 0 0 3px rgba(var(--v-theme-error), 0.08);
+}
+.v-application .v-field--disabled {
+  opacity: 0.68;
+  background: rgba(var(--v-theme-on-surface), 0.035);
+}
+.v-application .v-field__input {
+  min-height: var(--app-control-height);
+}
+.v-application .v-input__details {
+  padding-inline: 12px;
+  padding-top: 5px;
+}
+
+/* ---- Surfaces and component hierarchy ---------------------------------- */
+.v-application .v-card {
+  box-shadow: var(--app-shadow-sm);
+  transition:
+    border-color var(--app-dur-fast) var(--app-ease),
+    box-shadow var(--app-dur) var(--app-ease);
+}
+.v-application .v-card:not(.v-card--variant-tonal) {
+  border-color: rgba(var(--v-border-color), 0.1) !important;
+}
+.v-application .v-card-item {
+  padding: 20px 22px 14px;
+}
+.v-application .v-card-text {
+  line-height: 1.65;
+}
+.v-application .v-card--variant-tonal {
+  box-shadow: none;
+}
+.v-application .v-overlay__content > .v-card,
+.v-application .v-dialog > .v-overlay__content > .v-card {
+  background: rgb(var(--v-theme-surface-bright));
+  box-shadow: var(--app-shadow-lg);
+}
+.v-application .v-card-title {
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.v-application .v-card-actions {
+  gap: var(--app-space-2);
+}
+.v-application .v-btn {
+  letter-spacing: 0;
+  min-height: 40px;
+}
+.v-application .v-btn--size-large {
+  min-height: 48px;
+  padding-inline: 22px;
+}
+.v-application .v-btn--variant-elevated,
+.v-application .v-btn--variant-flat {
+  box-shadow: 0 1px 2px rgba(13, 27, 49, 0.12);
+}
+.v-application .v-menu > .v-overlay__content {
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius);
+  box-shadow: var(--app-shadow-lg);
+  overflow: hidden;
+}
+.v-application .v-list-item {
+  min-height: 44px;
+  margin: 2px var(--app-space-1);
+}
+.v-application .v-list-item--active {
+  background: rgba(var(--v-theme-primary), 0.1);
+}
+.v-application .v-tabs {
+  border-bottom: 1px solid var(--app-border);
+}
+.v-application .v-tab {
+  min-height: 46px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+.v-application .v-chip {
+  font-weight: 600;
+  letter-spacing: 0;
+}
+.v-application .v-alert {
+  box-shadow: none;
+}
+
+/* ---- Data surfaces ------------------------------------------------------ */
+.v-application .v-table {
+  background: transparent;
+}
+.v-application .v-data-table {
+  border-radius: inherit;
+  overflow: hidden;
+}
+.v-application .v-data-table thead th {
+  height: 50px !important;
+  background: rgba(var(--v-theme-surface-container), 0.8);
+  color: rgb(var(--v-theme-on-surface-variant));
+  font-size: 0.76rem;
+  font-weight: 700 !important;
+  letter-spacing: 0.025em;
+  white-space: nowrap;
+}
+.v-application .v-data-table tbody td {
+  min-height: 58px;
+  border-bottom-color: rgba(var(--v-border-color), 0.08) !important;
+}
+.v-application .v-data-table tbody tr {
+  transition: background-color var(--app-dur-fast) var(--app-ease);
+}
+.v-application .v-data-table tbody tr:hover {
+  background: rgba(var(--v-theme-primary), 0.035) !important;
+}
+.v-application .v-data-table-footer {
+  border-top: 1px solid var(--app-border);
+  background: rgba(var(--v-theme-surface-container), 0.55);
+}
+
+/* Shared visual hooks for filters and mobile record cards. */
+.app-filter-surface {
+  background: rgb(var(--v-theme-surface));
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius-lg);
+  box-shadow: var(--app-shadow-sm);
+}
+.app-record-card {
+  border: 1px solid var(--app-border);
+  background: rgb(var(--v-theme-surface));
+  border-radius: var(--app-radius);
+  box-shadow: var(--app-shadow-sm);
+}
+.app-record-card:hover {
+  border-color: rgba(var(--v-theme-primary), 0.22);
+  box-shadow: var(--app-shadow-md);
+}
+.app-data-surface {
+  overflow: hidden;
+}
+.app-data-surface > .v-card-text:first-child {
+  background: rgba(var(--v-theme-surface-container), 0.42);
+  border-bottom: 1px solid var(--app-border);
+}
+
+/* Shared module workspace treatment. Existing modules keep their contracts and
+   component composition while reading as one coherent product. */
+.app-content-container > div > .v-card,
+.app-content-container > div > section > .v-card {
+  border-radius: var(--app-radius-lg) !important;
+}
+.app-content-container .v-card-title {
+  font-weight: 700;
+  letter-spacing: -0.12px;
+}
+.app-content-container .v-toolbar {
+  background: transparent;
+}
+.app-content-container .v-data-table,
+.app-content-container .v-table {
+  color: rgb(var(--v-theme-on-surface));
+}
+.app-content-container .v-data-table tbody tr:last-child td,
+.app-content-container .v-table tbody tr:last-child td {
+  border-bottom: 0 !important;
+}
+.app-content-container .v-pagination {
+  padding-block: 12px;
+}
+.v-dialog .v-card-title {
+  min-height: 64px;
+  align-items: center;
+  border-bottom: 1px solid rgba(var(--v-border-color), 0.1);
+}
+.v-dialog .v-card-actions {
+  min-height: 64px;
+  border-top: 1px solid rgba(var(--v-border-color), 0.1);
+}
+.v-snackbar .v-snackbar__wrapper {
+  border: 1px solid rgba(var(--v-border-color), 0.12);
+  box-shadow: var(--app-shadow-lg) !important;
+}
+
+/* Browser autofill must remain legible in both themes. */
+.v-application input:-webkit-autofill,
+.v-application input:-webkit-autofill:hover,
+.v-application input:-webkit-autofill:focus {
+  -webkit-text-fill-color: rgb(var(--v-theme-on-surface));
+  box-shadow: 0 0 0 1000px rgb(var(--v-theme-surface)) inset;
+  caret-color: rgb(var(--v-theme-on-surface));
+  transition: background-color 9999s ease-out;
+}
+.v-application .v-messages__message {
+  line-height: 1.45;
+}
+
+@media (pointer: coarse) {
+  .v-application .v-btn:not(.v-btn--icon) {
+    min-height: 44px;
+  }
+  .v-application .v-field__input {
+    min-height: 52px;
+  }
+}
+
+@media (max-width: 599px) {
+  :root {
+    --app-radius-lg: 14px;
+    --app-radius-xl: 18px;
+    --app-space-5: 20px;
+    --app-space-6: 26px;
+    --app-space-8: 36px;
+  }
+  .v-application .v-card-title {
+    padding-inline: var(--app-space-4);
+  }
+  .v-application .v-card-text,
+  .v-application .v-card-actions {
+    padding-inline: var(--app-space-4);
+  }
+  .v-application .v-dialog > .v-overlay__content {
+    max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  }
+  .v-application .v-dialog > .v-overlay__content > .v-card {
+    max-height: 100%;
+  }
+  .v-application .v-card-actions .v-btn {
+    min-height: 44px;
+  }
+  .v-application .v-dialog .v-card-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    padding-bottom: max(var(--app-space-4), env(safe-area-inset-bottom));
+    background: rgba(var(--v-theme-surface-bright), 0.96);
+    border-top: 1px solid var(--app-border);
+    backdrop-filter: blur(12px);
+  }
+  .v-application .v-main {
+    padding-bottom: calc(70px + env(safe-area-inset-bottom));
+  }
+  .app-data-surface .v-table__wrapper {
+    overscroll-behavior-inline: contain;
+    scrollbar-gutter: stable;
+  }
+}
+
+.v-theme--dark {
+  --app-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(255, 255, 255, 0.015);
+  --app-shadow-md: 0 8px 24px rgba(0, 0, 0, 0.3);
+  --app-shadow-lg: 0 18px 48px rgba(0, 0, 0, 0.42);
+}
+.v-theme--dark .v-card:not(.v-card--variant-tonal) {
+  border-color: rgba(255, 255, 255, 0.075) !important;
+}
+.v-theme--dark .v-field:not(.v-field--disabled) {
+  background: rgba(var(--v-theme-surface-bright), 0.48);
 }
 
 /* ---- Utilities ---------------------------------------------------------- */

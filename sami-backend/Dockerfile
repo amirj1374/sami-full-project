@@ -10,11 +10,17 @@ COPY pom.xml .
 RUN mvn -q dependency:go-offline -B
 
 COPY src ./src
-RUN mvn -q clean package -DskipTests -B
+ARG BUILD_BRANCH=unknown
+ARG BUILD_COMMIT=unknown
+RUN mvn -q clean package -DskipTests -B -Dbuild.branch="$BUILD_BRANCH" -Dbuild.commit="$BUILD_COMMIT"
 
 # ---- Stage 2: runtime ----
 # Minimal JRE image, non-root user, only the jar is carried over.
 FROM eclipse-temurin:21-jre-jammy AS runtime
+ARG BUILD_COMMIT=unknown
+ARG APP_VERSION=0.1.0
+LABEL org.opencontainers.image.revision=$BUILD_COMMIT \
+      org.opencontainers.image.version=$APP_VERSION
 WORKDIR /app
 
 # Run as an unprivileged user. The uploads directory is created here so the

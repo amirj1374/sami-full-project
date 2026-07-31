@@ -17,7 +17,7 @@ const target = computed(() => Number(meta.value.target ?? props.widget.config?.t
       <span class="text-h4 font-weight-bold" :class="`text-${color}`">
         {{ formatNumber(data?.value ?? null) }}
       </span>
-      <span v-if="meta.unit" class="text-body-2 text-medium-emphasis ml-1">{{ meta.unit }}</span>
+      <span v-if="meta.unit" class="text-body-2 text-medium-emphasis ms-1">{{ meta.unit }}</span>
     </div>
     <div v-if="widget.config?.label" class="text-caption text-medium-emphasis">
       {{ widget.config.label }}

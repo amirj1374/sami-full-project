@@ -3,6 +3,8 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useMenuStore } from '@/stores/menu'
+import { useServerLabel } from '@/composables/useServerLabel'
+import AppPageHeader from '@/components/AppPageHeader.vue'
 
 const { t, te } = useI18n()
 
@@ -22,9 +24,10 @@ const { t, te } = useI18n()
  */
 const route = useRoute()
 const menu = useMenuStore()
+const { moduleLabel, statusLabel } = useServerLabel()
 
 const moduleItem = computed(() => menu.items.find((item) => item.path === route.path) ?? null)
-const moduleName = computed(() => moduleItem.value?.name ?? t('placeholder.defaultName'))
+const moduleName = computed(() => moduleLabel(moduleItem.value?.code, moduleItem.value?.name ?? t('placeholder.defaultName')))
 const moduleIcon = computed(() => moduleItem.value?.icon ?? 'mdi-view-module')
 
 const backendStatus = computed(() => moduleItem.value?.backendStatus ?? null)
@@ -69,13 +72,15 @@ const statusIcon = computed(() => overallStatus.value?.icon ?? moduleIcon.value)
 
 <template>
   <div>
-    <h1 class="text-h4 mb-4">{{ moduleName }}</h1>
+    <AppPageHeader :icon="moduleIcon" :eyebrow="t('placeholder.axis.release')" :title="moduleName" />
 
-    <v-card rounded="lg" border flat>
-      <v-card-text class="text-center py-12">
-        <v-icon :icon="statusIcon" size="64" :color="statusColor" class="mb-4" />
+    <v-card class="placeholder-workspace" rounded="xl">
+      <v-card-text class="text-center py-12 py-md-16">
+        <div class="placeholder-workspace__icon mx-auto mb-5">
+          <v-icon :icon="statusIcon" :color="statusColor" size="38" />
+        </div>
 
-        <div class="text-h6 mb-2">{{ headline }}</div>
+        <div class="text-h5 font-weight-bold mb-2">{{ headline }}</div>
 
         <p class="text-body-1 text-medium-emphasis mx-auto mb-6" style="max-width: 520px">
           {{ detail }}
@@ -90,7 +95,7 @@ const statusIcon = computed(() => overallStatus.value?.icon ?? moduleIcon.value)
             :color="backendStatus.color ?? undefined"
             :prepend-icon="backendStatus.icon ?? 'mdi-server'"
           >
-            {{ t('placeholder.axis.backend') }}: {{ backendStatus.name }}
+            {{ t('placeholder.axis.backend') }}: {{ statusLabel(backendStatus.name) }}
           </v-chip>
           <v-chip
             size="small"
@@ -98,14 +103,14 @@ const statusIcon = computed(() => overallStatus.value?.icon ?? moduleIcon.value)
             :color="frontendStatus.color ?? undefined"
             :prepend-icon="frontendStatus.icon ?? 'mdi-monitor'"
           >
-            {{ t('placeholder.axis.frontend') }}: {{ frontendStatus.name }}
+            {{ t('placeholder.axis.frontend') }}: {{ statusLabel(frontendStatus.name) }}
           </v-chip>
           <v-chip v-if="releaseVersion" size="small" variant="tonal" prepend-icon="mdi-tag-outline">
             {{ t('placeholder.axis.release') }}: {{ releaseVersion }}
           </v-chip>
         </div>
 
-        <div v-if="progress !== null" class="mx-auto" style="max-width: 320px">
+        <div v-if="progress !== null" class="mx-auto mt-2" style="max-width: 360px">
           <div class="d-flex justify-space-between text-caption text-medium-emphasis mb-1">
             <span>{{ t('placeholder.progress') }}</span>
             <span>{{ progress }}%</span>
@@ -121,3 +126,23 @@ const statusIcon = computed(() => overallStatus.value?.icon ?? moduleIcon.value)
     </v-card>
   </div>
 </template>
+
+<style scoped>
+.placeholder-workspace {
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 0, rgba(var(--v-theme-primary), 0.06), transparent 46%),
+    rgb(var(--v-theme-surface));
+}
+.placeholder-workspace__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 76px;
+  height: 76px;
+  border: 1px solid rgba(var(--v-border-color), 0.12);
+  border-radius: 22px;
+  background: rgb(var(--v-theme-surface-bright));
+  box-shadow: var(--app-shadow-md);
+}
+</style>

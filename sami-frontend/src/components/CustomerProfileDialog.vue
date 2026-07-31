@@ -6,6 +6,7 @@ import { crmConfigApi } from '@/api/crmConfig'
 import { useApiError } from '@/composables/useApiError'
 import { usePermission } from '@/composables/usePermission'
 import { useFormat } from '@/composables/useFormat'
+import { useServerLabel } from '@/composables/useServerLabel'
 import type {
   Customer,
   CustomerDetail,
@@ -36,6 +37,7 @@ const open = computed({
 const { t } = useI18n()
 const { formatDateTime } = useFormat()
 const { can } = usePermission()
+const { lookupLabel } = useServerLabel()
 const { message: errorMessage, set: setError, clear: clearError } = useApiError()
 const tab = ref<'timeline' | 'notes' | 'relations'>('timeline')
 
@@ -277,7 +279,7 @@ function detailEntries(event: CustomerEvent): [string, unknown][] {
     <v-card rounded="lg">
       <v-card-text v-if="customer" class="px-6 pt-5 pb-2">
         <div class="d-flex align-center">
-          <v-avatar size="56" color="surface-variant" class="mr-4">
+          <v-avatar size="56" color="surface-variant" class="me-4">
             <v-img v-if="avatarSrc" :src="avatarSrc" cover />
             <v-icon v-else icon="mdi-account" />
           </v-avatar>
@@ -287,13 +289,13 @@ function detailEntries(event: CustomerEvent): [string, unknown][] {
               <span class="text-body-2 text-medium-emphasis">{{ customer.customerCode }}</span>
             </div>
             <div class="d-flex align-center flex-wrap ga-1 mt-1">
-              <v-chip size="x-small" variant="tonal">{{ customer.type.name }}</v-chip>
+              <v-chip size="x-small" variant="tonal">{{ lookupLabel(customer.type.name) }}</v-chip>
               <v-chip
                 size="x-small"
                 variant="tonal"
                 :color="customer.status.isBlocking ? 'error' : 'success'"
               >
-                {{ customer.status.name }}
+                {{ lookupLabel(customer.status.name) }}
               </v-chip>
               <v-chip
                 v-for="tag in customer.tags"
@@ -302,7 +304,7 @@ function detailEntries(event: CustomerEvent): [string, unknown][] {
                 variant="tonal"
                 :color="tag.color ?? undefined"
               >
-                {{ tag.name }}
+                {{ lookupLabel(tag.name) }}
               </v-chip>
             </div>
           </div>
@@ -352,7 +354,7 @@ function detailEntries(event: CustomerEvent): [string, unknown][] {
                 size="x-small"
               >
                 <div class="d-flex align-center flex-wrap mb-1">
-                  <v-chip size="x-small" variant="tonal" :color="EVENT_COLORS[event.eventType]" class="mr-2">
+                  <v-chip size="x-small" variant="tonal" :color="EVENT_COLORS[event.eventType]" class="me-2">
                     {{ event.eventType }}
                   </v-chip>
                   <span class="text-caption text-medium-emphasis">
@@ -414,10 +416,10 @@ function detailEntries(event: CustomerEvent): [string, unknown][] {
             <p v-if="notes.length === 0" class="text-body-2 text-medium-emphasis">{{ t('customers.profile.notes.empty') }}</p>
             <v-card v-for="note in notes" :key="note.id" variant="outlined" class="mb-3 pa-3">
               <div class="d-flex align-center mb-1">
-                <v-chip size="x-small" variant="tonal" :color="PRIORITY_COLORS[note.priority]" class="mr-2">
+                <v-chip size="x-small" variant="tonal" :color="PRIORITY_COLORS[note.priority]" class="me-2">
                   {{ t(`customers.profile.priority.${note.priority}`) }}
                 </v-chip>
-                <v-chip v-if="note.visibility === 'PRIVATE'" size="x-small" variant="tonal" class="mr-2">
+                <v-chip v-if="note.visibility === 'PRIVATE'" size="x-small" variant="tonal" class="me-2">
                   <v-icon start icon="mdi-lock" size="x-small" />{{ t('customers.profile.visibilityValue.PRIVATE') }}
                 </v-chip>
                 <span class="text-caption text-medium-emphasis">
@@ -501,8 +503,8 @@ function detailEntries(event: CustomerEvent): [string, unknown][] {
             <v-list density="compact">
               <v-list-item v-for="relation in relations" :key="relation.id">
                 <template #prepend>
-                  <v-chip size="x-small" variant="tonal" class="mr-2">
-                    {{ relation.relationType.name }}
+                  <v-chip size="x-small" variant="tonal" class="me-2">
+                    {{ lookupLabel(relation.relationType.name) }}
                   </v-chip>
                 </template>
                 <v-list-item-title>

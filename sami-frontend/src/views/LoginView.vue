@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useForm } from 'vee-validate'
@@ -7,6 +7,7 @@ import { toTypedSchema } from '@vee-validate/zod'
 import { useAuthStore } from '@/stores/auth'
 import { useApiError } from '@/composables/useApiError'
 import { loginSchema } from '@/schemas/auth'
+import AuthCard from '@/components/AuthCard.vue'
 
 const { t } = useI18n()
 const auth = useAuthStore()
@@ -14,9 +15,10 @@ const router = useRouter()
 const route = useRoute()
 const { message: errorMessage, set: setError, clear: clearError } = useApiError()
 const loading = ref(false)
+const showPassword = ref(false)
 
 const { handleSubmit, defineField, errors } = useForm({
-  validationSchema: toTypedSchema(loginSchema(t)),
+  validationSchema: computed(() => toTypedSchema(loginSchema(t))),
   initialValues: { email: '', password: '' },
 })
 const [email, emailProps] = defineField('email')
@@ -38,11 +40,7 @@ const onSubmit = handleSubmit(async (values) => {
 </script>
 
 <template>
-  <v-card elevation="4" rounded="lg">
-    <v-card-title class="text-h5 pt-6 px-6">{{ t('auth.signInTitle') }}</v-card-title>
-    <v-card-subtitle class="px-6">{{ t('auth.signInSubtitle') }}</v-card-subtitle>
-
-    <v-card-text class="px-6">
+  <AuthCard :title="t('auth.signInTitle')" :subtitle="t('auth.signInSubtitle')">
       <v-alert v-if="errorMessage" type="error" variant="tonal" density="compact" class="mb-4">
         {{ errorMessage }}
       </v-alert>
@@ -62,9 +60,11 @@ const onSubmit = handleSubmit(async (values) => {
           v-bind="passwordProps"
           :error-messages="errors.password"
           :label="t('auth.password')"
-          type="password"
+          :type="showPassword ? 'text' : 'password'"
           autocomplete="current-password"
           prepend-inner-icon="mdi-lock-outline"
+          :append-inner-icon="showPassword ? 'mdi-eye-off-outline' : 'mdi-eye-outline'"
+          @click:append-inner="showPassword = !showPassword"
         />
 
         <div class="d-flex justify-end mb-2">
@@ -77,11 +77,9 @@ const onSubmit = handleSubmit(async (values) => {
           {{ t('auth.signInButton') }}
         </v-btn>
       </v-form>
-    </v-card-text>
-
-    <v-card-actions class="justify-center pb-6">
+    <template #actions>
       <span class="text-body-2">{{ t('auth.noAccount') }}</span>
       <v-btn variant="text" :to="{ name: 'register' }" color="primary">{{ t('auth.createOne') }}</v-btn>
-    </v-card-actions>
-  </v-card>
+    </template>
+  </AuthCard>
 </template>

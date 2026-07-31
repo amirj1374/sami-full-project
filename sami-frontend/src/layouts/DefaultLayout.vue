@@ -38,14 +38,23 @@ const themeOptions: { value: ThemeMode; icon: string; label: string }[] = [
 
 const TITLE_KEYS: Record<string, string> = {
   dashboard: 'dashboard.title',
+  dashboards: 'dash.dashboards',
+  'dashboard-reports': 'dash.reports',
+  'dashboard-viewer': 'dash.dashboards',
+  kpis: 'dash.kpis',
   products: 'products.title',
   suppliers: 'suppliers.title',
   purchases: 'purchases.title',
   customers: 'customers.title',
+  automations: 'automation.title',
+  scheduler: 'scheduler.title',
+  'data-quality': 'dataQuality.title',
+  profile: 'profile.title',
   users: 'users.title',
   roles: 'roles.title',
   permissions: 'permissions.title',
   modules: 'modules.title',
+  forbidden: 'apiError.forbidden',
 }
 
 const isDashboard = computed(() => route.name === 'dashboard')
@@ -69,7 +78,7 @@ const filteredItems = computed<MenuItem[]>(() => {
   const q = navQuery.value.trim().toLowerCase()
   if (!q) return menu.items
   return menu.items.filter(
-    (m) => m.name.toLowerCase().includes(q) || m.code.toLowerCase().includes(q),
+    (m) => moduleLabel(m.code, m.name).toLocaleLowerCase().includes(q) || m.code.toLowerCase().includes(q),
   )
 })
 const favoriteItems = computed<MenuItem[]>(() =>
@@ -101,9 +110,13 @@ function onGlobalKey(e: KeyboardEvent): void {
 
 watch(
   () => route.path,
-  (path) => recordVisit(path),
+  (path) => {
+    recordVisit(path)
+    if (mobile.value) drawer.value = false
+  },
   { immediate: true },
 )
+const mobileNavItems = computed(() => menu.items.slice(0, 4))
 
 onMounted(() => window.addEventListener('keydown', onGlobalKey))
 onBeforeUnmount(() => window.removeEventListener('keydown', onGlobalKey))
@@ -122,11 +135,12 @@ async function logout(): Promise<void> {
     :rail-width="76"
     width="264"
     class="app-drawer"
+    theme="dark"
   >
     <!-- Brand -->
     <div class="app-brand d-flex align-center px-4" :class="rail && !mobile ? 'justify-center' : 'ga-3'">
-      <v-avatar rounded="lg" color="primary" size="38" class="app-brand__logo">
-        <span class="text-subtitle-1 font-weight-bold">S</span>
+      <v-avatar rounded="lg" size="40" class="app-brand__logo">
+        <img src="/icons/sami-app-icon.svg" alt="" width="40" height="40" />
       </v-avatar>
       <div v-if="!(rail && !mobile)" class="d-flex flex-column">
         <span class="text-subtitle-1 font-weight-bold app-brand__name">{{ t('common.appName') }}</span>
@@ -248,12 +262,16 @@ async function logout(): Promise<void> {
     </template>
   </v-navigation-drawer>
 
-  <v-app-bar flat border height="64" class="app-topbar">
+  <v-app-bar flat height="72" class="app-topbar">
     <v-app-bar-nav-icon
       v-if="mobile"
       :aria-label="t('shell.toggleMenu')"
       @click="drawer = !drawer"
     />
+
+    <div v-if="mobile" class="app-mobile-title ms-1">
+      <span class="text-subtitle-1 font-weight-bold text-truncate">{{ pageTitle }}</span>
+    </div>
 
     <div class="d-none d-sm-flex flex-column justify-center ms-2">
       <v-breadcrumbs :items="breadcrumbs" density="compact" divider="/" class="pa-0 app-breadcrumbs">
@@ -288,7 +306,7 @@ async function logout(): Promise<void> {
     />
 
     <!-- Branch selector (single branch today) -->
-    <v-menu location="bottom end">
+    <v-menu v-if="!mobile" location="bottom end">
       <template #activator="{ props: p }">
         <v-btn variant="text" class="text-none d-none d-sm-flex" v-bind="p">
           <v-icon icon="mdi-store-outline" size="18" class="me-2" />
@@ -308,7 +326,7 @@ async function logout(): Promise<void> {
     </v-menu>
 
     <!-- Notifications -->
-    <v-menu location="bottom end" :close-on-content-click="false">
+    <v-menu v-if="!mobile" location="bottom end" :close-on-content-click="false">
       <template #activator="{ props: p }">
         <v-btn icon="mdi-bell-outline" variant="text" v-bind="p" :aria-label="t('layout.notifications')" />
       </template>
@@ -325,7 +343,7 @@ async function logout(): Promise<void> {
     </v-menu>
 
     <!-- Theme switch -->
-    <v-menu location="bottom end">
+    <v-menu v-if="!mobile" location="bottom end">
       <template #activator="{ props: p }">
         <v-btn
           :icon="isDark ? 'mdi-weather-night' : 'mdi-white-balance-sunny'"
@@ -347,7 +365,7 @@ async function logout(): Promise<void> {
       </v-list>
     </v-menu>
 
-    <LanguageSwitcher />
+    <LanguageSwitcher v-if="!mobile" />
 
     <!-- Profile -->
     <v-menu location="bottom end">
@@ -377,6 +395,12 @@ async function logout(): Promise<void> {
         <v-list density="compact" nav class="pa-2">
           <v-list-item
             rounded="lg"
+            prepend-icon="mdi-account-circle-outline"
+            :title="t('profile.title')"
+            :to="{ name: 'profile' }"
+          />
+          <v-list-item
+            rounded="lg"
             prepend-icon="mdi-lock-reset"
             :title="t('shell.changePassword')"
             @click="changePasswordOpen = true"
@@ -394,7 +418,7 @@ async function logout(): Promise<void> {
   </v-app-bar>
 
   <v-main class="app-main">
-    <v-container class="py-6">
+    <v-container class="app-content-container py-6 py-md-8">
       <router-view v-slot="{ Component }">
         <transition name="route-fade" mode="out-in">
           <component :is="Component" />
@@ -403,16 +427,41 @@ async function logout(): Promise<void> {
     </v-container>
   </v-main>
 
+  <v-bottom-navigation
+    v-if="mobile"
+    grow
+    color="primary"
+    class="app-bottom-nav"
+    :elevation="0"
+  >
+    <v-btn
+      v-for="item in mobileNavItems"
+      :key="`mobile-${item.code}`"
+      :to="item.path"
+      :aria-label="moduleLabel(item.code, item.name)"
+    >
+      <v-icon :icon="item.icon" />
+      <span>{{ moduleLabel(item.code, item.name) }}</span>
+    </v-btn>
+    <v-btn :aria-label="t('shell.navigation')" @click="drawer = true">
+      <v-icon icon="mdi-dots-grid" />
+      <span>{{ t('shell.navigation') }}</span>
+    </v-btn>
+  </v-bottom-navigation>
+
   <CommandPalette v-model="paletteOpen" />
   <ChangePasswordDialog v-model="changePasswordOpen" />
 </template>
 
 <style scoped>
 .app-brand {
-  height: 64px;
+  height: 72px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  margin-bottom: 10px;
 }
 .app-brand__logo {
-  box-shadow: 0 4px 12px rgba(var(--v-theme-primary), 0.35);
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
 }
 .app-nav-scroll {
   overflow-y: auto;
@@ -422,12 +471,29 @@ async function logout(): Promise<void> {
   font-weight: 700;
   letter-spacing: 0.8px;
   text-transform: uppercase;
-  color: rgba(var(--v-theme-on-surface), 0.45);
+  color: var(--app-nav-muted);
   padding: 10px 12px 4px;
 }
 .app-nav-item {
   margin-bottom: 2px;
   transition: background var(--app-dur-fast) var(--app-ease);
+}
+.app-nav-item :deep(.v-list-item-title) {
+  font-size: 0.875rem;
+  font-weight: 540;
+}
+.app-nav-item :deep(.v-list-item__prepend > .v-icon) {
+  color: var(--app-nav-muted);
+}
+.app-nav-item.v-list-item--active {
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: inset 3px 0 0 rgb(var(--v-theme-accent));
+}
+[dir='rtl'] .app-nav-item.v-list-item--active {
+  box-shadow: inset -3px 0 0 rgb(var(--v-theme-accent));
+}
+.app-nav-item.v-list-item--active :deep(.v-list-item__prepend > .v-icon) {
+  color: #fff;
 }
 .app-nav-item__fav {
   opacity: 0;
@@ -448,8 +514,55 @@ async function logout(): Promise<void> {
 .app-page-title {
   line-height: 1.2;
 }
+.app-topbar {
+  background: rgba(var(--v-theme-surface), 0.9) !important;
+  border-bottom: 1px solid rgba(var(--v-border-color), 0.1) !important;
+  backdrop-filter: blur(18px);
+}
+.app-main {
+  min-width: 0;
+}
+.app-content-container {
+  width: min(100%, var(--app-content-max));
+  max-width: var(--app-content-max);
+}
+.app-bottom-nav {
+  position: fixed !important;
+  z-index: 1005;
+  inset-inline: 10px;
+  inset-block-end: max(8px, env(safe-area-inset-bottom));
+  width: auto !important;
+  height: 64px !important;
+  border: 1px solid rgba(var(--v-border-color), 0.14);
+  border-radius: 18px !important;
+  background: rgba(var(--v-theme-surface-bright), 0.94) !important;
+  box-shadow: var(--app-shadow-lg) !important;
+  backdrop-filter: blur(18px);
+  overflow: hidden;
+}
+.app-bottom-nav :deep(.v-btn) {
+  min-width: 0;
+  font-size: 0.64rem;
+}
+.app-bottom-nav :deep(.v-btn__content) {
+  gap: 3px;
+}
 .app-breadcrumbs :deep(.v-breadcrumbs-item) {
   font-size: 0.72rem;
   padding: 0;
+}
+.app-mobile-title {
+  min-width: 0;
+  max-width: 42vw;
+}
+@media (max-width: 599px) {
+  .app-topbar {
+    padding-top: env(safe-area-inset-top);
+  }
+  .app-content-container {
+    width: 100%;
+    max-width: none;
+    padding: 18px 14px max(24px, env(safe-area-inset-bottom)) !important;
+  }
 }
 </style>

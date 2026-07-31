@@ -194,7 +194,7 @@ watch(usageDashboardId, async (id) => {
                 <tr v-for="entry in usageEntries" :key="entry.id">
                   <td>
                     <v-chip size="x-small" variant="tonal">{{ entry.action }}</v-chip>
-                    <span v-if="entry.newValues" class="text-medium-emphasis ml-1">
+                    <span v-if="entry.newValues" class="text-medium-emphasis ms-1">
                       {{ JSON.stringify(entry.newValues) }}
                     </span>
                   </td>

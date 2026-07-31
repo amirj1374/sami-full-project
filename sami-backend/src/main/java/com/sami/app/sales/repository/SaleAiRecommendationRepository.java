@@ -1,0 +1,1 @@
+package com.sami.app.sales.repository; import com.sami.app.sales.domain.SaleAiRecommendation; import org.springframework.data.jpa.repository.JpaRepository; public interface SaleAiRecommendationRepository extends JpaRepository<SaleAiRecommendation,Long>{}

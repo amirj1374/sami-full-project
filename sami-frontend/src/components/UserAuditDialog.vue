@@ -101,7 +101,7 @@ function changes(entry: UserAuditEntry): { key: string; from: unknown; to: unkno
             size="x-small"
           >
             <div class="d-flex align-center flex-wrap mb-1">
-              <v-chip size="x-small" variant="tonal" :color="ACTION_COLORS[entry.action]" class="mr-2">
+              <v-chip size="x-small" variant="tonal" :color="ACTION_COLORS[entry.action]" class="me-2">
                 {{ entry.action }}
               </v-chip>
               <span class="text-caption text-medium-emphasis">

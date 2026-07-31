@@ -277,7 +277,7 @@ const genderItems = computed(() => [
 
             <v-window-item value="profile">
               <div v-if="isEdit" class="d-flex align-center mb-4">
-                <v-avatar size="64" color="surface-variant" class="mr-4">
+                <v-avatar size="64" color="surface-variant" class="me-4">
                   <v-img v-if="avatarSrc" :src="avatarSrc" cover />
                   <v-icon v-else icon="mdi-account" />
                 </v-avatar>
@@ -287,7 +287,7 @@ const genderItems = computed(() => [
                   accept="image/jpeg,image/png,image/webp"
                   density="comfortable"
                   hide-details
-                  class="mr-2"
+                  class="me-2"
                 />
                 <v-btn
                   size="small"
@@ -295,7 +295,7 @@ const genderItems = computed(() => [
                   variant="tonal"
                   :disabled="!avatarFile"
                   :loading="avatarBusy"
-                  class="mr-1"
+                  class="me-1"
                   @click="uploadAvatar"
                 >
                   {{ t('users.upload') }}

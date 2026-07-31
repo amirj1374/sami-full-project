@@ -66,7 +66,7 @@ public class SupplierController {
     @Operation(summary = "Export suppliers matching the current filters as CSV")
     public ResponseEntity<String> export(SupplierFilter filter) {
         return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType("text/csv"))
+                .contentType(MediaType.parseMediaType("text/csv;charset=UTF-8"))
                 .header("Content-Disposition", "attachment; filename=\"suppliers.csv\"")
                 .body(supplierService.exportCsv(filter));
     }

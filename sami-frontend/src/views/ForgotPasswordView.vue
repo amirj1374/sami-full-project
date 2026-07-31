@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import { authApi } from '@/api/auth'
 import { useApiError } from '@/composables/useApiError'
 import { forgotPasswordSchema } from '@/schemas/auth'
+import AuthCard from '@/components/AuthCard.vue'
 
 const { t } = useI18n()
 const { message: errorMessage, set: setError, clear: clearError } = useApiError()
@@ -13,7 +14,7 @@ const loading = ref(false)
 const sent = ref(false)
 
 const { handleSubmit, defineField, errors } = useForm({
-  validationSchema: toTypedSchema(forgotPasswordSchema(t)),
+  validationSchema: computed(() => toTypedSchema(forgotPasswordSchema(t))),
   initialValues: { email: '' },
 })
 const [email, emailProps] = defineField('email')
@@ -33,11 +34,7 @@ const onSubmit = handleSubmit(async (values) => {
 </script>
 
 <template>
-  <v-card elevation="4" rounded="lg">
-    <v-card-title class="text-h5 pt-6 px-6">{{ t('auth.forgotTitle') }}</v-card-title>
-    <v-card-subtitle class="px-6">{{ t('auth.forgotSubtitle') }}</v-card-subtitle>
-
-    <v-card-text class="px-6">
+  <AuthCard :title="t('auth.forgotTitle')" :subtitle="t('auth.forgotSubtitle')">
       <v-alert v-if="sent" type="success" variant="tonal" density="compact" class="mb-4">
         {{ t('auth.forgotSent') }}
       </v-alert>
@@ -63,10 +60,8 @@ const onSubmit = handleSubmit(async (values) => {
           </v-btn>
         </v-form>
       </template>
-    </v-card-text>
-
-    <v-card-actions class="justify-center pb-6">
+    <template #actions>
       <v-btn variant="text" :to="{ name: 'login' }" color="primary">{{ t('auth.backToSignIn') }}</v-btn>
-    </v-card-actions>
-  </v-card>
+    </template>
+  </AuthCard>
 </template>

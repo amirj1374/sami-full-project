@@ -11,11 +11,15 @@ import { purchasesApi } from '@/api/purchases'
 import type { Product, PurchaseRow } from '@/types/models'
 import AppPageHeader from '@/components/AppPageHeader.vue'
 import AppEmptyState from '@/components/AppEmptyState.vue'
+import { useApiError } from '@/composables/useApiError'
+import { usePermission } from '@/composables/usePermission'
 
 const { t } = useI18n()
 const auth = useAuthStore()
 const { formatNumber, formatDate } = useFormat()
 const { statusLabel } = useServerLabel()
+const { message: errorMessage, set: setError, clear: clearError } = useApiError()
+const { can } = usePermission()
 
 const loading = ref(true)
 const counts = ref({ products: 0, activeProducts: 0, customers: 0, suppliers: 0, purchases: 0 })
@@ -54,6 +58,11 @@ const kpis = computed(() => [
     sub: `${formatNumber(purchaseValue.value)} ${t('dashboard.currencyUnit')}`,
   },
 ])
+const quickActions = computed(() => [
+  can('customers:create') ? { key: 'customer', icon: 'mdi-account-plus-outline', to: '/customers' } : null,
+  can('purchasing:create') ? { key: 'purchase', icon: 'mdi-cart-plus', to: '/purchases' } : null,
+  can('products:create') ? { key: 'product', icon: 'mdi-package-variant-plus', to: '/products' } : null,
+].filter((item): item is { key: string; icon: string; to: string } => item !== null))
 
 // --- Purchase-status donut --------------------------------------------------
 const R = 42
@@ -96,28 +105,31 @@ function buildStatusDist(rows: PurchaseRow[]): { name: string; value: number; co
 
 async function load(): Promise<void> {
   loading.value = true
+  clearError()
   try {
     const [products, active, customers, suppliers, purchasePage, low] = await Promise.all([
-      productsApi.list({ size: 1 }),
-      productsApi.list({ size: 1, active: true }),
-      customersApi.list({ size: 1 }),
-      suppliersApi.list({ size: 1 }),
-      purchasesApi.list({ size: 400, sort: 'createdAt,desc' }),
-      productsApi.list({ size: 5, active: true, sort: 'stockQuantity,asc' }),
+      can('products:view') ? productsApi.list({ size: 1 }) : undefined,
+      can('products:view') ? productsApi.list({ size: 1, active: true }) : undefined,
+      can('customers:view') ? customersApi.list({ size: 1 }) : undefined,
+      can('suppliers:view') ? suppliersApi.list({ size: 1 }) : undefined,
+      can('purchasing:view') ? purchasesApi.list({ size: 400, sort: 'createdAt,desc' }) : undefined,
+      can('products:view') ? productsApi.list({ size: 5, active: true, sort: 'stockQuantity,asc' }) : undefined,
     ])
-    const rows = purchasePage.content
+    const rows = purchasePage?.content ?? []
     counts.value = {
-      products: products.totalElements,
-      activeProducts: active.totalElements,
-      customers: customers.totalElements,
-      suppliers: suppliers.totalElements,
-      purchases: purchasePage.totalElements,
+      products: products?.totalElements ?? 0,
+      activeProducts: active?.totalElements ?? 0,
+      customers: customers?.totalElements ?? 0,
+      suppliers: suppliers?.totalElements ?? 0,
+      purchases: purchasePage?.totalElements ?? 0,
     }
     purchaseValue.value = rows.reduce((s, r) => s + Number(r.totalAmount), 0)
     recentPurchases.value = rows.slice(0, 6)
     monthly.value = buildMonthly(rows)
     statusDist.value = buildStatusDist(rows)
-    lowStock.value = low.content
+    lowStock.value = low?.content ?? []
+  } catch (error) {
+    setError(error)
   } finally {
     loading.value = false
   }
@@ -143,17 +155,49 @@ onMounted(load)
       </template>
     </AppPageHeader>
 
-    <p class="text-body-2 text-medium-emphasis mb-5 mt-n3">
-      <i18n-t keypath="dashboard.welcome" tag="span">
-        <template #name>
-          <strong class="text-high-emphasis">{{ auth.user?.fullName }}</strong>
-        </template>
-      </i18n-t>
-    </p>
+    <section class="dashboard-command mb-6">
+      <div class="dashboard-command__copy">
+        <div class="text-caption dashboard-command__date">{{ formatDate(new Date().toISOString()) }}</div>
+        <h2 class="dashboard-command__title">
+          <i18n-t keypath="dashboard.welcome" tag="span">
+            <template #name><strong>{{ auth.user?.fullName }}</strong></template>
+          </i18n-t>
+        </h2>
+        <p>{{ t('dashboard.commandDescription') }}</p>
+      </div>
+      <div v-if="quickActions.length" class="dashboard-command__actions">
+        <span class="text-caption">{{ t('dashboard.quickActions') }}</span>
+        <div class="d-flex flex-wrap ga-2 mt-2">
+          <v-btn
+            v-for="action in quickActions"
+            :key="action.key"
+            :to="action.to"
+            variant="tonal"
+            :prepend-icon="action.icon"
+          >
+            {{ t(`dashboard.quick.${action.key}`) }}
+          </v-btn>
+        </div>
+      </div>
+    </section>
+
+    <v-alert
+      v-if="errorMessage"
+      type="error"
+      variant="tonal"
+      class="mb-5"
+      closable
+      @click:close="clearError"
+    >
+      <div class="d-flex flex-wrap align-center ga-3">
+        <span class="flex-grow-1">{{ errorMessage }}</span>
+        <v-btn size="small" variant="text" :loading="loading" @click="load">{{ t('common.refresh') }}</v-btn>
+      </div>
+    </v-alert>
 
     <!-- KPI cards -->
     <v-row>
-      <v-col v-for="kpi in kpis" :key="kpi.key" cols="12" sm="6" lg="3">
+      <v-col v-for="kpi in kpis" :key="kpi.key" cols="6" lg="3">
         <v-card rounded="lg" border flat class="kpi-card app-elevate h-100">
           <v-card-text class="d-flex align-center ga-4">
             <span :class="['kpi-icon', { 'kpi-icon--accent': kpi.accent }]">
@@ -257,7 +301,31 @@ onMounted(load)
             <div v-for="n in 5" :key="n" class="app-skeleton" style="height: 40px" />
           </div>
           <template v-else-if="recentPurchases.length">
-            <v-table density="comfortable" class="dash-table">
+            <div class="d-sm-none pa-3 d-flex flex-column ga-2">
+              <v-card
+                v-for="p in recentPurchases"
+                :key="p.id"
+                :to="{ name: 'purchases' }"
+                variant="tonal"
+                rounded="lg"
+                class="purchase-mobile-card"
+              >
+                <v-card-text class="pa-3">
+                  <div class="d-flex align-start justify-space-between ga-3">
+                    <div class="min-width-0">
+                      <div class="text-body-2 font-weight-bold">{{ p.purchaseNumber }}</div>
+                      <div class="text-caption text-medium-emphasis text-truncate">{{ p.supplierName }}</div>
+                    </div>
+                    <v-chip size="x-small" variant="tonal" label>{{ statusLabel(p.status.name) }}</v-chip>
+                  </div>
+                  <div class="d-flex align-center justify-space-between mt-3">
+                    <span class="text-caption text-medium-emphasis">{{ formatDate(p.createdAt) }}</span>
+                    <span class="text-body-2 font-weight-bold">{{ formatNumber(p.totalAmount) }}</span>
+                  </div>
+                </v-card-text>
+              </v-card>
+            </div>
+            <v-table density="comfortable" class="dash-table d-none d-sm-block">
               <thead>
                 <tr>
                   <th>{{ t('dashboard.colNumber') }}</th>
@@ -398,5 +466,65 @@ onMounted(load)
   text-transform: uppercase;
   letter-spacing: 0.4px;
   color: rgba(var(--v-theme-on-surface), 0.55) !important;
+}
+.dashboard-command {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  overflow: hidden;
+  padding: clamp(20px, 3vw, 30px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--app-radius-xl);
+  color: #f4f7fb;
+  background: var(--app-nav-bg);
+  box-shadow: 0 18px 44px rgba(10, 24, 44, 0.16);
+}
+.dashboard-command::after {
+  position: absolute;
+  width: 240px;
+  height: 240px;
+  inset-inline-end: -100px;
+  inset-block-start: -150px;
+  border: 52px solid rgba(184, 135, 70, 0.13);
+  border-radius: 50%;
+  content: '';
+  pointer-events: none;
+}
+.dashboard-command__copy { position: relative; z-index: 1; max-width: 660px; }
+.dashboard-command__date { color: #9fb0c6; }
+.dashboard-command__title { margin-top: 7px; font-size: clamp(1.3rem, 2.4vw, 2rem); font-weight: 500; line-height: 1.4; }
+.dashboard-command__title strong { color: #fff; font-weight: 760; }
+.dashboard-command__copy p { margin: 8px 0 0; color: #aebbd0; font-size: 0.88rem; }
+.dashboard-command__actions { position: relative; z-index: 1; min-width: 290px; }
+.dashboard-command__actions > span { color: #aebbd0; }
+.dashboard-command__actions :deep(.v-btn) { color: #fff; background: rgba(255,255,255,0.09); }
+.min-width-0 {
+  min-width: 0;
+}
+.purchase-mobile-card {
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+}
+@media (max-width: 599px) {
+  .dashboard-command { align-items: flex-start; flex-direction: column; gap: 18px; }
+  .dashboard-command__actions { width: 100%; min-width: 0; }
+  .dashboard-command__actions :deep(.v-btn) { flex: 1 1 calc(50% - 8px); }
+  .kpi-card :deep(.v-card-text) {
+    min-height: 138px;
+    padding: 14px;
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 10px !important;
+  }
+  .kpi-icon {
+    width: 42px;
+    height: 42px;
+  }
+  .donut-wrap,
+  .donut {
+    width: 144px;
+    height: 144px;
+  }
 }
 </style>

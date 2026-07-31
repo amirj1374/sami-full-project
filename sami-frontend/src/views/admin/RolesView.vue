@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
@@ -8,6 +8,7 @@ import { rolesApi } from '@/api/roles'
 import { useApiError } from '@/composables/useApiError'
 import { useServerLabel } from '@/composables/useServerLabel'
 import PermissionMatrixDialog from '@/components/PermissionMatrixDialog.vue'
+import AppPageHeader from '@/components/AppPageHeader.vue'
 import type { PageQuery } from '@/types/api'
 import type { Role } from '@/types/models'
 
@@ -31,13 +32,13 @@ const totalItems = ref(0)
 const loading = ref(false)
 const lastOptions = ref<TableOptions>({ page: 1, itemsPerPage: 10, sortBy: [] })
 
-const headers = [
+const headers = computed(() => [
   { title: t('roles.name'), key: 'name' },
   { title: t('roles.description'), key: 'description', sortable: false },
   { title: t('roles.attributes'), key: 'attributes', sortable: false },
   { title: t('roles.users'), key: 'userCount', sortable: false, align: 'end' as const },
   { title: '', key: 'actions', sortable: false, align: 'end' as const },
-]
+])
 
 async function loadItems(options: TableOptions) {
   lastOptions.value = options
@@ -195,19 +196,13 @@ async function confirmDelete() {
 
 <template>
   <div>
-    <div class="d-flex align-center mb-4">
-      <h1 class="text-h4">{{ t('roles.title') }}</h1>
-      <v-spacer />
-      <v-btn v-can="'roles:create'" color="primary" prepend-icon="mdi-plus" @click="openCreate">
-        {{ t('roles.new') }}
-      </v-btn>
-    </div>
+    <AppPageHeader icon="mdi-shield-account-outline" :title="t('roles.title')"><template #actions><v-btn v-can="'roles:create'" color="primary" prepend-icon="mdi-plus" @click="openCreate">{{ t('roles.new') }}</v-btn></template></AppPageHeader>
 
     <v-alert v-if="errorMessage" type="error" variant="tonal" density="compact" class="mb-4">
       {{ errorMessage }}
     </v-alert>
 
-    <v-card rounded="lg" border flat>
+    <v-card rounded="lg" border flat class="app-data-surface">
       <v-data-table-server
         :headers="headers"
         :items="items"
@@ -223,14 +218,14 @@ async function confirmDelete() {
           <span class="text-medium-emphasis">{{ item.description ?? '—' }}</span>
         </template>
         <template #[`item.attributes`]="{ item }">
-          <v-chip v-if="item.isSystem" size="small" variant="tonal" class="mr-1">{{ t('roles.system') }}</v-chip>
+          <v-chip v-if="item.isSystem" size="small" variant="tonal" class="me-1">{{ t('roles.system') }}</v-chip>
           <v-chip
             v-if="item.isSuperAdmin"
             color="warning"
             size="small"
             variant="tonal"
             prepend-icon="mdi-shield-crown"
-            class="mr-1"
+            class="me-1"
           >
             {{ t('roles.superAdmin') }}
           </v-chip>

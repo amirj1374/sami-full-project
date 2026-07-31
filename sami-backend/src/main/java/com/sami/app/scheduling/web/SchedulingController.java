@@ -161,6 +161,7 @@ public class SchedulingController {
         return ApiResponse.ok(Map.of(
                 "appointmentTypes", appointmentTypeRepository.findByIsActiveTrueOrderByDisplayOrderAsc()
                         .stream().map(t -> Map.of(
+                                "id", t.getId(),
                                 "code", t.getCode(), "name", t.getName(),
                                 "defaultDurationMinutes", t.getDefaultDurationMinutes(),
                                 "minDurationMinutes", t.getMinDurationMinutes(),

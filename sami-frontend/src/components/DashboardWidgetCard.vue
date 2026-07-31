@@ -44,10 +44,10 @@ const renderer = computed(() => resolveWidgetComponent(props.widget.widgetTypeCo
           v-if="editMode"
           icon="mdi-drag"
           size="small"
-          class="mr-1 cursor-move"
+          class="me-1 cursor-move"
           data-drag-handle
         />
-        <v-icon v-else-if="icon" :icon="icon" :color="color" size="small" class="mr-2" />
+        <v-icon v-else-if="icon" :icon="icon" :color="color" size="small" class="me-2" />
         <span class="text-subtitle-2 text-truncate">{{ widget.title }}</span>
         <v-spacer />
         <v-chip v-if="meta.thresholdLevel" size="x-small" :color="thresholdColor" variant="flat">

@@ -1,0 +1,11 @@
+export interface LicenseRecord { id:number; code:string; typeCode:string; tenantId:number; tenantCode:string; companyId:number|null; statusCode:string; statusName:string; planCode:string; expiryBehavior:string|null; activationDate:string|null; expirationDate:string|null; graceDays:number; activatedAt:string|null; activationMode:string|null; paymentStatus:string|null; autoRenew:boolean; emergencyUntil:string|null; transferCount:number; limitOverrides:Record<string,unknown>; createdAt:string; version:number }
+export interface TenantRecord { id:number; code:string; name:string; description:string|null; statusCode:string; statusName:string; contactEmail:string|null; config:Record<string,unknown>; activatedAt:string|null; suspendedAt:string|null; createdAt:string; version:number }
+export interface LicenseFeature { id:number; code:string; name:string; description:string|null; moduleCode:string|null; licenseRequired:boolean; core:boolean; active:boolean }
+export interface LicensePlan { id:number; code:string; name:string; description:string|null; statusCode:string; durationDays:number; renewalPolicy:string; isDefault:boolean }
+export interface LicenseLookup { id:number; code:string; name:string; extra:string|null }
+export interface LicenseCatalog { licenseStatuses:LicenseLookup[]; tenantStatuses:LicenseLookup[]; licenseTypes:LicenseLookup[]; expiryBehaviors:LicenseLookup[]; limitTypes:LicenseLookup[]; meteredLimitTypes:string[]; expiryHandlers:string[] }
+export interface LicensePayload { code:string; licenseKey?:string; typeCode:string; tenantId:number; companyId?:number; planCode:string; expiryBehaviorCode?:string; graceDays?:number; expirationDate?:string; limitOverrides:Record<string,unknown> }
+export interface LicenseValidation { valid:boolean; reason:string; licenseCode:string|null; status:string|null; planCode:string|null; tenantId:number|null; expirationDate:string|null; withinGrace:boolean; features:string[] }
+export interface UsageCheck { limitType:string; limit:number; current:number; unlimited:boolean; allowed:boolean }
+export interface LicenseSummary { total:number; byStatus:Record<string,number>; byPlan:Record<string,number>; byActivationMode:Record<string,number>; autoRenew:number }
+export interface LicenseTransfer { fromTenantId:string; toTenantId:number; reason:string; transferredAt:string; by:string }

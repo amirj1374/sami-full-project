@@ -15,7 +15,7 @@ withDefaults(
 </script>
 
 <template>
-  <div class="app-page-header d-flex flex-wrap align-center ga-4 mb-5">
+  <header class="app-page-header d-flex flex-wrap align-center ga-4 mb-6">
     <div v-if="icon" class="app-page-header__badge">
       <v-icon :icon="icon" size="26" />
     </div>
@@ -27,28 +27,53 @@ withDefaults(
     <div class="app-page-header__actions d-flex align-center ga-2 flex-wrap">
       <slot name="actions" />
     </div>
-  </div>
+  </header>
 </template>
 
 <style scoped>
 .app-page-header__badge {
-  width: 52px;
-  height: 52px;
+  width: 48px;
+  height: 48px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--app-radius);
-  color: rgb(var(--v-theme-primary));
-  background: linear-gradient(
-    135deg,
-    rgba(var(--v-theme-primary), 0.16),
-    rgba(var(--v-theme-primary), 0.06)
-  );
-  box-shadow: inset 0 0 0 1px rgba(var(--v-theme-primary), 0.1);
+  border-radius: 14px;
+  color: rgb(var(--v-theme-accent));
+  background: rgb(var(--v-theme-primary));
+  box-shadow: 0 8px 20px rgba(var(--v-theme-primary), 0.18);
   flex: none;
 }
 .app-eyebrow {
-  letter-spacing: 1.4px;
+  color: rgb(var(--v-theme-primary)) !important;
+  font-weight: 700;
+  letter-spacing: 1.2px;
   line-height: 1.4;
+}
+@media (max-width: 599px) {
+  .app-page-header {
+    gap: 12px !important;
+    margin-bottom: 18px !important;
+  }
+  .app-page-header__badge {
+    width: 40px;
+    height: 40px;
+  }
+  .app-page-header__badge :deep(.v-icon) {
+    font-size: 22px !important;
+  }
+  .app-page-header__text {
+    min-width: calc(100% - 56px);
+  }
+  .app-page-header__text h1 {
+    font-size: 1.35rem !important;
+    line-height: 1.35;
+  }
+  .app-page-header__actions {
+    width: 100%;
+    padding-top: 4px;
+  }
+  .app-page-header__actions :deep(.v-btn) {
+    flex: 1;
+  }
 }
 </style>
