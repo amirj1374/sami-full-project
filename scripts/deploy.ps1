@@ -361,10 +361,19 @@ function Invoke-SshScript {
 
 function Get-ImageMetadata {
     param([string]$Tag, [string]$Component)
-    $json = Invoke-CapturedNative $script:DockerExecutable @('image', 'inspect', $Tag) "$Component image inspection"
-    $parsed = @($json | ConvertFrom-Json)
-    if ($parsed.Count -eq 0) { throw "$Component image '$Tag' was not found." }
-    $image = $parsed[0]
+    $indexJson = Invoke-CapturedNative $script:DockerExecutable @('image', 'inspect', $Tag) "$Component image-index inspection"
+    $indexResult = $indexJson | ConvertFrom-Json
+    $indexImage = if ($indexResult -is [array]) { $indexResult[0] } else { $indexResult }
+    if ($null -eq $indexImage) { throw "$Component image '$Tag' was not found." }
+
+    # Buildx with provenance may load an OCI index containing the application
+    # manifest plus an attestation manifest. Inspect the release platform
+    # explicitly instead of treating empty index-level platform fields as data.
+    $platformJson = Invoke-CapturedNative $script:DockerExecutable @(
+        'image', 'inspect', '--platform', 'linux/amd64', $Tag
+    ) "$Component linux/amd64 image inspection"
+    $platformResult = $platformJson | ConvertFrom-Json
+    $image = if ($platformResult -is [array]) { $platformResult[0] } else { $platformResult }
     $architecture = Get-ObjectPropertyValue $image 'Architecture'
     $operatingSystem = Get-ObjectPropertyValue $image 'Os'
     if ($operatingSystem -ne 'linux' -or $architecture -ne 'amd64') {
@@ -386,11 +395,12 @@ function Get-ImageMetadata {
             '-c', "grep -R -F -q '$($script:CommitSha)' /usr/share/nginx/html"
         ) 'Frontend embedded build-revision check'
     }
-    $repoDigests = @(Get-ObjectPropertyValue $image 'RepoDigests')
+    $repoDigests = @(Get-ObjectPropertyValue $indexImage 'RepoDigests')
     return [pscustomobject]@{
         Component    = $Component
         Tag          = $Tag
-        Id           = (Get-ObjectPropertyValue $image 'Id')
+        Id           = (Get-ObjectPropertyValue $indexImage 'Id')
+        PlatformId   = (Get-ObjectPropertyValue $image 'Id')
         Architecture = $architecture
         Os           = $operatingSystem
         Revision     = $revision
@@ -450,7 +460,15 @@ function Invoke-BuildPhase {
 function Publish-AtomicFile {
     param([string]$TemporaryPath, [string]$FinalPath)
     if (Test-Path -LiteralPath $FinalPath) {
-        [IO.File]::Replace($TemporaryPath, $FinalPath, $null)
+        $backupPath = "$FinalPath.replace-backup-$([Guid]::NewGuid().ToString('N'))"
+        try {
+            [IO.File]::Replace($TemporaryPath, $FinalPath, $backupPath)
+        }
+        finally {
+            if (Test-Path -LiteralPath $backupPath) {
+                Remove-Item -LiteralPath $backupPath -Force -ErrorAction SilentlyContinue
+            }
+        }
     }
     else {
         [IO.File]::Move($TemporaryPath, $FinalPath)
@@ -489,6 +507,8 @@ function Invoke-ExportPhase {
             frontendImageTag    = $FrontendImageTag
             backendImageId      = $script:BackendImage.Id
             frontendImageId     = $script:FrontendImage.Id
+            backendPlatformImageId = $script:BackendImage.PlatformId
+            frontendPlatformImageId = $script:FrontendImage.PlatformId
             backendImageDigests = @($script:BackendImage.RepoDigests)
             frontendImageDigests = @($script:FrontendImage.RepoDigests)
             backendTarFilename  = 'sami-backend-test.tar'
