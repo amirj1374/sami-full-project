@@ -1,6 +1,6 @@
-import type{ApiResponse,PageQuery,PageResponse}from '@/types/api';import type{Sale,SaleAudit,SaleDiscount,SalePayload,SalesDashboard}from '@/types/sales';import{http,unwrap}from './http'
+import type{ApiResponse,PageQuery,PageResponse}from '@/types/api';import type{Sale,SaleAccountingEntry,SaleAudit,SaleDiscount,SalePayload,SalesDashboard,SalesFilter,SalesReport,LostSale,LostSalePayload}from '@/types/sales';import{http,unwrap}from './http'
 export const salesApi={
- list:(params:PageQuery={}):Promise<PageResponse<Sale>>=>unwrap(http.get<ApiResponse<PageResponse<Sale>>>('/v1/sales',{params})),
+ list:(params:PageQuery&SalesFilter={}):Promise<PageResponse<Sale>>=>unwrap(http.get<ApiResponse<PageResponse<Sale>>>('/v1/sales',{params})),
  get:(id:number):Promise<Sale>=>unwrap(http.get<ApiResponse<Sale>>(`/v1/sales/${id}`)),
  create:(p:SalePayload):Promise<Sale>=>unwrap(http.post<ApiResponse<Sale>>('/v1/sales',p)),
  update:(id:number,p:SalePayload):Promise<Sale>=>unwrap(http.put<ApiResponse<Sale>>(`/v1/sales/${id}`,p)),
@@ -14,5 +14,9 @@ export const salesApi={
  returnSale:(id:number,p:{reason:string;refundMethod:string;items:{saleItemId:number;quantity:number}[]}):Promise<Sale>=>unwrap(http.post<ApiResponse<Sale>>(`/v1/sales/${id}/return`,p)),
  audit:(id:number):Promise<SaleAudit[]>=>unwrap(http.get<ApiResponse<SaleAudit[]>>(`/v1/sales/${id}/audit`)),
  dashboard:():Promise<SalesDashboard>=>unwrap(http.get<ApiResponse<SalesDashboard>>('/v1/sales/dashboard')),
- exportCsv:async():Promise<void>=>{const response=await http.get<Blob>('/v1/sales/reports/export.csv',{responseType:'blob'});const url=URL.createObjectURL(response.data);const anchor=document.createElement('a');anchor.href=url;anchor.download='sales-report.csv';anchor.click();URL.revokeObjectURL(url)},
+ reports:(params:SalesFilter={}):Promise<SalesReport>=>unwrap(http.get<ApiResponse<SalesReport>>('/v1/sales/reports',{params})),
+ accounting:(id:number):Promise<SaleAccountingEntry[]>=>unwrap(http.get<ApiResponse<SaleAccountingEntry[]>>(`/v1/sales/${id}/accounting`)),
+ lostSales:(params:PageQuery={}):Promise<PageResponse<LostSale>>=>unwrap(http.get<ApiResponse<PageResponse<LostSale>>>('/v1/sales/lost',{params})),
+ recordLostSale:(payload:LostSalePayload):Promise<LostSale>=>unwrap(http.post<ApiResponse<LostSale>>('/v1/sales/lost',payload)),
+ exportCsv:async(params:SalesFilter={}):Promise<void>=>{const response=await http.get<Blob>('/v1/sales/reports/export.csv',{params,responseType:'blob'});const url=URL.createObjectURL(response.data);const anchor=document.createElement('a');anchor.href=url;anchor.download='sales-report.csv';document.body.appendChild(anchor);anchor.click();anchor.remove();URL.revokeObjectURL(url)},
 }
