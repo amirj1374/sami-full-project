@@ -17,6 +17,12 @@ public final class SalesDtos { private SalesDtos(){}
  public record AuditResponse(Long id,String action,Long actorId,String actorEmail,Map<String,Object> oldValue,Map<String,Object> newValue,Instant occurredAt){ public static AuditResponse from(SaleAuditHistory a){return new AuditResponse(a.getId(),a.getAction(),a.getActorId(),a.getActorEmail(),a.getOldValue(),a.getNewValue(),a.getOccurredAt());}}
  public record DiscountResponse(Long id,String type,BigDecimal amount,String reason,String status,Long requestedBy,Long approvedBy,Instant requestedAt,Instant decidedAt){public static DiscountResponse from(SaleDiscount d){return new DiscountResponse(d.getId(),d.getDiscountType(),d.getAmount(),d.getReason(),d.getStatus(),d.getRequestedBy(),d.getApprovedBy(),d.getRequestedAt(),d.getDecidedAt());}}
  public record DashboardResponse(long drafts,long confirmed,long completed,long cancelled,BigDecimal revenue,BigDecimal profit){}
+ public record ReportFilter(Instant from,Instant to,Long branchId,Long sellerId,String status,String saleType){}
+ public record MetricPoint(String label,BigDecimal value,long count){}
+ public record SalesReportResponse(BigDecimal revenue,BigDecimal grossProfit,BigDecimal averageTicket,BigDecimal discountRate,BigDecimal returnRate,long invoiceCount,long lostSaleCount,List<MetricPoint> dailySales,List<MetricPoint> paymentMethods,List<MetricPoint> topProducts,List<MetricPoint> topSellers){}
+ public record AccountingEntryResponse(Long id,String entryType,String accountCode,BigDecimal debit,BigDecimal credit,String referenceNo,Instant postedAt){}
+ public record LostSaleRequest(@NotNull Long companyId,@NotNull Long branchId,Long customerId,Long productId,@NotBlank @Size(max=40) String reasonCode,@Size(max=1000) String notes,@DecimalMin("0") BigDecimal expectedAmount,Instant occurredAt){}
+ public record LostSaleResponse(Long id,Long companyId,Long branchId,Long customerId,Long productId,Long sellerId,String reasonCode,String notes,BigDecimal expectedAmount,Instant occurredAt,Instant createdAt){public static LostSaleResponse from(LostSale s){return new LostSaleResponse(s.getId(),s.getCompanyId(),s.getBranchId(),s.getCustomerId(),s.getProductId(),s.getSellerId(),s.getReasonCode(),s.getNotes(),s.getExpectedAmount(),s.getOccurredAt(),s.getCreatedAt());}}
  public record AiRequest(Long saleId,@NotBlank String type,Map<String,Object> context){}
  public record AiResponse(Long id,boolean available,String provider,Map<String,Object> result){}
 }

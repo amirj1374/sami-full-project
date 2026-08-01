@@ -3,14 +3,16 @@ package com.sami.app.sales.web;
 import com.sami.app.common.api.*; import com.sami.app.sales.dto.SalesDtos.*; import com.sami.app.sales.service.SalesService;
 import io.swagger.v3.oas.annotations.Operation; import io.swagger.v3.oas.annotations.tags.Tag; import jakarta.validation.Valid; import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable; import org.springframework.data.web.PageableDefault; import org.springframework.http.*; import org.springframework.security.access.prepost.PreAuthorize; import org.springframework.web.bind.annotation.*;
-import java.util.List;
+import java.time.Instant; import java.util.List;
 
 @RestController @RequestMapping("/api/v1/sales") @RequiredArgsConstructor
 @Tag(name="Sales",description="Tenant-scoped sales, payments, lifecycle, returns and reporting")
 public class SalesController {
  private final SalesService service;
  @GetMapping @PreAuthorize("@authz.has('sales:view')") @Operation(summary="List sales")
- public ApiResponse<PageResponse<SaleResponse>> list(@PageableDefault(size=20,sort="createdAt") Pageable pageable){return ApiResponse.ok(PageResponse.from(service.list(pageable)));}
+ public ApiResponse<PageResponse<SaleResponse>> list(@PageableDefault(size=20,sort="createdAt") Pageable pageable,
+  @RequestParam(required=false) Instant from,@RequestParam(required=false) Instant to,@RequestParam(required=false) Long branchId,
+  @RequestParam(required=false) Long sellerId,@RequestParam(required=false) String status,@RequestParam(required=false) String saleType){return ApiResponse.ok(PageResponse.from(service.list(pageable,new ReportFilter(from,to,branchId,sellerId,status,saleType))));}
  @GetMapping("/{id}") @PreAuthorize("@authz.has('sales:view')") public ApiResponse<SaleResponse> get(@PathVariable Long id){return ApiResponse.ok(service.get(id));}
  @PostMapping @ResponseStatus(HttpStatus.CREATED) @PreAuthorize("@authz.has('sales:create')") public ApiResponse<SaleResponse> create(@Valid @RequestBody SaleRequest request){return ApiResponse.ok(service.create(request));}
  @PutMapping("/{id}") @PreAuthorize("@authz.has('sales:edit')") public ApiResponse<SaleResponse> update(@PathVariable Long id,@Valid @RequestBody SaleRequest request){return ApiResponse.ok(service.update(id,request));}
@@ -24,6 +26,14 @@ public class SalesController {
  @PostMapping("/{id}/return") @PreAuthorize("@authz.has('sales:return')") public ApiResponse<SaleResponse> createReturn(@PathVariable Long id,@Valid @RequestBody ReturnRequest request){return ApiResponse.ok(service.createReturn(id,request));}
  @GetMapping("/{id}/audit") @PreAuthorize("@authz.has('sales:view-audit')") public ApiResponse<List<AuditResponse>> audit(@PathVariable Long id){return ApiResponse.ok(service.audit(id));}
  @GetMapping("/dashboard") @PreAuthorize("@authz.has('sales:report')") public ApiResponse<DashboardResponse> dashboard(){return ApiResponse.ok(service.dashboard());}
- @GetMapping(value="/reports/export.csv",produces="text/csv;charset=UTF-8") @PreAuthorize("@authz.has('sales:export')") public ResponseEntity<byte[]> export(){return ResponseEntity.ok().contentType(MediaType.parseMediaType("text/csv;charset=UTF-8")).header(HttpHeaders.CONTENT_DISPOSITION,"attachment; filename*=UTF-8''sales-report.csv").body(service.exportCsv());}
+ @GetMapping("/reports") @PreAuthorize("@authz.has('sales:report')") public ApiResponse<SalesReportResponse> reports(
+  @RequestParam(required=false) Instant from,@RequestParam(required=false) Instant to,@RequestParam(required=false) Long branchId,
+  @RequestParam(required=false) Long sellerId,@RequestParam(required=false) String status,@RequestParam(required=false) String saleType){return ApiResponse.ok(service.report(new ReportFilter(from,to,branchId,sellerId,status,saleType)));}
+ @GetMapping(value="/reports/export.csv",produces="text/csv;charset=UTF-8") @PreAuthorize("@authz.has('sales:export')") public ResponseEntity<byte[]> export(
+  @RequestParam(required=false) Instant from,@RequestParam(required=false) Instant to,@RequestParam(required=false) Long branchId,
+  @RequestParam(required=false) Long sellerId,@RequestParam(required=false) String status,@RequestParam(required=false) String saleType){return ResponseEntity.ok().contentType(MediaType.parseMediaType("text/csv;charset=UTF-8")).header(HttpHeaders.CONTENT_DISPOSITION,"attachment; filename*=UTF-8''sales-report.csv").body(service.exportCsv(new ReportFilter(from,to,branchId,sellerId,status,saleType)));}
+ @GetMapping("/{id}/accounting") @PreAuthorize("@authz.has('sales:view-accounting')") public ApiResponse<List<AccountingEntryResponse>> accounting(@PathVariable Long id){return ApiResponse.ok(service.accounting(id));}
+ @GetMapping("/lost") @PreAuthorize("@authz.has('sales:manage-lost-sales')") public ApiResponse<PageResponse<LostSaleResponse>> lost(@PageableDefault(size=20) Pageable pageable){return ApiResponse.ok(PageResponse.from(service.lostSales(pageable)));}
+ @PostMapping("/lost") @ResponseStatus(HttpStatus.CREATED) @PreAuthorize("@authz.has('sales:manage-lost-sales')") public ApiResponse<LostSaleResponse> lost(@Valid @RequestBody LostSaleRequest request){return ApiResponse.ok(service.recordLostSale(request));}
  @PostMapping("/ai/recommendation") @PreAuthorize("@authz.has('sales:view')") public ApiResponse<AiResponse> recommend(@Valid @RequestBody AiRequest request){return ApiResponse.ok(service.recommend(request));}
 }
