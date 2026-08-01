@@ -20,7 +20,10 @@ import lombok.Setter;
 @Builder
 public class CustomerTag extends BaseEntity {
 
-    @Column(nullable = false, unique = true, length = 80)
+    @Column(name = "tenant_id", updatable = false)
+    private Long tenantId;
+
+    @Column(nullable = false, length = 80)
     private String name;
 
     @Column(length = 32)

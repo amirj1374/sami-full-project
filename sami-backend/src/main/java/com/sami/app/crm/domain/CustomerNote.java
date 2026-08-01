@@ -33,6 +33,9 @@ public class CustomerNote extends BaseEntity {
 
     public enum Visibility { PUBLIC, PRIVATE }
 
+    @Column(name = "tenant_id", nullable = false, updatable = false)
+    private Long tenantId;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "customer_id", nullable = false)
     private Customer customer;

@@ -7,8 +7,8 @@ import com.sami.app.crm.dto.PreferenceDtos.PreferenceDefinitionResponse;
 import com.sami.app.crm.dto.RelationDtos.RelationTypeResponse;
 import com.sami.app.crm.dto.SegmentDtos.SegmentRequest;
 import com.sami.app.crm.dto.SegmentDtos.SegmentResponse;
-import com.sami.app.crm.repository.BlacklistReasonRepository;
-import com.sami.app.crm.repository.RelationTypeRepository;
+import com.sami.app.crm.service.CustomerBlacklistService;
+import com.sami.app.crm.service.CustomerRelationService;
 import com.sami.app.crm.service.CustomerPreferenceService;
 import com.sami.app.crm.service.SegmentService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -44,8 +44,8 @@ public class CrmExtensionConfigController {
 
     private static final String MANAGE = "@authz.hasAny('customers:manage-config','customers:edit')";
 
-    private final RelationTypeRepository relationTypeRepository;
-    private final BlacklistReasonRepository blacklistReasonRepository;
+    private final CustomerRelationService relationService;
+    private final CustomerBlacklistService blacklistService;
     private final CustomerPreferenceService preferenceService;
     private final SegmentService segmentService;
 
@@ -53,16 +53,14 @@ public class CrmExtensionConfigController {
     @PreAuthorize("@authz.has('customers:view')")
     @Operation(summary = "List relation types")
     public ApiResponse<List<RelationTypeResponse>> relationTypes() {
-        return ApiResponse.ok(relationTypeRepository.findAllByOrderByDisplayOrderAsc().stream()
-                .map(RelationTypeResponse::from).toList());
+        return ApiResponse.ok(relationService.listTypes());
     }
 
     @GetMapping("/blacklist-reasons")
     @PreAuthorize("@authz.has('customers:view')")
     @Operation(summary = "List blacklist reasons")
     public ApiResponse<List<BlacklistReasonResponse>> blacklistReasons() {
-        return ApiResponse.ok(blacklistReasonRepository.findAllByOrderByDisplayOrderAsc().stream()
-                .map(BlacklistReasonResponse::from).toList());
+        return ApiResponse.ok(blacklistService.reasons());
     }
 
     // ------------------------------------------------ preference definitions

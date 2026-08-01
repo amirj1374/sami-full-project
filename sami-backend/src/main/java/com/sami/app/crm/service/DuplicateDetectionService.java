@@ -10,6 +10,7 @@ import com.sami.app.crm.repository.CustomerContactRepository;
 import com.sami.app.crm.repository.CustomerRepository;
 import com.sami.app.crm.repository.CustomerSpecifications;
 import com.sami.app.crm.repository.DuplicateRuleRepository;
+import com.sami.app.common.tenancy.TenantContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -31,6 +32,7 @@ public class DuplicateDetectionService {
     private final DuplicateRuleRepository ruleRepository;
     private final CustomerRepository customerRepository;
     private final CustomerContactRepository contactRepository;
+    private final TenantContext tenantContext;
 
     /**
      * Finds existing (non-merged) customers colliding with the candidate on any
@@ -39,16 +41,25 @@ public class DuplicateDetectionService {
     @Transactional(readOnly = true)
     public List<DuplicateMatchResponse> findMatches(CustomerRequest candidate, Long excludeId) {
         long exclude = excludeId == null ? -1L : excludeId;
+        Long tenantId = tenantContext.requireTenantId();
         // matched customer id -> identifiers it collided on
         Map<Long, List<String>> matches = new LinkedHashMap<>();
 
-        for (DuplicateRule rule : ruleRepository.findByEnabledTrue()) {
+        Map<DuplicateRule.Identifier, DuplicateRule> rules = new LinkedHashMap<>();
+        ruleRepository.findVisible(tenantId).forEach(rule -> {
+            if (rule.getTenantId() == null) {
+                rules.putIfAbsent(rule.getIdentifier(), rule);
+            } else {
+                rules.put(rule.getIdentifier(), rule);
+            }
+        });
+        for (DuplicateRule rule : rules.values().stream().filter(DuplicateRule::isEnabled).toList()) {
             switch (rule.getIdentifier()) {
                 case PHONE -> contactValues(candidate, CustomerContact.Kind.PHONE).forEach(value ->
-                        contactRepository.findOwnerIds(CustomerContact.Kind.PHONE, value, exclude)
+                        contactRepository.findOwnerIds(CustomerContact.Kind.PHONE, value, exclude, tenantId)
                                 .forEach(id -> add(matches, id, "PHONE " + value)));
                 case EMAIL -> contactValues(candidate, CustomerContact.Kind.EMAIL).forEach(value ->
-                        contactRepository.findOwnerIds(CustomerContact.Kind.EMAIL, value, exclude)
+                        contactRepository.findOwnerIds(CustomerContact.Kind.EMAIL, value, exclude, tenantId)
                                 .forEach(id -> add(matches, id, "EMAIL " + value)));
                 case NATIONAL_CODE -> fieldMatches(candidate.nationalCode(), "nationalCode", exclude)
                         .forEach(id -> add(matches, id, "NATIONAL_CODE"));
@@ -58,7 +69,7 @@ public class DuplicateDetectionService {
         }
 
         return matches.entrySet().stream()
-                .map(entry -> customerRepository.findById(entry.getKey())
+                .map(entry -> customerRepository.findByIdAndTenantId(entry.getKey(), tenantId)
                         .map(c -> new DuplicateMatchResponse(
                                 c.getId(), c.getCustomerCode(), c.getDisplayName(), entry.getValue()))
                         .orElse(null))
@@ -83,6 +94,7 @@ public class DuplicateDetectionService {
             return List.of();
         }
         Specification<Customer> spec = Specification.allOf(
+                CustomerSpecifications.hasTenant(tenantContext.requireTenantId()),
                 CustomerSpecifications.notMerged(),
                 (root, query, cb) -> cb.equal(root.get(attribute), value),
                 (root, query, cb) -> cb.notEqual(root.get("id"), excludeId));

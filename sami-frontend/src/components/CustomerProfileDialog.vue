@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { useDisplay } from 'vuetify'
 import { useI18n } from 'vue-i18n'
 import { customersApi } from '@/api/customers'
 import { crmConfigApi } from '@/api/crmConfig'
@@ -7,7 +8,9 @@ import { useApiError } from '@/composables/useApiError'
 import { usePermission } from '@/composables/usePermission'
 import { useFormat } from '@/composables/useFormat'
 import { useServerLabel } from '@/composables/useServerLabel'
+import { useNotifications } from '@/composables/useNotifications'
 import type {
+  BlacklistEntry,
   Customer,
   CustomerDetail,
   CustomerEvent,
@@ -35,18 +38,24 @@ const open = computed({
 })
 
 const { t } = useI18n()
+const { smAndDown } = useDisplay()
 const { formatDateTime } = useFormat()
 const { can } = usePermission()
 const { lookupLabel } = useServerLabel()
 const { message: errorMessage, set: setError, clear: clearError } = useApiError()
-const tab = ref<'timeline' | 'notes' | 'relations'>('timeline')
+const notifications = useNotifications()
+const tab = ref<'timeline' | 'notes' | 'relations' | 'blacklist'>('timeline')
 
 // --- Detail + avatar ---------------------------------------------------------
 const detail = ref<CustomerDetail | null>(null)
 const avatarSrc = ref<string | null>(null)
+const detailLoading = ref(false)
+const avatarInput = ref<HTMLInputElement | null>(null)
+const avatarBusy = ref(false)
 
 async function loadDetail() {
   if (!props.customer) return
+  detailLoading.value = true
   clearError()
   try {
     detail.value = await customersApi.get(props.customer.id)
@@ -58,6 +67,25 @@ async function loadDetail() {
     }
   } catch (err) {
     setError(err)
+  } finally {
+    detailLoading.value = false
+  }
+}
+
+async function uploadAvatar(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file || !props.customer) return
+  avatarBusy.value = true
+  try {
+    await customersApi.uploadAvatar(props.customer.id, file)
+    await loadDetail()
+    notifications.success(t('customers.profile.avatarUpdated'))
+  } catch (err) {
+    setError(err)
+  } finally {
+    avatarBusy.value = false
   }
 }
 
@@ -161,6 +189,7 @@ async function deleteNote(note: CustomerNote) {
   try {
     await customersApi.deleteNote(props.customer.id, note.id)
     await loadNotes()
+    notifications.success(t('customers.profile.notes.deleted'))
   } catch (err) {
     setError(err)
   }
@@ -218,6 +247,7 @@ async function addRelation() {
     relationSearch.value = ''
     relationNote.value = ''
     await loadRelations()
+    notifications.success(t('customers.profile.relations.saved'))
   } catch (err) {
     setError(err)
   } finally {
@@ -230,8 +260,25 @@ async function removeRelation(relation: CustomerRelation) {
   try {
     await customersApi.removeRelation(props.customer.id, relation.id)
     await loadRelations()
+    notifications.success(t('customers.profile.relations.deleted'))
   } catch (err) {
     setError(err)
+  }
+}
+
+// --- Blacklist history ------------------------------------------------------
+const blacklistHistory = ref<BlacklistEntry[]>([])
+const blacklistLoading = ref(false)
+
+async function loadBlacklistHistory() {
+  if (!props.customer) return
+  blacklistLoading.value = true
+  try {
+    blacklistHistory.value = await customersApi.blacklistHistory(props.customer.id)
+  } catch (err) {
+    setError(err)
+  } finally {
+    blacklistLoading.value = false
   }
 }
 
@@ -248,6 +295,7 @@ watch(open, (isOpen) => {
   void loadTimeline()
   void loadNotes()
   void loadRelations()
+  void loadBlacklistHistory()
 })
 
 const PRIORITY_COLORS: Record<NotePriority, string> = {
@@ -275,14 +323,17 @@ function detailEntries(event: CustomerEvent): [string, unknown][] {
 </script>
 
 <template>
-  <v-dialog v-model="open" max-width="760">
+  <v-dialog v-model="open" :fullscreen="smAndDown" max-width="820">
     <v-card rounded="lg">
       <v-card-text v-if="customer" class="px-6 pt-5 pb-2">
-        <div class="d-flex align-center">
-          <v-avatar size="56" color="surface-variant" class="me-4">
+        <div class="d-flex align-center flex-wrap ga-3">
+          <div>
+          <v-avatar size="56" color="surface-variant">
             <v-img v-if="avatarSrc" :src="avatarSrc" cover />
             <v-icon v-else icon="mdi-account" />
           </v-avatar>
+          <input ref="avatarInput" type="file" accept="image/png,image/jpeg,image/webp" class="d-none" @change="uploadAvatar" />
+          </div>
           <div>
             <div class="text-h6">
               {{ customer.displayName }}
@@ -309,6 +360,16 @@ function detailEntries(event: CustomerEvent): [string, unknown][] {
             </div>
           </div>
           <v-spacer />
+          <v-btn
+            v-if="can('customers:edit')"
+            size="small"
+            variant="tonal"
+            prepend-icon="mdi-camera"
+            :loading="avatarBusy"
+            @click="avatarInput?.click()"
+          >
+            {{ t('customers.profile.changeAvatar') }}
+          </v-btn>
           <div v-if="detail" class="text-body-2 text-medium-emphasis text-right">
             <div v-for="contact in detail.contacts.filter((c) => c.isDefault)" :key="contact.kind">
               <v-icon :icon="contact.kind === 'PHONE' ? 'mdi-phone' : 'mdi-email'" size="x-small" />
@@ -320,12 +381,14 @@ function detailEntries(event: CustomerEvent): [string, unknown][] {
         <v-alert v-if="errorMessage" type="error" variant="tonal" density="compact" class="mt-3">
           {{ errorMessage }}
         </v-alert>
+        <v-progress-linear v-if="detailLoading" indeterminate class="mt-3" />
       </v-card-text>
 
       <v-tabs v-model="tab" class="px-4">
         <v-tab value="timeline">{{ t('customers.profile.tabs.timeline') }}</v-tab>
         <v-tab value="notes">{{ t('customers.profile.tabs.notes') }}</v-tab>
         <v-tab value="relations">{{ t('customers.profile.tabs.relations') }}</v-tab>
+        <v-tab value="blacklist">{{ t('customers.profile.tabs.blacklist') }}</v-tab>
       </v-tabs>
       <v-divider />
 
@@ -526,6 +589,31 @@ function detailEntries(event: CustomerEvent): [string, unknown][] {
               </v-list-item>
             </v-list>
           </v-window-item>
+          <v-window-item value="blacklist">
+            <v-progress-linear v-if="blacklistLoading" indeterminate class="mb-3" />
+            <p v-else-if="blacklistHistory.length === 0" class="text-body-2 text-medium-emphasis">
+              {{ t('customers.profile.blacklist.empty') }}
+            </p>
+            <v-list v-else lines="three">
+              <v-list-item v-for="entry in blacklistHistory" :key="entry.id">
+                <template #prepend>
+                  <v-avatar :color="entry.liftedAt ? 'success' : 'error'" variant="tonal" rounded="lg">
+                    <v-icon :icon="entry.liftedAt ? 'mdi-account-check' : 'mdi-account-cancel'" />
+                  </v-avatar>
+                </template>
+                <v-list-item-title>{{ lookupLabel(entry.reason.name) }}</v-list-item-title>
+                <v-list-item-subtitle>
+                  {{ formatDateTime(entry.createdAt) }} · {{ entry.createdByEmail ?? t('customers.profile.systemAuthor') }}
+                  <template v-if="entry.note"><br />{{ entry.note }}</template>
+                </v-list-item-subtitle>
+                <template #append>
+                  <v-chip :color="entry.liftedAt ? 'success' : 'error'" size="small" variant="tonal">
+                    {{ entry.liftedAt ? t('customers.profile.blacklist.lifted') : t('customers.profile.blacklist.active') }}
+                  </v-chip>
+                </template>
+              </v-list-item>
+            </v-list>
+          </v-window-item>
         </v-window>
       </v-card-text>
 
@@ -536,3 +624,11 @@ function detailEntries(event: CustomerEvent): [string, unknown][] {
     </v-card>
   </v-dialog>
 </template>
+
+<style scoped>
+@media (max-width: 599px) {
+  :deep(.v-card-text) { padding-inline: 16px !important; }
+  :deep(.v-tabs) { overflow-x: auto; }
+  :deep(.v-btn) { min-height: 44px; }
+}
+</style>

@@ -7,6 +7,7 @@ import com.sami.app.crm.dto.ContactDto;
 import com.sami.app.crm.dto.CustomerRequest;
 import com.sami.app.crm.dto.ImportResultResponse;
 import com.sami.app.crm.repository.CustomerTypeRepository;
+import com.sami.app.common.tenancy.TenantContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -41,6 +42,7 @@ public class CustomerImportService {
 
     private final CustomerService customerService;
     private final CustomerTypeRepository typeRepository;
+    private final TenantContext tenantContext;
 
     public ImportResultResponse importCsv(MultipartFile file) {
         List<String[]> rows = parse(file);
@@ -53,7 +55,14 @@ public class CustomerImportService {
             throw new ApiException(ErrorCode.VALIDATION_FAILED,
                     "The header must contain a displayName column");
         }
-        Long defaultTypeId = typeRepository.findByIsDefaultTrue()
+        Long tenantId = tenantContext.requireTenantId();
+        Long defaultTypeId = typeRepository.findVisible(tenantId).stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        type -> type.getCode().toLowerCase(Locale.ROOT),
+                        type -> type,
+                        (left, right) -> right.getTenantId() != null ? right : left,
+                        java.util.LinkedHashMap::new))
+                .values().stream().filter(com.sami.app.crm.domain.CustomerType::isDefault).findFirst()
                 .orElseThrow(() -> new ApiException(ErrorCode.INTERNAL_ERROR,
                         "No default customer type is configured"))
                 .getId();
@@ -131,6 +140,9 @@ public class CustomerImportService {
     private List<String[]> parse(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new ApiException(ErrorCode.VALIDATION_FAILED, "A CSV file is required");
+        }
+        if (file.getSize() > 5L * 1024 * 1024) {
+            throw new ApiException(ErrorCode.VALIDATION_FAILED, "The CSV file must not exceed 5 MB");
         }
         List<String[]> rows = new ArrayList<>();
         try (BufferedReader reader = new BufferedReader(

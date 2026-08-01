@@ -27,8 +27,11 @@ public class DuplicateRule extends BaseEntity {
 
     public enum Identifier { PHONE, EMAIL, NATIONAL_CODE, PASSPORT }
 
+    @Column(name = "tenant_id", updatable = false)
+    private Long tenantId;
+
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, unique = true, length = 32)
+    @Column(nullable = false, length = 32)
     private Identifier identifier;
 
     @Column(nullable = false)

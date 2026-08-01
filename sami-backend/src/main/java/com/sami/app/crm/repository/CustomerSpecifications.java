@@ -26,6 +26,10 @@ public final class CustomerSpecifications {
     private CustomerSpecifications() {
     }
 
+    public static Specification<Customer> hasTenant(Long tenantId) {
+        return (root, query, cb) -> cb.equal(root.get("tenantId"), tenantId);
+    }
+
     /** Merged-away records never appear in listings or checks. */
     public static Specification<Customer> notMerged() {
         return (root, query, cb) -> cb.isNull(root.get("mergedInto"));
@@ -125,6 +129,7 @@ public final class CustomerSpecifications {
             Root<CustomerEvent> e = sub.from(CustomerEvent.class);
             var predicates = new ArrayList<jakarta.persistence.criteria.Predicate>();
             predicates.add(cb.equal(e.get("customerId"), root.get("id")));
+            predicates.add(cb.equal(e.get("tenantId"), root.get("tenantId")));
             predicates.add(cb.equal(e.get("eventType"), eventType));
             if (threshold != null) {
                 predicates.add(cb.greaterThanOrEqualTo(e.get("occurredAt"), threshold));
@@ -145,6 +150,7 @@ public final class CustomerSpecifications {
             Root<CustomerEvent> e = sub.from(CustomerEvent.class);
             sub.select(cb.literal(1L)).where(
                     cb.equal(e.get("customerId"), root.get("id")),
+                    cb.equal(e.get("tenantId"), root.get("tenantId")),
                     cb.greaterThanOrEqualTo(e.get("occurredAt"), threshold));
             return cb.not(cb.exists(sub));
         };

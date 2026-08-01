@@ -10,6 +10,7 @@ import com.sami.app.crm.dto.NoteDtos.NoteResponse;
 import com.sami.app.crm.repository.CustomerNoteRepository;
 import com.sami.app.crm.repository.CustomerRepository;
 import com.sami.app.security.CurrentActor;
+import com.sami.app.common.tenancy.TenantContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -30,12 +31,14 @@ public class CustomerNoteService {
     private final CustomerNoteRepository noteRepository;
     private final CustomerRepository customerRepository;
     private final CustomerEventService events;
+    private final TenantContext tenantContext;
 
     @Transactional(readOnly = true)
     public Page<NoteResponse> list(Long customerId, Pageable pageable) {
         requireCustomer(customerId);
+        Long tenantId = tenantContext.requireTenantId();
         Long viewerId = CurrentActor.id();
-        return noteRepository.findVisible(customerId, viewerId == null ? -1L : viewerId,
+        return noteRepository.findVisible(tenantId, customerId, viewerId == null ? -1L : viewerId,
                         CustomerNote.Visibility.PUBLIC, pageable)
                 .map(NoteResponse::from);
     }
@@ -43,7 +46,9 @@ public class CustomerNoteService {
     @Transactional
     public NoteResponse add(Long customerId, NoteRequest request) {
         requireCustomer(customerId);
+        Long tenantId = tenantContext.requireTenantId();
         CustomerNote note = noteRepository.save(CustomerNote.builder()
+                .tenantId(tenantId)
                 .customer(customerRepository.getReferenceById(customerId))
                 .authorId(CurrentActor.id())
                 .authorEmail(CurrentActor.email())
@@ -60,7 +65,7 @@ public class CustomerNoteService {
     /** Authors may delete their own notes; nobody else's. */
     @Transactional
     public void delete(Long customerId, Long noteId) {
-        CustomerNote note = noteRepository.findById(noteId)
+        CustomerNote note = noteRepository.findByIdAndTenantId(noteId, tenantContext.requireTenantId())
                 .orElseThrow(() -> ResourceNotFoundException.of("Note", noteId));
         if (!note.getCustomer().getId().equals(customerId)) {
             throw ResourceNotFoundException.of("Note", noteId);
@@ -74,7 +79,7 @@ public class CustomerNoteService {
     }
 
     private Customer requireCustomer(Long id) {
-        return customerRepository.findById(id)
+        return customerRepository.findByIdAndTenantId(id, tenantContext.requireTenantId())
                 .orElseThrow(() -> ResourceNotFoundException.of("Customer", id));
     }
 }

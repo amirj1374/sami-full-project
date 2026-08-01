@@ -11,10 +11,9 @@ import java.util.Optional;
 public interface BlacklistEntryRepository extends JpaRepository<BlacklistEntry, Long> {
 
     @EntityGraph(attributePaths = {"reason"})
-    List<BlacklistEntry> findByCustomerIdOrderByCreatedAtDesc(Long customerId);
+    List<BlacklistEntry> findByTenantIdAndCustomerIdOrderByCreatedAtDesc(Long tenantId, Long customerId);
 
     /** The open (unlifted) episode, if the customer is currently blacklisted. */
-    Optional<BlacklistEntry> findFirstByCustomerIdAndLiftedAtIsNullOrderByCreatedAtDesc(Long customerId);
-
-    long countByReasonId(Long reasonId);
+    Optional<BlacklistEntry> findFirstByTenantIdAndCustomerIdAndLiftedAtIsNullOrderByCreatedAtDesc(
+            Long tenantId, Long customerId);
 }

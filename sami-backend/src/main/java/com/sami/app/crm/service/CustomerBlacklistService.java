@@ -15,6 +15,7 @@ import com.sami.app.crm.repository.BlacklistReasonRepository;
 import com.sami.app.crm.repository.CustomerRepository;
 import com.sami.app.crm.repository.CustomerStatusRepository;
 import com.sami.app.security.CurrentActor;
+import com.sami.app.common.tenancy.TenantContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,10 +40,24 @@ public class CustomerBlacklistService {
     private final BlacklistReasonRepository reasonRepository;
     private final BlacklistEntryRepository entryRepository;
     private final CustomerEventService events;
+    private final TenantContext tenantContext;
+
+    @Transactional(readOnly = true)
+    public List<com.sami.app.crm.dto.BlacklistDtos.BlacklistReasonResponse> reasons() {
+        java.util.LinkedHashMap<String, BlacklistReason> resolved = new java.util.LinkedHashMap<>();
+        reasonRepository.findVisible(tenantContext.requireTenantId()).forEach(reason -> {
+            String key = reason.getCode().toLowerCase(java.util.Locale.ROOT);
+            if (reason.getTenantId() == null) resolved.putIfAbsent(key, reason); else resolved.put(key, reason);
+        });
+        return resolved.values().stream()
+                .map(com.sami.app.crm.dto.BlacklistDtos.BlacklistReasonResponse::from).toList();
+    }
 
     @Transactional(readOnly = true)
     public List<BlacklistEntryResponse> history(Long customerId) {
-        return entryRepository.findByCustomerIdOrderByCreatedAtDesc(customerId).stream()
+        findOrThrow(customerId);
+        return entryRepository.findByTenantIdAndCustomerIdOrderByCreatedAtDesc(
+                        tenantContext.requireTenantId(), customerId).stream()
                 .map(BlacklistEntryResponse::from)
                 .toList();
     }
@@ -54,16 +69,20 @@ public class CustomerBlacklistService {
             throw new ApiException(ErrorCode.OPERATION_NOT_ALLOWED,
                     "The customer is already blacklisted");
         }
-        BlacklistReason reason = reasonRepository.findById(request.reasonId())
+        Long tenantId = tenantContext.requireTenantId();
+        BlacklistReason reason = reasonRepository.findVisible(tenantId).stream()
+                .filter(candidate -> candidate.getId().equals(request.reasonId())).findFirst()
                 .orElseThrow(() -> ResourceNotFoundException.of("Blacklist reason",
                         request.reasonId()));
-        CustomerStatus blacklistStatus = statusRepository.findByIsBlacklistStateTrue()
+        CustomerStatus blacklistStatus = visibleStatuses().stream()
+                .filter(CustomerStatus::isBlacklistState).findFirst()
                 .orElseThrow(() -> new ApiException(ErrorCode.INTERNAL_ERROR,
                         "No blacklist status is configured"));
 
         String from = customer.getStatus().getName();
         customer.setStatus(blacklistStatus);
         entryRepository.save(BlacklistEntry.builder()
+                .tenantId(tenantId)
                 .customer(customer)
                 .reason(reason)
                 .note(request.note())
@@ -85,12 +104,13 @@ public class CustomerBlacklistService {
             throw new ApiException(ErrorCode.OPERATION_NOT_ALLOWED,
                     "The customer is not blacklisted");
         }
-        CustomerStatus target = statusRepository.findByIsDefaultTrue()
+        CustomerStatus target = visibleStatuses().stream().filter(CustomerStatus::isDefault).findFirst()
                 .orElseThrow(() -> new ApiException(ErrorCode.INTERNAL_ERROR,
                         "No default customer status is configured"));
 
         customer.setStatus(target);
-        entryRepository.findFirstByCustomerIdAndLiftedAtIsNullOrderByCreatedAtDesc(customerId)
+        entryRepository.findFirstByTenantIdAndCustomerIdAndLiftedAtIsNullOrderByCreatedAtDesc(
+                        tenantContext.requireTenantId(), customerId)
                 .ifPresent(entry -> {
                     entry.setLiftedAt(Instant.now());
                     entry.setLiftedBy(CurrentActor.id());
@@ -102,12 +122,21 @@ public class CustomerBlacklistService {
     }
 
     private Customer findOrThrow(Long id) {
-        Customer customer = customerRepository.findById(id)
+        Customer customer = customerRepository.findByIdAndTenantId(id, tenantContext.requireTenantId())
                 .orElseThrow(() -> ResourceNotFoundException.of("Customer", id));
         if (customer.getMergedInto() != null) {
             throw new ApiException(ErrorCode.OPERATION_NOT_ALLOWED,
                     "This record was merged away");
         }
         return customer;
+    }
+
+    private List<CustomerStatus> visibleStatuses() {
+        java.util.LinkedHashMap<String, CustomerStatus> resolved = new java.util.LinkedHashMap<>();
+        statusRepository.findVisible(tenantContext.requireTenantId()).forEach(status -> {
+            String key = status.getCode().toLowerCase(java.util.Locale.ROOT);
+            if (status.getTenantId() == null) resolved.putIfAbsent(key, status); else resolved.put(key, status);
+        });
+        return List.copyOf(resolved.values());
     }
 }

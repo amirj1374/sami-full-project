@@ -46,7 +46,10 @@ import java.util.Set;
 @Builder
 public class Customer extends BaseEntity {
 
-    @Column(name = "customer_code", nullable = false, unique = true, length = 32)
+    @Column(name = "tenant_id", nullable = false, updatable = false)
+    private Long tenantId;
+
+    @Column(name = "customer_code", nullable = false, length = 32)
     private String customerCode;
 
     @Column(name = "first_name", length = 80)
