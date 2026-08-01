@@ -4,6 +4,8 @@ import com.sami.app.common.api.ApiResponse;
 import com.sami.app.common.exception.ApiException;
 import com.sami.app.common.exception.ErrorCode;
 import com.sami.app.common.exception.ResourceNotFoundException;
+import com.sami.app.common.tenancy.TenantContext;
+import com.sami.app.inventory.repository.InventoryWarehouseRepository;
 import com.sami.app.purchasing.domain.PurApprovalRule;
 import com.sami.app.purchasing.domain.PurType;
 import com.sami.app.purchasing.dto.PurLookupDtos.ApprovalRuleRequest;
@@ -19,7 +21,6 @@ import com.sami.app.purchasing.repository.PurCancelReasonRepository;
 import com.sami.app.purchasing.repository.PurIdentifierTypeRepository;
 import com.sami.app.purchasing.repository.PurStatusRepository;
 import com.sami.app.purchasing.repository.PurTypeRepository;
-import com.sami.app.purchasing.repository.PurWarehouseRepository;
 import com.sami.app.purchasing.repository.PurchaseRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -57,7 +58,8 @@ public class PurchasingConfigController {
     private final PurTypeRepository typeRepository;
     private final PurCancelReasonRepository cancelReasonRepository;
     private final PurIdentifierTypeRepository identifierTypeRepository;
-    private final PurWarehouseRepository warehouseRepository;
+    private final InventoryWarehouseRepository warehouseRepository;
+    private final TenantContext tenantContext;
     private final PurApprovalRuleRepository approvalRuleRepository;
     private final PurchaseRepository purchaseRepository;
 
@@ -155,7 +157,8 @@ public class PurchasingConfigController {
     @PreAuthorize("@authz.has('purchasing:view')")
     @Operation(summary = "List warehouses")
     public ApiResponse<List<WarehouseResponse>> warehouses() {
-        return ApiResponse.ok(warehouseRepository.findAllByOrderByDisplayOrderAsc().stream()
+        return ApiResponse.ok(warehouseRepository
+                .findByTenantIdOrderByDisplayOrderAsc(tenantContext.requireTenantId()).stream()
                 .map(WarehouseResponse::from).toList());
     }
 

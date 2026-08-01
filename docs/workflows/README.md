@@ -30,8 +30,18 @@ The purchase controller delegates creation/update and lifecycle work to
 `PurchaseService`; approval, receipt and return behavior is separated into
 specialized services. Receipt records received quantities and serial/IMEI data.
 Permissions under the purchasing namespace guard operations; logs/events record
-changes. Inventory balances, reservation and valuation are not affected because
-no inventory ledger exists.
+changes. Completed receipt and supplier-return operations post canonical balance,
+movement, serial and valuation changes through Inventory in the same transaction.
+
+## Inventory operations
+
+Inventory resolves tenant ownership from the authenticated server-side context.
+Adjustments and imports post signed, idempotent ledger entries. Transfers follow
+draft → shipped → received/cancelled stages; shipping removes source stock and
+receiving posts destination stock. Counts snapshot expected stock, capture physical
+results and post only the variance. Sales reserves available stock, releases it on
+cancellation, issues it on completion and posts customer returns. Every mutation
+records tenant-correct audit evidence and emits a process-local domain event.
 
 ## Scheduled job execution
 

@@ -3,6 +3,9 @@ package com.sami.app.purchasing.service;
 import com.sami.app.common.exception.ApiException;
 import com.sami.app.common.exception.ErrorCode;
 import com.sami.app.common.exception.ResourceNotFoundException;
+import com.sami.app.inventory.publicapi.InventoryStockOperations;
+import com.sami.app.inventory.publicapi.InventoryStockOperations.StockLine;
+import com.sami.app.inventory.publicapi.InventoryStockOperations.SupplierReturnCommand;
 import com.sami.app.purchasing.domain.Purchase;
 import com.sami.app.purchasing.domain.PurchaseItem;
 import com.sami.app.purchasing.domain.PurchaseReturn;
@@ -31,6 +34,7 @@ public class PurchaseReturnService {
     private final PurchaseService purchaseService;
     private final PurchaseReturnRepository returnRepository;
     private final PurchaseLogService logs;
+    private final InventoryStockOperations inventory;
 
     @Transactional(readOnly = true)
     public List<ReturnResponse> history(Long purchaseId) {
@@ -77,7 +81,15 @@ public class PurchaseReturnService {
             item.setReturnedQuantity(item.getReturnedQuantity().add(line.quantity()));
         }
 
-        returnRepository.save(purchaseReturn);
+        returnRepository.saveAndFlush(purchaseReturn);
+        inventory.returnToSupplier(new SupplierReturnCommand(
+                purchase.getWarehouse() == null ? null : purchase.getWarehouse().getId(),
+                purchase.getId(), purchaseReturn.getId(), purchaseReturn.getItems().stream()
+                        .map(item -> new StockLine(
+                                item.getPurchaseItem().getId(),
+                                item.getPurchaseItem().getProduct().getId(),
+                                item.getQuantity(), null, null))
+                        .toList()));
         logs.record(purchase, PurchaseLogService.RETURNED, "Returned to supplier",
                 Map.of("reason", request.reason(), "lines", request.lines().size()));
         return ReturnResponse.from(purchaseReturn);

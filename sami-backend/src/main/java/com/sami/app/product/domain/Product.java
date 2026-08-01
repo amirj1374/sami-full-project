@@ -27,6 +27,9 @@ import java.math.BigDecimal;
 @Builder
 public class Product extends BaseEntity {
 
+    @Column(name = "tenant_id", nullable = false)
+    private Long tenantId;
+
     @Column(nullable = false)
     private String name;
 

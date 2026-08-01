@@ -3,6 +3,7 @@ package com.sami.app.sales;
 import com.sami.app.authz.domain.Role;
 import com.sami.app.common.tenancy.TenantContext;
 import com.sami.app.crm.repository.CustomerRepository;
+import com.sami.app.inventory.publicapi.InventoryStockOperations;
 import com.sami.app.product.repository.ProductRepository;
 import com.sami.app.sales.domain.LostSale;
 import com.sami.app.sales.dto.SalesDtos.LostSaleRequest;
@@ -41,6 +42,7 @@ class SalesTenantOperationsTest {
     @Mock ProductRepository products;
     @Mock CustomerRepository customers;
     @Mock TenantContext tenantContext;
+    @Mock InventoryStockOperations inventory;
     @Mock JdbcTemplate jdbc;
     @Mock ApplicationEventPublisher events;
     @Mock List<SalesRecommendationProvider> providers;
