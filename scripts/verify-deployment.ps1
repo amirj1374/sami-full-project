@@ -46,9 +46,9 @@ $checks = @(
     [pscustomobject]@{ Name = 'Sales route'; Path = '/sales'; Allowed = @(200) },
     [pscustomobject]@{ Name = 'Automation route'; Path = '/automations'; Allowed = @(200) },
     [pscustomobject]@{ Name = 'Licensing route'; Path = '/licensing'; Allowed = @(200) },
-    # GET is intentionally not a login attempt. 400/401/403/405 proves nginx
-    # reached the API instead of serving the SPA or returning a proxy failure.
-    [pscustomobject]@{ Name = 'nginx API proxy'; Path = '/api/v1/auth/login'; Allowed = @(200, 400, 401, 403, 405) }
+    # The protected read is intentionally unauthenticated. 200/401/403 proves
+    # nginx reached the API instead of serving the SPA or returning a 5xx.
+    [pscustomobject]@{ Name = 'nginx API proxy'; Path = '/api/v1/menu'; Allowed = @(200, 401, 403) }
 )
 
 $handler = New-Object System.Net.Http.HttpClientHandler

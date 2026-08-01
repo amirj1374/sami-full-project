@@ -719,8 +719,8 @@ deploy_release() {
   for route in /auth/login /sales /automations /licensing; do
     curl --fail --silent --show-error "http://127.0.0.1$route" >/dev/null
   done
-  api_status="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' http://127.0.0.1/api/v1/auth/login || true)"
-  case "$api_status" in 200|400|401|403|405) ;; *) echo "Unexpected API proxy status: $api_status" >&2; return 1 ;; esac
+  api_status="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' http://127.0.0.1/api/v1/menu || true)"
+  case "$api_status" in 200|401|403) ;; *) echo "Unexpected API proxy status: $api_status" >&2; return 1 ;; esac
 }
 
 if ! deploy_release; then
