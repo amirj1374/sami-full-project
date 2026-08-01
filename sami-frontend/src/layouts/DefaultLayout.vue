@@ -45,6 +45,7 @@ const TITLE_KEYS: Record<string, string> = {
   products: 'products.title',
   suppliers: 'suppliers.title',
   purchases: 'purchases.title',
+  sales: 'sales.title',
   customers: 'customers.title',
   automations: 'automation.title',
   scheduler: 'scheduler.title',

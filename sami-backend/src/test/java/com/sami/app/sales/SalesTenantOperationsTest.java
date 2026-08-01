@@ -72,6 +72,13 @@ class SalesTenantOperationsTest {
         assertThat(event.getValue().action()).isEqualTo("LOST_SALE_RECORDED");
     }
 
+    @Test
+    void detailLookupDoesNotJoinFetchMultipleBagCollections() throws NoSuchMethodException {
+        var method = SaleRepository.class.getMethod("findByIdAndTenantId", Long.class, Long.class);
+
+        assertThat(method.getAnnotation(org.springframework.data.jpa.repository.EntityGraph.class)).isNull();
+    }
+
     private void authenticate(Long tenantId) {
         User user = User.builder().tenantId(tenantId).email("sales@example.com")
                 .passwordHash("hash").fullName("Sales User")

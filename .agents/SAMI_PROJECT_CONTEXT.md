@@ -105,6 +105,7 @@ From `sami-frontend`:
 
 ```powershell
 npm ci
+npm test
 npm run type-check
 npm run build
 npm run dev
@@ -113,13 +114,15 @@ npm run dev
 Configured scripts:
 
 - `npm run dev`: Vite development server.
+- `npm test`: Node test runner for release, route, localization, permission and
+  source-contract checks.
 - `npm run type-check`: `vue-tsc --noEmit`.
 - `npm run build`: type-check followed by production Vite build.
 - `npm run preview`: local production-bundle preview.
 
-There are currently no configured frontend lint or automated test scripts.
+There is currently no configured frontend lint script.
 
-The last verified production build passed and transformed 1005 modules. Re-run it after any source or dependency change.
+The last verified production build passed and transformed 1013 modules. Re-run it after any source or dependency change.
 
 ## Backend technology and architecture
 
@@ -156,9 +159,10 @@ Backend runtime:
 - Database defaults: PostgreSQL at `localhost:5432/sami`.
 - Production secrets must be supplied through environment variables.
 
-Migration range is `V1` through `V32`. Inventory is introduced by `V32`, which
-promotes `pur_warehouses` in place and backfills legacy product stock and Sales
-movement evidence without changing historical migrations.
+Migration range is `V1` through `V36`. `V31` completes Sales, `V32` introduces
+Inventory, `V33` completes Purchasing, `V34` completes CRM, and `V35` applies
+release hardening. `V36` preserves the transformed Sales module row and its
+grants while aligning its registry code with the `sales:*` permission namespace.
 
 ## Container and deployment context
 

@@ -98,3 +98,15 @@ test('frontend source does not hardcode company, branch, or tenant identity 1', 
 
   assert.deepEqual(offenders, [])
 })
+
+test('Sales menu namespace matches its route permission and localized label', () => {
+  const router = read('src/router/index.ts')
+  const salesMigration = read('../sami-backend/src/main/resources/db/migration/V36__align_sales_module_namespace.sql')
+  const english = JSON.parse(read('src/locales/en.json'))
+  const persian = JSON.parse(read('src/locales/fa.json'))
+
+  assert.match(router, /path:\s*'sales'[\s\S]*?permission:\s*'sales:view'/)
+  assert.match(salesMigration, /SET code = 'sales'/)
+  assert.equal(english.server.module.sales, 'Sales')
+  assert.equal(persian.server.module.sales, 'فروش')
+})
