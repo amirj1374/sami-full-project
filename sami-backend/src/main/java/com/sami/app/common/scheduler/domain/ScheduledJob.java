@@ -105,6 +105,6 @@ public class ScheduledJob extends BaseEntity {
     @Column(name = "is_system", nullable = false)
     private boolean isSystem;
 
-    @Column(name = "tenant_id", nullable = false)
+    @Column(name = "tenant_id", nullable = false, updatable = false)
     private Long tenantId;
 }

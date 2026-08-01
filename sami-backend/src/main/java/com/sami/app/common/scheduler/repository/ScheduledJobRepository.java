@@ -19,6 +19,15 @@ public interface ScheduledJobRepository extends JpaRepository<ScheduledJob, Long
     @EntityGraph(attributePaths = {"status"})
     Optional<ScheduledJob> findByCode(String code);
 
+    @EntityGraph(attributePaths = {"status"})
+    Optional<ScheduledJob> findByTenantIdAndCode(Long tenantId, String code);
+
+    @EntityGraph(attributePaths = {"status"})
+    Optional<ScheduledJob> findByIdAndTenantId(Long id, Long tenantId);
+
+    @EntityGraph(attributePaths = {"status"})
+    List<ScheduledJob> findAllByTenantIdOrderByCodeAsc(Long tenantId);
+
     @Override
     @EntityGraph(attributePaths = {"status"})
     Optional<ScheduledJob> findById(Long id);

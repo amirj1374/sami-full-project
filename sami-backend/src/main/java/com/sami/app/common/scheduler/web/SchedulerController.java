@@ -7,6 +7,7 @@ import com.sami.app.common.scheduler.repository.JobExecutionRepository;
 import com.sami.app.common.scheduler.service.JobRunner;
 import com.sami.app.common.scheduler.service.JobService;
 import com.sami.app.common.scheduler.spi.JobHandlerRegistry;
+import com.sami.app.common.tenancy.TenantContext;
 import com.sami.app.common.scheduler.web.SchedulerDtos.CreateJobRequest;
 import com.sami.app.common.scheduler.web.SchedulerDtos.ExecutionResponse;
 import com.sami.app.common.scheduler.web.SchedulerDtos.HandlerResponse;
@@ -47,6 +48,7 @@ public class SchedulerController {
     private final JobRunner jobRunner;
     private final JobExecutionRepository executionRepository;
     private final JobHandlerRegistry handlerRegistry;
+    private final TenantContext tenantContext;
 
     @GetMapping("/jobs")
     @PreAuthorize("@authz.has('scheduler:view')")
@@ -104,6 +106,7 @@ public class SchedulerController {
     @PreAuthorize("@authz.has('scheduler:execute')")
     @Operation(summary = "Run a job now")
     public ApiResponse<ExecutionResponse> run(@PathVariable Long id) {
+        jobService.get(id);
         return ApiResponse.ok(ExecutionResponse.from(jobRunner.runNow(id)));
     }
 
@@ -113,7 +116,8 @@ public class SchedulerController {
     public ApiResponse<PageResponse<ExecutionResponse>> executions(
             @PathVariable Long id, @PageableDefault(size = 20) Pageable pageable) {
         return ApiResponse.ok(PageResponse.from(
-                executionRepository.findAllByJobIdOrderByStartedAtDesc(id, pageable),
+                executionRepository.findAllByJobIdAndTenantIdOrderByStartedAtDesc(
+                        jobService.get(id).getId(), tenantContext.requireTenantId(), pageable),
                 ExecutionResponse::from));
     }
 
@@ -123,7 +127,8 @@ public class SchedulerController {
     public ApiResponse<PageResponse<ExecutionResponse>> allExecutions(
             @PageableDefault(size = 20) Pageable pageable) {
         return ApiResponse.ok(PageResponse.from(
-                executionRepository.findAllByOrderByStartedAtDesc(pageable),
+                executionRepository.findAllByTenantIdOrderByStartedAtDesc(
+                        tenantContext.requireTenantId(), pageable),
                 ExecutionResponse::from));
     }
 

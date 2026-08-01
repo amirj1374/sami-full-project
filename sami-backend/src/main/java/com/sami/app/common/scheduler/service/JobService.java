@@ -1,6 +1,6 @@
 package com.sami.app.common.scheduler.service;
 
-import com.sami.app.common.tenancy.TenantDefaults;
+import com.sami.app.common.tenancy.TenantContext;
 import com.sami.app.common.exception.ApiException;
 import com.sami.app.common.exception.ErrorCode;
 import com.sami.app.common.exception.ResourceNotFoundException;
@@ -26,16 +26,16 @@ public class JobService {
     private final JobStatusRepository statusRepository;
     private final JobHandlerRegistry handlerRegistry;
     private final ScheduleCalculator calculator;
-    private final TenantDefaults tenantDefaults;
+    private final TenantContext tenantContext;
 
     @Transactional(readOnly = true)
     public List<ScheduledJob> list() {
-        return jobRepository.findAll();
+        return jobRepository.findAllByTenantIdOrderByCodeAsc(tenantContext.requireTenantId());
     }
 
     @Transactional(readOnly = true)
     public ScheduledJob get(Long id) {
-        return jobRepository.findById(id)
+        return jobRepository.findByIdAndTenantId(id, tenantContext.requireTenantId())
                 .orElseThrow(() -> ResourceNotFoundException.of("Job", id));
     }
 
@@ -44,7 +44,8 @@ public class JobService {
                                String scheduleKind, String cronExpression, Integer intervalSeconds,
                                String timezone, Map<String, Object> config, Integer timeoutSeconds,
                                Boolean catchUp, Instant runAt) {
-        if (jobRepository.findByCode(code).isPresent()) {
+        Long tenantId = tenantContext.requireTenantId();
+        if (jobRepository.findByTenantIdAndCode(tenantId, code).isPresent()) {
             throw new ApiException(ErrorCode.RESOURCE_CONFLICT, "A job named '%s' already exists".formatted(code));
         }
         // Refuse a job whose handler does not exist, rather than discovering it at
@@ -73,9 +74,7 @@ public class JobService {
                 .nextRunAt(runAt)
                 .isSystem(false)
                 
-                // tenant_id is mapped, so Hibernate always sends it: an explicit
-                // NULL would override the column DEFAULT instead of triggering it.
-                .tenantId(tenantDefaults.current())
+                .tenantId(tenantId)
                 .build();
 
         calculator.validate(job);

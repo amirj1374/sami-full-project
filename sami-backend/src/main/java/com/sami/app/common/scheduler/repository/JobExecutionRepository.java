@@ -12,9 +12,14 @@ public interface JobExecutionRepository extends JpaRepository<JobExecution, Long
 
     Page<JobExecution> findAllByJobIdOrderByStartedAtDesc(Long jobId, Pageable pageable);
 
+    Page<JobExecution> findAllByJobIdAndTenantIdOrderByStartedAtDesc(
+            Long jobId, Long tenantId, Pageable pageable);
+
     List<JobExecution> findAllByStatusOrderByStartedAtDesc(String status);
 
     Page<JobExecution> findAllByOrderByStartedAtDesc(Pageable pageable);
+
+    Page<JobExecution> findAllByTenantIdOrderByStartedAtDesc(Long tenantId, Pageable pageable);
 
     @Query(value = "SELECT nextval('job_execution_seq')", nativeQuery = true)
     Long nextExecutionSequence();

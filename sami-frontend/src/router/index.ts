@@ -102,24 +102,6 @@ const routes: RouteRecordRaw[] = [
         meta: { requiresAuth: true, permission: 'scheduler:view' },
       },
       {
-        path: 'data-quality',
-        name: 'data-quality',
-        component: () => import('@/views/DataQualityView.vue'),
-        meta: { requiresAuth: true, permission: 'data-quality:view' },
-      },
-      {
-        path: 'files',
-        name: 'files',
-        component: () => import('@/views/FilesView.vue'),
-        meta: { requiresAuth: true, permission: 'files:view' },
-      },
-      {
-        path: 'appointments',
-        name: 'appointments',
-        component: () => import('@/views/AppointmentsView.vue'),
-        meta: { requiresAuth: true, permission: 'appointments:view' },
-      },
-      {
         path: 'licensing',
         name: 'licensing',
         component: () => import('@/views/LicensingView.vue'),

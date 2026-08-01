@@ -62,6 +62,6 @@ public class JobExecution extends BaseEntity {
     @Column(name = "actor_email", length = 255)
     private String actorEmail;
 
-    @Column(name = "tenant_id", nullable = false)
+    @Column(name = "tenant_id", nullable = false, updatable = false)
     private Long tenantId;
 }
