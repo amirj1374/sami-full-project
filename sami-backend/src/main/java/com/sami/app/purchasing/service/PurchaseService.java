@@ -3,6 +3,8 @@ package com.sami.app.purchasing.service;
 import com.sami.app.common.exception.ApiException;
 import com.sami.app.common.exception.ErrorCode;
 import com.sami.app.common.exception.ResourceNotFoundException;
+import com.sami.app.common.tenancy.TenantContext;
+import com.sami.app.inventory.repository.InventoryWarehouseRepository;
 import com.sami.app.product.repository.ProductRepository;
 import com.sami.app.supplier.domain.Supplier;
 import com.sami.app.supplier.repository.SupplierRepository;
@@ -22,7 +24,6 @@ import com.sami.app.purchasing.repository.PurApprovalRuleRepository;
 import com.sami.app.purchasing.repository.PurCancelReasonRepository;
 import com.sami.app.purchasing.repository.PurStatusRepository;
 import com.sami.app.purchasing.repository.PurTypeRepository;
-import com.sami.app.purchasing.repository.PurWarehouseRepository;
 import com.sami.app.purchasing.repository.PurchaseRepository;
 import com.sami.app.purchasing.repository.PurchaseSpecifications;
 import com.sami.app.security.CurrentActor;
@@ -55,7 +56,8 @@ public class PurchaseService {
     private final PurStatusRepository statusRepository;
     private final PurTypeRepository typeRepository;
     private final PurCancelReasonRepository cancelReasonRepository;
-    private final PurWarehouseRepository warehouseRepository;
+    private final InventoryWarehouseRepository warehouseRepository;
+    private final TenantContext tenantContext;
     private final PurApprovalRuleRepository approvalRuleRepository;
     private final SupplierRepository supplierRepository;
     private final ProductRepository productRepository;
@@ -241,7 +243,8 @@ public class PurchaseService {
 
     private void applyHeaderAndItems(Purchase purchase, PurchaseRequest request) {
         purchase.setWarehouse(request.warehouseId() == null ? null
-                : warehouseRepository.findById(request.warehouseId())
+                : warehouseRepository.findByIdAndTenantId(request.warehouseId(),
+                                tenantContext.requireTenantId())
                         .orElseThrow(() -> ResourceNotFoundException.of("Warehouse",
                                 request.warehouseId())));
         purchase.setNotes(request.notes());

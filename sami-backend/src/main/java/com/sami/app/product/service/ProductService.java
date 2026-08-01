@@ -3,6 +3,7 @@ package com.sami.app.product.service;
 import com.sami.app.common.exception.ApiException;
 import com.sami.app.common.exception.ErrorCode;
 import com.sami.app.common.exception.ResourceNotFoundException;
+import com.sami.app.common.tenancy.TenantContext;
 import com.sami.app.product.domain.Product;
 import com.sami.app.product.dto.CreateProductRequest;
 import com.sami.app.product.dto.ProductFilter;
@@ -10,7 +11,10 @@ import com.sami.app.product.dto.ProductResponse;
 import com.sami.app.product.dto.UpdateProductRequest;
 import com.sami.app.product.repository.ProductRepository;
 import com.sami.app.product.repository.ProductSpecifications;
+import com.sami.app.product.event.ProductStockChangedEvent;
+import com.sami.app.security.CurrentActor;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -26,10 +30,13 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProductService {
 
     private final ProductRepository productRepository;
+    private final TenantContext tenantContext;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional(readOnly = true)
     public Page<ProductResponse> list(ProductFilter filter, Pageable pageable) {
         Specification<Product> spec = Specification.allOf(
+                ProductSpecifications.tenant(tenantContext.requireTenantId()),
                 ProductSpecifications.nameContains(filter.name()),
                 ProductSpecifications.active(filter.active()),
                 ProductSpecifications.priceGreaterThanOrEqual(filter.minPrice()),
@@ -44,12 +51,14 @@ public class ProductService {
 
     @Transactional
     public ProductResponse create(CreateProductRequest request) {
-        if (productRepository.existsBySku(request.sku())) {
+        Long tenantId = tenantContext.requireTenantId();
+        if (productRepository.existsByTenantIdAndSku(tenantId, request.sku())) {
             throw new ApiException(ErrorCode.RESOURCE_CONFLICT,
                     "A product with SKU '%s' already exists".formatted(request.sku()));
         }
 
         Product product = Product.builder()
+                .tenantId(tenantId)
                 .name(request.name())
                 .sku(request.sku())
                 .description(request.description())
@@ -58,17 +67,26 @@ public class ProductService {
                 .active(request.active())
                 .build();
 
-        return ProductResponse.from(productRepository.save(product));
+        Product saved = productRepository.saveAndFlush(product);
+        if (request.stockQuantity() > 0) {
+            publishStockChange(saved, 0, request.stockQuantity());
+        }
+        return ProductResponse.from(saved);
     }
 
     @Transactional
     public ProductResponse update(Long id, UpdateProductRequest request) {
         Product product = findOrThrow(id);
+        int previousStock = product.getStockQuantity();
         product.setName(request.name());
         product.setDescription(request.description());
         product.setPrice(request.price());
         product.setStockQuantity(request.stockQuantity());
         product.setActive(request.active());
+        if (previousStock != request.stockQuantity()) {
+            productRepository.flush();
+            publishStockChange(product, previousStock, request.stockQuantity());
+        }
         // Dirty checking flushes the update on transaction commit.
         return ProductResponse.from(product);
     }
@@ -80,7 +98,13 @@ public class ProductService {
     }
 
     private Product findOrThrow(Long id) {
-        return productRepository.findById(id)
+        return productRepository.findByIdAndTenantId(id, tenantContext.requireTenantId())
                 .orElseThrow(() -> ResourceNotFoundException.of("Product", id));
+    }
+
+    private void publishStockChange(Product product, int previous, int current) {
+        eventPublisher.publishEvent(new ProductStockChangedEvent(
+                product.getTenantId(), product.getId(), previous, current,
+                CurrentActor.id(), java.time.Instant.now()));
     }
 }

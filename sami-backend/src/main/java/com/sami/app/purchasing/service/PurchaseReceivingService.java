@@ -3,6 +3,10 @@ package com.sami.app.purchasing.service;
 import com.sami.app.common.exception.ApiException;
 import com.sami.app.common.exception.ErrorCode;
 import com.sami.app.common.exception.ResourceNotFoundException;
+import com.sami.app.inventory.publicapi.InventoryStockOperations;
+import com.sami.app.inventory.publicapi.InventoryStockOperations.PurchaseReceiptCommand;
+import com.sami.app.inventory.publicapi.InventoryStockOperations.ReceiptLine;
+import com.sami.app.inventory.publicapi.InventoryStockOperations.SerialIdentity;
 import com.sami.app.purchasing.domain.PurIdentifierType;
 import com.sami.app.purchasing.domain.PurStatus;
 import com.sami.app.purchasing.domain.Purchase;
@@ -23,6 +27,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -47,6 +53,7 @@ public class PurchaseReceivingService {
     private final PurIdentifierTypeRepository identifierTypeRepository;
     private final PurchaseUnitIdentifierRepository identifierRepository;
     private final PurchaseLogService logs;
+    private final InventoryStockOperations inventory;
 
     @Transactional(readOnly = true)
     public List<ReceiptResponse> history(Long purchaseId) {
@@ -96,7 +103,18 @@ public class PurchaseReceivingService {
             item.setReceivedQuantity(item.getReceivedQuantity().add(line.quantity()));
         }
 
-        receiptRepository.save(receipt);
+        receiptRepository.saveAndFlush(receipt);
+
+        inventory.receivePurchase(new PurchaseReceiptCommand(
+                purchase.getWarehouse() == null ? null : purchase.getWarehouse().getId(),
+                purchase.getId(), receipt.getId(), receipt.getItems().stream()
+                        .map(item -> new ReceiptLine(
+                                item.getPurchaseItem().getId(),
+                                item.getPurchaseItem().getProduct().getId(),
+                                item.getQuantity(),
+                                item.getPurchaseItem().getUnitPrice(),
+                                serials(item)))
+                        .toList()));
 
         boolean fullyReceived = purchase.getItems().stream()
                 .allMatch(i -> i.remainingQuantity().compareTo(BigDecimal.ZERO) == 0);
@@ -175,5 +193,24 @@ public class PurchaseReceivingService {
                                 .formatted(unitIndex, item.getProduct().getName()));
             }
         }
+    }
+
+    private List<SerialIdentity> serials(PurchaseReceiptItem item) {
+        Map<Integer, String> serials = new LinkedHashMap<>();
+        Map<Integer, String> imeis = new LinkedHashMap<>();
+        item.getIdentifiers().forEach(identifier -> {
+            if (identifier.getIdentifierType().isSatisfiesSerial()) {
+                serials.put(identifier.getUnitIndex(), identifier.getValue());
+            }
+            if (identifier.getIdentifierType().isSatisfiesImei()) {
+                imeis.put(identifier.getUnitIndex(), identifier.getValue());
+            }
+        });
+        java.util.LinkedHashSet<Integer> indexes = new java.util.LinkedHashSet<>();
+        indexes.addAll(serials.keySet());
+        indexes.addAll(imeis.keySet());
+        List<SerialIdentity> result = new ArrayList<>();
+        indexes.forEach(index -> result.add(new SerialIdentity(serials.get(index), imeis.get(index))));
+        return result;
     }
 }

@@ -15,7 +15,9 @@ import java.util.Optional;
 public interface ProductRepository
         extends JpaRepository<Product, Long>, JpaSpecificationExecutor<Product> {
 
-    Optional<Product> findBySku(String sku);
+    Optional<Product> findByIdAndTenantId(Long id, Long tenantId);
 
-    boolean existsBySku(String sku);
+    Optional<Product> findByTenantIdAndSku(Long tenantId, String sku);
+
+    boolean existsByTenantIdAndSku(Long tenantId, String sku);
 }

@@ -1,6 +1,7 @@
 package com.sami.app.purchasing.domain;
 
 import com.sami.app.common.domain.BaseEntity;
+import com.sami.app.inventory.domain.InventoryWarehouse;
 import com.sami.app.supplier.domain.Supplier;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -54,7 +55,7 @@ public class Purchase extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "warehouse_id")
-    private PurWarehouse warehouse;
+    private InventoryWarehouse warehouse;
 
     @Column(length = 2000)
     private String notes;

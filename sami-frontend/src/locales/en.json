@@ -931,7 +931,8 @@
       "portal": "Customer Portal",
       "calendar": "Business Calendar",
       "organization": "Organisation",
-      "communication": "Communication Hub"
+      "communication": "Communication Hub",
+      "inventory": "Inventory"
     },
     "action": {
       "view": "View",
@@ -951,7 +952,15 @@
       "share": "Share",
       "publish": "Publish",
       "download": "Download",
-      "upload": "Upload"
+      "upload": "Upload",
+      "manage-warehouses": "Manage warehouses",
+      "adjust": "Adjust stock",
+      "transfer": "Manage transfers",
+      "count": "Manage stock counts",
+      "reserve": "Manage reservations",
+      "issue": "Issue and return stock",
+      "view-audit": "View audit trail",
+      "report": "View reports"
     },
     "enum": {
       "ACTIVE": "Active", "INACTIVE": "Inactive", "DRAFT": "Draft", "PENDING": "Pending",
@@ -1489,5 +1498,30 @@
     "noVersions": "No versions available",
     "deleteTitle": "Delete file?",
     "deleteMessage": "The file “{name}” will be moved to deleted items."
+  },
+  "inventory": {
+    "eyebrow": "Stock operations", "title": "Inventory", "subtitle": "Control warehouses, stock, serials, transfers, counts, and inventory value.",
+    "balances": "Stock balances", "balancesSubtitle": "Real-time on-hand, reserved, and available quantities by location.",
+    "transfers": "Transfers", "transfersSubtitle": "Move stock between warehouses with separate shipping and receiving controls.",
+    "stockCounts": "Stock counts", "countsSubtitle": "Capture physical quantities, review variances, and post controlled adjustments.",
+    "monitoring": "Monitoring", "monitoringSubtitle": "Trace movements, serial identities, and active reservations.",
+    "warehouses": "Warehouses", "warehousesSubtitle": "Manage tenant-scoped warehouses and their operational locations.",
+    "reports": "Reports", "reportsSubtitle": "Review inventory value, movement activity, low stock, and audit evidence.",
+    "warehouseCount": "Warehouses", "productCount": "Stocked products", "lowStockCount": "Low-stock items", "activeReservationCount": "Active reservations", "openTransferCount": "Open transfers", "openCountCount": "Open counts", "totalOnHand": "Total on hand", "totalAvailable": "Total available", "inventoryValue": "Inventory value",
+    "product": "Product", "warehouse": "Warehouse", "location": "Location", "locationOptional": "Location (optional)", "onHand": "On hand", "reserved": "Reserved", "available": "Available", "value": "Value", "status": "Status", "lowStock": "Low stock", "healthy": "Healthy", "lowStockOnly": "Low stock only", "noBalances": "No stock balances found",
+    "adjustStock": "Adjust stock", "adjustmentSaved": "Stock adjustment posted successfully.", "postAdjustment": "Post adjustment", "quantitySigned": "Quantity (+ / -)", "quantity": "Quantity", "unitCost": "Unit cost", "reason": "Reason", "lines": "Lines", "addLine": "Add line", "importCsv": "Import CSV", "exportCsv": "Export CSV", "importDone": "{count} inventory rows imported successfully.",
+    "newTransfer": "New transfer", "transferNumber": "Transfer number", "fromWarehouse": "From warehouse", "toWarehouse": "To warehouse", "serialsOptional": "Serial numbers (optional, one per line)", "notes": "Notes", "ship": "Ship", "receive": "Receive", "transferCreated": "Transfer created successfully.", "transferUpdated": "Transfer updated successfully.", "noTransfers": "No transfers found",
+    "newCount": "New stock count", "countNumber": "Count number", "createdAt": "Created at", "expected": "Expected", "counted": "Counted", "variance": "Variance", "submitCount": "Submit count", "postCount": "Post count", "countCreated": "Stock count created successfully.", "countSubmitted": "Count results submitted successfully.", "countUpdated": "Stock count updated successfully.", "noCounts": "No stock counts found", "emptyCount": "No products are available for this count",
+    "movements": "Movements", "serials": "Serials / IMEI", "reservations": "Reservations", "movementType": "Movement type", "route": "Route", "source": "Source", "occurredAt": "Occurred at", "serialNumber": "Serial number", "imei": "IMEI", "changeStatus": "Change status", "changeSerialStatus": "Update serial status", "makeAvailable": "Make available", "quarantine": "Quarantine", "serialUpdated": "Serial status updated successfully.", "release": "Release", "releaseReservation": "Release reservation", "releaseReservationConfirm": "Release this inventory reservation?", "reservationReleased": "Reservation released successfully.", "noMovements": "No stock movements found", "noSerials": "No serial or IMEI records found", "noReservations": "No reservations found",
+    "newWarehouse": "New warehouse", "editWarehouse": "Edit warehouse", "deleteWarehouse": "Delete warehouse", "deleteWarehouseConfirm": "Delete this warehouse? This is allowed only when it has no inventory history.", "warehouseSaved": "Warehouse saved successfully.", "warehouseDeleted": "Warehouse deleted successfully.", "noWarehouses": "No warehouses found", "noWarehousesDescription": "Create the first warehouse to begin inventory operations.", "newLocation": "New location", "editLocation": "Edit location", "deleteLocation": "Delete location", "deleteLocationConfirm": "Delete this warehouse location?", "locationSaved": "Location saved successfully.", "locationDeleted": "Location deleted successfully.", "noLocations": "No locations found", "locations": "Locations", "locationsFor": "Locations in {name}",
+    "code": "Code", "name": "Name", "description": "Description", "warehouseType": "Warehouse type", "locationType": "Location type", "companyId": "Company ID", "branchId": "Branch ID", "default": "Default", "defaultWarehouse": "Default warehouse", "defaultLocation": "Default location",
+    "from": "From", "to": "To", "printReport": "Print report", "valueByWarehouse": "Value by warehouse", "movementSummary": "Movement summary", "productCountValue": "{count} products", "recordCountValue": "{count} records", "noReportData": "No report data for the selected period", "noLowStock": "No low-stock items", "auditTrail": "Audit trail", "noAudit": "No audit records found", "systemActor": "System",
+    "validation": { "code": "Enter a valid code.", "name": "Name is required.", "warehouse": "Select a warehouse.", "distinctWarehouses": "Source and destination warehouses must be different.", "reason": "Reason is required.", "lines": "Add at least one line.", "product": "Select a product for every line.", "quantity": "Quantity must be greater than zero." },
+    "values": {
+      "STANDARD": "Standard", "RETAIL": "Retail", "TRANSIT": "Transit", "QUARANTINE": "Quarantine", "RETURNS": "Returns", "RECEIVING": "Receiving", "STORAGE": "Storage", "PICKING": "Picking",
+      "DRAFT": "Draft", "SHIPPED": "Shipped", "RECEIVED": "Received", "COUNTED": "Counted", "POSTED": "Posted", "CANCELLED": "Cancelled", "AVAILABLE": "Available", "RESERVED": "Reserved", "IN_TRANSIT": "In transit", "ISSUED": "Issued", "QUARANTINED": "Quarantined", "RETURNED_TO_SUPPLIER": "Returned to supplier", "OPEN": "Open", "RELEASED": "Released", "FULFILLED": "Fulfilled", "EXPIRED": "Expired",
+      "OPENING": "Opening balance", "ADJUSTMENT_IN": "Adjustment in", "ADJUSTMENT_OUT": "Adjustment out", "PURCHASE_RECEIPT": "Purchase receipt", "PURCHASE_RETURN": "Purchase return", "SALE_ISSUE": "Sale issue", "CUSTOMER_RETURN": "Customer return", "RESERVE": "Reserve", "RELEASE": "Release", "TRANSFER_OUT": "Transfer out", "TRANSFER_IN": "Transfer in", "COUNT_ADJUSTMENT": "Count adjustment",
+      "WAREHOUSE_CREATED": "Warehouse created", "WAREHOUSE_UPDATED": "Warehouse updated", "WAREHOUSE_DELETED": "Warehouse deleted", "LOCATION_CREATED": "Location created", "LOCATION_UPDATED": "Location updated", "LOCATION_DELETED": "Location deleted", "ADJUSTMENT_POSTED": "Adjustment posted", "TRANSFER_CREATED": "Transfer created", "TRANSFER_SHIPPED": "Transfer shipped", "TRANSFER_RECEIVED": "Transfer received", "TRANSFER_CANCELLED": "Transfer cancelled", "COUNT_CREATED": "Count created", "COUNT_SUBMITTED": "Count submitted", "COUNT_POSTED": "Count posted", "COUNT_CANCELLED": "Count cancelled", "SERIAL_STATUS_CHANGED": "Serial status changed", "RESERVATION_RELEASED": "Reservation released"
+    }
   }
 }

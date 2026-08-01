@@ -931,7 +931,8 @@
       "portal": "پرتال مشتریان",
       "calendar": "تقویم کاری",
       "organization": "سازمان",
-      "communication": "مرکز ارتباطات"
+      "communication": "مرکز ارتباطات",
+      "inventory": "مدیریت موجودی"
     },
     "action": {
       "view": "مشاهده",
@@ -951,7 +952,15 @@
       "share": "اشتراک‌گذاری",
       "publish": "انتشار",
       "download": "دریافت",
-      "upload": "بارگذاری"
+      "upload": "بارگذاری",
+      "manage-warehouses": "مدیریت انبارها",
+      "adjust": "اصلاح موجودی",
+      "transfer": "مدیریت انتقال‌ها",
+      "count": "مدیریت انبارگردانی",
+      "reserve": "مدیریت رزروها",
+      "issue": "خروج و مرجوعی کالا",
+      "view-audit": "مشاهده سوابق ممیزی",
+      "report": "مشاهده گزارش‌ها"
     },
     "enum": {
       "ACTIVE": "فعال", "INACTIVE": "غیرفعال", "DRAFT": "پیش‌نویس", "PENDING": "در انتظار",
@@ -1489,5 +1498,30 @@
     "noVersions": "نسخه‌ای موجود نیست",
     "deleteTitle": "فایل حذف شود؟",
     "deleteMessage": "فایل «{name}» به موارد حذف‌شده منتقل می‌شود."
+  },
+  "inventory": {
+    "eyebrow": "عملیات موجودی", "title": "مدیریت موجودی", "subtitle": "کنترل انبارها، موجودی، سریال‌ها، انتقال‌ها، شمارش و ارزش کالا.",
+    "balances": "مانده موجودی", "balancesSubtitle": "موجودی واقعی، رزروشده و قابل فروش به تفکیک مکان.",
+    "transfers": "انتقال‌ها", "transfersSubtitle": "انتقال کنترل‌شده کالا میان انبارها با مراحل مستقل ارسال و دریافت.",
+    "stockCounts": "انبارگردانی", "countsSubtitle": "ثبت شمارش فیزیکی، بررسی مغایرت و اعمال اصلاحیه کنترل‌شده.",
+    "monitoring": "پایش", "monitoringSubtitle": "رهگیری گردش کالا، شناسه‌های سریال و رزروهای فعال.",
+    "warehouses": "انبارها", "warehousesSubtitle": "مدیریت انبارهای مستأجر و مکان‌های عملیاتی آن‌ها.",
+    "reports": "گزارش‌ها", "reportsSubtitle": "بررسی ارزش موجودی، گردش کالا، کسری موجودی و سوابق ممیزی.",
+    "warehouseCount": "انبارها", "productCount": "کالاهای موجود", "lowStockCount": "اقلام کم‌موجودی", "activeReservationCount": "رزروهای فعال", "openTransferCount": "انتقال‌های باز", "openCountCount": "شمارش‌های باز", "totalOnHand": "کل موجودی", "totalAvailable": "کل قابل فروش", "inventoryValue": "ارزش موجودی",
+    "product": "کالا", "warehouse": "انبار", "location": "مکان", "locationOptional": "مکان (اختیاری)", "onHand": "موجودی", "reserved": "رزروشده", "available": "قابل فروش", "value": "ارزش", "status": "وضعیت", "lowStock": "کم‌موجودی", "healthy": "مطلوب", "lowStockOnly": "فقط کم‌موجودی", "noBalances": "مانده موجودی یافت نشد",
+    "adjustStock": "اصلاح موجودی", "adjustmentSaved": "اصلاح موجودی با موفقیت ثبت شد.", "postAdjustment": "ثبت اصلاحیه", "quantitySigned": "مقدار (+ / -)", "quantity": "مقدار", "unitCost": "بهای واحد", "reason": "دلیل", "lines": "ردیف‌ها", "addLine": "افزودن ردیف", "importCsv": "ورود CSV", "exportCsv": "خروجی CSV", "importDone": "{count} ردیف موجودی با موفقیت وارد شد.",
+    "newTransfer": "انتقال جدید", "transferNumber": "شماره انتقال", "fromWarehouse": "انبار مبدأ", "toWarehouse": "انبار مقصد", "serialsOptional": "شماره‌های سریال (اختیاری، هر خط یک مورد)", "notes": "یادداشت", "ship": "ارسال", "receive": "دریافت", "transferCreated": "انتقال با موفقیت ایجاد شد.", "transferUpdated": "انتقال با موفقیت به‌روزرسانی شد.", "noTransfers": "انتقالی یافت نشد",
+    "newCount": "انبارگردانی جدید", "countNumber": "شماره شمارش", "createdAt": "زمان ایجاد", "expected": "مورد انتظار", "counted": "شمارش‌شده", "variance": "مغایرت", "submitCount": "ثبت نتیجه شمارش", "postCount": "اعمال شمارش", "countCreated": "شمارش موجودی با موفقیت ایجاد شد.", "countSubmitted": "نتیجه شمارش با موفقیت ثبت شد.", "countUpdated": "شمارش موجودی با موفقیت به‌روزرسانی شد.", "noCounts": "شمارش موجودی یافت نشد", "emptyCount": "کالایی برای این شمارش موجود نیست",
+    "movements": "گردش کالا", "serials": "سریال / IMEI", "reservations": "رزروها", "movementType": "نوع گردش", "route": "مسیر", "source": "منبع", "occurredAt": "زمان رخداد", "serialNumber": "شماره سریال", "imei": "IMEI", "changeStatus": "تغییر وضعیت", "changeSerialStatus": "به‌روزرسانی وضعیت سریال", "makeAvailable": "آزادسازی", "quarantine": "قرنطینه", "serialUpdated": "وضعیت سریال با موفقیت به‌روزرسانی شد.", "release": "آزادسازی", "releaseReservation": "آزادسازی رزرو", "releaseReservationConfirm": "این رزرو موجودی آزاد شود؟", "reservationReleased": "رزرو با موفقیت آزاد شد.", "noMovements": "گردش موجودی یافت نشد", "noSerials": "سریال یا IMEI یافت نشد", "noReservations": "رزروی یافت نشد",
+    "newWarehouse": "انبار جدید", "editWarehouse": "ویرایش انبار", "deleteWarehouse": "حذف انبار", "deleteWarehouseConfirm": "این انبار حذف شود؟ حذف فقط در صورت نداشتن سابقه موجودی مجاز است.", "warehouseSaved": "انبار با موفقیت ذخیره شد.", "warehouseDeleted": "انبار با موفقیت حذف شد.", "noWarehouses": "انباری یافت نشد", "noWarehousesDescription": "برای آغاز عملیات موجودی، نخستین انبار را ایجاد کنید.", "newLocation": "مکان جدید", "editLocation": "ویرایش مکان", "deleteLocation": "حذف مکان", "deleteLocationConfirm": "این مکان انبار حذف شود؟", "locationSaved": "مکان با موفقیت ذخیره شد.", "locationDeleted": "مکان با موفقیت حذف شد.", "noLocations": "مکانی یافت نشد", "locations": "مکان‌ها", "locationsFor": "مکان‌های {name}",
+    "code": "کد", "name": "نام", "description": "توضیحات", "warehouseType": "نوع انبار", "locationType": "نوع مکان", "companyId": "شناسه شرکت", "branchId": "شناسه شعبه", "default": "پیش‌فرض", "defaultWarehouse": "انبار پیش‌فرض", "defaultLocation": "مکان پیش‌فرض",
+    "from": "از", "to": "تا", "printReport": "چاپ گزارش", "valueByWarehouse": "ارزش به تفکیک انبار", "movementSummary": "خلاصه گردش", "productCountValue": "{count} کالا", "recordCountValue": "{count} رکورد", "noReportData": "برای بازه انتخابی داده‌ای وجود ندارد", "noLowStock": "کالای کم‌موجودی وجود ندارد", "auditTrail": "سوابق ممیزی", "noAudit": "سابقه ممیزی یافت نشد", "systemActor": "سامانه",
+    "validation": { "code": "کد معتبر وارد کنید.", "name": "نام الزامی است.", "warehouse": "انبار را انتخاب کنید.", "distinctWarehouses": "انبار مبدأ و مقصد باید متفاوت باشند.", "reason": "دلیل الزامی است.", "lines": "حداقل یک ردیف اضافه کنید.", "product": "برای همه ردیف‌ها کالا انتخاب کنید.", "quantity": "مقدار باید بزرگ‌تر از صفر باشد." },
+    "values": {
+      "STANDARD": "استاندارد", "RETAIL": "فروشگاهی", "TRANSIT": "در مسیر", "QUARANTINE": "قرنطینه", "RETURNS": "مرجوعی", "RECEIVING": "دریافت", "STORAGE": "نگهداری", "PICKING": "برداشت",
+      "DRAFT": "پیش‌نویس", "SHIPPED": "ارسال‌شده", "RECEIVED": "دریافت‌شده", "COUNTED": "شمارش‌شده", "POSTED": "اعمال‌شده", "CANCELLED": "لغوشده", "AVAILABLE": "آزاد", "RESERVED": "رزروشده", "IN_TRANSIT": "در مسیر", "ISSUED": "تحویل‌شده", "QUARANTINED": "قرنطینه‌شده", "RETURNED_TO_SUPPLIER": "مرجوع به تأمین‌کننده", "OPEN": "باز", "RELEASED": "آزادشده", "FULFILLED": "تکمیل‌شده", "EXPIRED": "منقضی‌شده",
+      "OPENING": "مانده افتتاحیه", "ADJUSTMENT_IN": "اصلاح افزایشی", "ADJUSTMENT_OUT": "اصلاح کاهشی", "PURCHASE_RECEIPT": "رسید خرید", "PURCHASE_RETURN": "مرجوعی خرید", "SALE_ISSUE": "خروج فروش", "CUSTOMER_RETURN": "مرجوعی مشتری", "RESERVE": "رزرو", "RELEASE": "آزادسازی", "TRANSFER_OUT": "خروج انتقال", "TRANSFER_IN": "ورود انتقال", "COUNT_ADJUSTMENT": "اصلاح شمارش",
+      "WAREHOUSE_CREATED": "ایجاد انبار", "WAREHOUSE_UPDATED": "ویرایش انبار", "WAREHOUSE_DELETED": "حذف انبار", "LOCATION_CREATED": "ایجاد مکان", "LOCATION_UPDATED": "ویرایش مکان", "LOCATION_DELETED": "حذف مکان", "ADJUSTMENT_POSTED": "ثبت اصلاحیه", "TRANSFER_CREATED": "ایجاد انتقال", "TRANSFER_SHIPPED": "ارسال انتقال", "TRANSFER_RECEIVED": "دریافت انتقال", "TRANSFER_CANCELLED": "لغو انتقال", "COUNT_CREATED": "ایجاد شمارش", "COUNT_SUBMITTED": "ثبت شمارش", "COUNT_POSTED": "اعمال شمارش", "COUNT_CANCELLED": "لغو شمارش", "SERIAL_STATUS_CHANGED": "تغییر وضعیت سریال", "RESERVATION_RELEASED": "آزادسازی رزرو"
+    }
   }
 }

@@ -17,6 +17,10 @@ public final class ProductSpecifications {
     private ProductSpecifications() {
     }
 
+    public static Specification<Product> tenant(Long tenantId) {
+        return (root, query, cb) -> cb.equal(root.get("tenantId"), tenantId);
+    }
+
     /** Case-insensitive substring match on name. */
     public static Specification<Product> nameContains(String name) {
         if (name == null || name.isBlank()) {

@@ -19,14 +19,14 @@ import com.sami.app.demo.DemoDataPools.ProductTemplate;
 import com.sami.app.demo.DemoDataPools.SupplierTemplate;
 import com.sami.app.product.domain.Product;
 import com.sami.app.product.repository.ProductRepository;
+import com.sami.app.inventory.domain.InventoryWarehouse;
+import com.sami.app.inventory.repository.InventoryWarehouseRepository;
 import com.sami.app.purchasing.domain.Purchase;
 import com.sami.app.purchasing.domain.PurchaseItem;
 import com.sami.app.purchasing.domain.PurStatus;
 import com.sami.app.purchasing.domain.PurType;
-import com.sami.app.purchasing.domain.PurWarehouse;
 import com.sami.app.purchasing.repository.PurStatusRepository;
 import com.sami.app.purchasing.repository.PurTypeRepository;
-import com.sami.app.purchasing.repository.PurWarehouseRepository;
 import com.sami.app.purchasing.repository.PurchaseRepository;
 import com.sami.app.supplier.domain.SupAddress;
 import com.sami.app.supplier.domain.SupCategory;
@@ -99,7 +99,7 @@ public class DemoSeeder {
     private final PurchaseRepository purchaseRepository;
     private final PurTypeRepository purTypeRepository;
     private final PurStatusRepository purStatusRepository;
-    private final PurWarehouseRepository purWarehouseRepository;
+    private final InventoryWarehouseRepository purWarehouseRepository;
     private final UserRepository userRepository;
     private final JdbcTemplate jdbcTemplate;
 
@@ -117,6 +117,7 @@ public class DemoSeeder {
 
     @Transactional
     public int seedProducts(Random rng, int target) {
+        Long tenantId = resolveTenantId();
         List<ProductVariant> space = buildVariantSpace();
         List<Product> batch = new ArrayList<>(BATCH);
         List<long[]> backdates = new ArrayList<>();
@@ -124,7 +125,7 @@ public class DemoSeeder {
         for (int i = 0; i < target; i++) {
             ProductVariant v = space.get(i % space.size());
             int serial = i + 1;
-            Product p = toProduct(v, serial, rng);
+            Product p = toProduct(v, serial, rng, tenantId);
             batch.add(p);
             if (batch.size() == BATCH) {
                 created += flushProducts(batch, backdates, rng);
@@ -149,7 +150,7 @@ public class DemoSeeder {
         return n;
     }
 
-    private Product toProduct(ProductVariant v, int serial, Random rng) {
+    private Product toProduct(ProductVariant v, int serial, Random rng, Long tenantId) {
         ProductTemplate t = v.template();
         StringBuilder name = new StringBuilder(t.brand()).append(' ').append(t.model());
         if (v.storage() != null) {
@@ -183,6 +184,7 @@ public class DemoSeeder {
         boolean active = rng.nextInt(100) < 93 && !(stock == 0 && rng.nextBoolean());
 
         return Product.builder()
+                .tenantId(tenantId)
                 .name(name.toString())
                 .sku(buildSku(t, serial))
                 .description(desc.toString())
@@ -468,7 +470,7 @@ public class DemoSeeder {
         }
         PurType type = purTypeRepository.findByIsDefaultTrue()
                 .orElseGet(() -> purTypeRepository.findAllByOrderByDisplayOrderAsc().get(0));
-        List<PurWarehouse> warehouses = purWarehouseRepository.findAllByOrderByDisplayOrderAsc();
+        List<InventoryWarehouse> warehouses = purWarehouseRepository.findByTenantIdOrderByDisplayOrderAsc(resolveTenantId());
         PurStatus draft = purStatusRepository.findByIsDraftStateTrue().orElse(null);
         PurStatus pending = purStatusRepository.findByIsPendingStateTrue().orElse(null);
         PurStatus approved = purStatusRepository.findByIsApprovedStateTrue().orElse(null);
@@ -575,6 +577,17 @@ public class DemoSeeder {
         return userRepository.findAll().stream().findFirst()
                 .map(u -> new Long[]{u.getId()})
                 .orElse(new Long[]{null});
+    }
+
+    /**
+     * Demo generation is a trusted background operation without an HTTP principal.
+     * It is intentionally scoped to the tenant owned by the bootstrap actor rather
+     * than falling back to a hard-coded tenant identifier.
+     */
+    private Long resolveTenantId() {
+        return userRepository.findAll().stream().findFirst()
+                .map(user -> user.getTenantId())
+                .orElseThrow(() -> new IllegalStateException("Demo data requires a bootstrap user tenant"));
     }
 
     // =========================================================================

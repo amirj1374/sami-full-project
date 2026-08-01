@@ -1,7 +1,7 @@
 # SAMI ERP — reusable development context
 
-Last repository inspection: 2026-07-28  
-Workspace: `C:\Users\Amir-Js\Documents\sami`
+Last repository inspection: 2026-08-01
+Workspace: `C:\Users\Amir-Js\OneDrive\Documents\sami-full-project`
 
 This file is a fast-start snapshot for Codex and developers. It reduces repeated discovery but does not override current repository files. Re-check the named source files whenever a relevant area changes.
 
@@ -119,7 +119,7 @@ Configured scripts:
 
 There are currently no configured frontend lint or automated test scripts.
 
-The last verified production build passed and transformed 878 modules. Re-run it after any source or dependency change.
+The last verified production build passed and transformed 1005 modules. Re-run it after any source or dependency change.
 
 ## Backend technology and architecture
 
@@ -140,7 +140,12 @@ Authoritative sources: `sami-backend/pom.xml`, `src/main/resources/application*.
   `SecurityUser`. It fails closed and does not trust client tenant identifiers.
   `TenantDefaults` remains transitional legacy infrastructure and must not be
   propagated.
-- Modules are organized below `com.sami.app` by domain, including auth, authz, automation, calendar, communication, CRM, dashboard, data quality, files, knowledge, licensing, metadata, portal, products, purchasing, scheduling, suppliers and users.
+- Modules are organized below `com.sami.app` by domain, including auth, authz, automation, calendar, communication, CRM, dashboard, data quality, files, inventory, knowledge, licensing, metadata, portal, products, purchasing, sales, scheduling, suppliers and users.
+- Inventory owns the canonical tenant-scoped warehouse registry, location balances,
+  append-only movements, serial/IMEI state, reservations, transfers, stock counts,
+  value reporting and audit. Purchasing receipts/returns and Sales reservations,
+  issues and customer returns integrate through `InventoryStockOperations` in the
+  caller transaction. `products.stock_quantity` remains a compatibility projection.
 
 Backend runtime:
 
@@ -151,7 +156,9 @@ Backend runtime:
 - Database defaults: PostgreSQL at `localhost:5432/sami`.
 - Production secrets must be supplied through environment variables.
 
-Migration range is `V1` through `V27`. The former duplicate communication-hub `V26` was moved to `V27`; the earlier organization lifecycle `V26` remains unchanged.
+Migration range is `V1` through `V32`. Inventory is introduced by `V32`, which
+promotes `pur_warehouses` in place and backfills legacy product stock and Sales
+movement evidence without changing historical migrations.
 
 ## Container and deployment context
 

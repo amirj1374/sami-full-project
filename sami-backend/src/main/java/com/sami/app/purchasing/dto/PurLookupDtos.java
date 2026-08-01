@@ -5,7 +5,7 @@ import com.sami.app.purchasing.domain.PurCancelReason;
 import com.sami.app.purchasing.domain.PurIdentifierType;
 import com.sami.app.purchasing.domain.PurStatus;
 import com.sami.app.purchasing.domain.PurType;
-import com.sami.app.purchasing.domain.PurWarehouse;
+import com.sami.app.inventory.domain.InventoryWarehouse;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -80,7 +80,7 @@ public final class PurLookupDtos {
 
     public record WarehouseResponse(Long id, String code, String name,
                                     boolean active, int displayOrder) {
-        public static WarehouseResponse from(PurWarehouse w) {
+        public static WarehouseResponse from(InventoryWarehouse w) {
             return new WarehouseResponse(w.getId(), w.getCode(), w.getName(),
                     w.isActive(), w.getDisplayOrder());
         }
