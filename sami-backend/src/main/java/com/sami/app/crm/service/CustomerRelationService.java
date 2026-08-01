@@ -11,6 +11,7 @@ import com.sami.app.crm.dto.RelationDtos.RelationResponse;
 import com.sami.app.crm.repository.CustomerRelationRepository;
 import com.sami.app.crm.repository.CustomerRepository;
 import com.sami.app.crm.repository.RelationTypeRepository;
+import com.sami.app.common.tenancy.TenantContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,11 +32,23 @@ public class CustomerRelationService {
     private final CustomerRepository customerRepository;
     private final RelationTypeRepository relationTypeRepository;
     private final CustomerEventService events;
+    private final TenantContext tenantContext;
+
+    @Transactional(readOnly = true)
+    public List<com.sami.app.crm.dto.RelationDtos.RelationTypeResponse> listTypes() {
+        java.util.LinkedHashMap<String, RelationType> resolved = new java.util.LinkedHashMap<>();
+        relationTypeRepository.findVisible(tenantContext.requireTenantId()).forEach(type -> {
+            String key = type.getCode().toLowerCase(java.util.Locale.ROOT);
+            if (type.getTenantId() == null) resolved.putIfAbsent(key, type); else resolved.put(key, type);
+        });
+        return resolved.values().stream()
+                .map(com.sami.app.crm.dto.RelationDtos.RelationTypeResponse::from).toList();
+    }
 
     @Transactional(readOnly = true)
     public List<RelationResponse> list(Long customerId) {
         requireCustomer(customerId);
-        return relationRepository.findAllInvolving(customerId).stream()
+        return relationRepository.findAllInvolving(tenantContext.requireTenantId(), customerId).stream()
                 .map(r -> RelationResponse.from(r, customerId))
                 .toList();
     }
@@ -48,16 +61,19 @@ public class CustomerRelationService {
         }
         Customer customer = requireCustomer(customerId);
         Customer related = requireCustomer(request.relatedCustomerId());
-        RelationType type = relationTypeRepository.findById(request.relationTypeId())
+        Long tenantId = tenantContext.requireTenantId();
+        RelationType type = relationTypeRepository.findVisible(tenantId).stream()
+                .filter(candidate -> candidate.getId().equals(request.relationTypeId())).findFirst()
                 .orElseThrow(() -> ResourceNotFoundException.of("Relation type",
                         request.relationTypeId()));
-        if (relationRepository.existsByCustomerIdAndRelatedCustomerIdAndRelationTypeId(
-                customerId, related.getId(), type.getId())) {
+        if (relationRepository.existsByTenantIdAndCustomerIdAndRelatedCustomerIdAndRelationTypeId(
+                tenantId, customerId, related.getId(), type.getId())) {
             throw new ApiException(ErrorCode.RESOURCE_CONFLICT,
                     "This relation already exists");
         }
 
         CustomerRelation relation = relationRepository.save(CustomerRelation.builder()
+                .tenantId(tenantId)
                 .customer(customer)
                 .relatedCustomer(related)
                 .relationType(type)
@@ -77,7 +93,8 @@ public class CustomerRelationService {
 
     @Transactional
     public void remove(Long customerId, Long relationId) {
-        CustomerRelation relation = relationRepository.findById(relationId)
+        CustomerRelation relation = relationRepository.findByIdAndTenantId(
+                        relationId, tenantContext.requireTenantId())
                 .orElseThrow(() -> ResourceNotFoundException.of("Relation", relationId));
         boolean involves = relation.getCustomer().getId().equals(customerId)
                 || relation.getRelatedCustomer().getId().equals(customerId);
@@ -96,7 +113,7 @@ public class CustomerRelationService {
     }
 
     private Customer requireCustomer(Long id) {
-        Customer customer = customerRepository.findById(id)
+        Customer customer = customerRepository.findByIdAndTenantId(id, tenantContext.requireTenantId())
                 .orElseThrow(() -> ResourceNotFoundException.of("Customer", id));
         if (customer.getMergedInto() != null) {
             throw new ApiException(ErrorCode.OPERATION_NOT_ALLOWED,

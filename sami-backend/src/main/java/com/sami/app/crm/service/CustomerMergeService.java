@@ -13,6 +13,7 @@ import com.sami.app.crm.repository.CustomerNoteRepository;
 import com.sami.app.crm.repository.CustomerRelationRepository;
 import com.sami.app.crm.repository.CustomerRepository;
 import com.sami.app.crm.repository.CustomerStatusRepository;
+import com.sami.app.common.tenancy.TenantContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,6 +44,7 @@ public class CustomerMergeService {
     private final CustomerEventRepository eventRepository;
     private final CustomerRelationRepository relationRepository;
     private final CustomerEventService events;
+    private final TenantContext tenantContext;
 
     @Transactional
     public CustomerDetailResponse merge(Long sourceId, Long targetId) {
@@ -65,12 +67,13 @@ public class CustomerMergeService {
         mergeRelations(source, target);
 
         // Notes and timeline move wholesale — history is preserved and unified.
-        noteRepository.moveAll(sourceId, targetId);
-        eventRepository.moveAll(sourceId, targetId);
+        Long tenantId = tenantContext.requireTenantId();
+        noteRepository.moveAll(tenantId, sourceId, targetId);
+        eventRepository.moveAll(tenantId, sourceId, targetId);
 
         // The source stays: flagged as merged, soft-deleted, out of every listing.
         source.setMergedInto(target);
-        source.setStatus(statusRepository.findByIsDeletedStateTrue()
+        source.setStatus(visibleStatuses().stream().filter(com.sami.app.crm.domain.CustomerStatus::isDeletedState).findFirst()
                 .orElseThrow(() -> new ApiException(ErrorCode.INTERNAL_ERROR,
                         "No deleted status is configured")));
         source.setDeletedAt(Instant.now());
@@ -84,7 +87,7 @@ public class CustomerMergeService {
                 Map.of("targetId", targetId, "targetCode", target.getCustomerCode()));
 
         return CustomerDetailResponse.from(
-                customerRepository.findWithDetailsById(targetId).orElseThrow());
+                customerRepository.findWithDetailsByIdAndTenantId(targetId, tenantId).orElseThrow());
     }
 
     private void mergeContacts(Customer source, Customer target) {
@@ -180,7 +183,8 @@ public class CustomerMergeService {
      */
     private void mergeRelations(Customer source, Customer target) {
         for (CustomerRelation relation
-                : relationRepository.findByCustomerIdOrRelatedCustomerId(source.getId(), source.getId())) {
+                : relationRepository.findByTenantIdAndCustomerIdOrTenantIdAndRelatedCustomerId(
+                        tenantContext.requireTenantId(), source.getId(), tenantContext.requireTenantId(), source.getId())) {
             if (relation.getCustomer().getId().equals(source.getId())) {
                 relation.setCustomer(target);
             }
@@ -190,7 +194,8 @@ public class CustomerMergeService {
             boolean selfRelation = relation.getCustomer().getId()
                     .equals(relation.getRelatedCustomer().getId());
             boolean duplicate = !selfRelation
-                    && relationRepository.existsByCustomerIdAndRelatedCustomerIdAndRelationTypeIdAndIdNot(
+                    && relationRepository.existsByTenantIdAndCustomerIdAndRelatedCustomerIdAndRelationTypeIdAndIdNot(
+                            tenantContext.requireTenantId(),
                             relation.getCustomer().getId(),
                             relation.getRelatedCustomer().getId(),
                             relation.getRelationType().getId(),
@@ -206,7 +211,16 @@ public class CustomerMergeService {
     }
 
     private Customer findOrThrow(Long id) {
-        return customerRepository.findWithDetailsById(id)
+        return customerRepository.findWithDetailsByIdAndTenantId(id, tenantContext.requireTenantId())
                 .orElseThrow(() -> ResourceNotFoundException.of("Customer", id));
+    }
+
+    private java.util.List<com.sami.app.crm.domain.CustomerStatus> visibleStatuses() {
+        java.util.LinkedHashMap<String, com.sami.app.crm.domain.CustomerStatus> resolved = new java.util.LinkedHashMap<>();
+        statusRepository.findVisible(tenantContext.requireTenantId()).forEach(status -> {
+            String key = status.getCode().toLowerCase(java.util.Locale.ROOT);
+            if (status.getTenantId() == null) resolved.putIfAbsent(key, status); else resolved.put(key, status);
+        });
+        return java.util.List.copyOf(resolved.values());
     }
 }

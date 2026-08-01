@@ -611,6 +611,19 @@ export interface CrmSegment {
   filter: Record<string, unknown>
 }
 
+export interface CrmStatsBucket {
+  name: string
+  count: number
+}
+
+export interface CrmStats {
+  total: number
+  newLast30Days: number
+  byStatus: CrmStatsBucket[]
+  byType: CrmStatsBucket[]
+  bySource: CrmStatsBucket[]
+}
+
 export interface DuplicateMatch {
   customerId: number
   customerCode: string

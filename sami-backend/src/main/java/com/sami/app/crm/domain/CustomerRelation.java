@@ -26,6 +26,9 @@ import lombok.Setter;
 @Builder
 public class CustomerRelation extends BaseEntity {
 
+    @Column(name = "tenant_id", nullable = false, updatable = false)
+    private Long tenantId;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "customer_id", nullable = false)
     private Customer customer;

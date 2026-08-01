@@ -10,6 +10,7 @@ import com.sami.app.crm.dto.CustomerResponse;
 import com.sami.app.crm.dto.SegmentDtos.SegmentRequest;
 import com.sami.app.crm.dto.SegmentDtos.SegmentResponse;
 import com.sami.app.crm.repository.SegmentRepository;
+import com.sami.app.common.tenancy.TenantContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -32,22 +33,25 @@ public class SegmentService {
     private final SegmentRepository segmentRepository;
     private final CustomerService customerService;
     private final ObjectMapper objectMapper;
+    private final TenantContext tenantContext;
 
     @Transactional(readOnly = true)
     public List<SegmentResponse> list() {
-        return segmentRepository.findAllByOrderByNameAsc().stream()
+        return segmentRepository.findAllByTenantIdOrderByNameAsc(tenantContext.requireTenantId()).stream()
                 .map(SegmentResponse::from)
                 .toList();
     }
 
     @Transactional
     public SegmentResponse create(SegmentRequest request) {
-        if (segmentRepository.existsByNameIgnoreCase(request.name())) {
+        Long tenantId = tenantContext.requireTenantId();
+        if (segmentRepository.existsByTenantIdAndNameIgnoreCase(tenantId, request.name())) {
             throw new ApiException(ErrorCode.RESOURCE_CONFLICT,
                     "A segment named '%s' already exists".formatted(request.name()));
         }
         requireValidFilter(request.filter());
         return SegmentResponse.from(segmentRepository.save(Segment.builder()
+                .tenantId(tenantId)
                 .name(request.name())
                 .description(request.description())
                 .filter(request.filter())
@@ -57,7 +61,8 @@ public class SegmentService {
     @Transactional
     public SegmentResponse update(Long id, SegmentRequest request) {
         Segment segment = findOrThrow(id);
-        if (segmentRepository.existsByNameIgnoreCaseAndIdNot(request.name(), id)) {
+        if (segmentRepository.existsByTenantIdAndNameIgnoreCaseAndIdNot(
+                tenantContext.requireTenantId(), request.name(), id)) {
             throw new ApiException(ErrorCode.RESOURCE_CONFLICT,
                     "A segment named '%s' already exists".formatted(request.name()));
         }
@@ -94,7 +99,7 @@ public class SegmentService {
     }
 
     private Segment findOrThrow(Long id) {
-        return segmentRepository.findById(id)
+        return segmentRepository.findByIdAndTenantId(id, tenantContext.requireTenantId())
                 .orElseThrow(() -> ResourceNotFoundException.of("Segment", id));
     }
 }

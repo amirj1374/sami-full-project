@@ -6,6 +6,7 @@ import com.sami.app.common.exception.ResourceNotFoundException;
 import com.sami.app.common.storage.FileStorage;
 import com.sami.app.common.storage.ImageUploads;
 import com.sami.app.common.storage.StorageProperties;
+import com.sami.app.common.tenancy.TenantContext;
 import com.sami.app.crm.CrmProperties;
 import com.sami.app.crm.domain.Customer;
 import com.sami.app.crm.domain.CustomerAddress;
@@ -68,6 +69,7 @@ public class CustomerService {
     private final FileStorage fileStorage;
     private final StorageProperties storageProperties;
     private final CrmProperties crmProperties;
+    private final TenantContext tenantContext;
 
     // ----------------------------------------------------------------- reads
 
@@ -104,15 +106,17 @@ public class CustomerService {
 
     @Transactional
     public CustomerDetailResponse create(CustomerRequest request) {
+        Long tenantId = tenantContext.requireTenantId();
         enforceDuplicatePolicy(request, null);
 
         CustomerStatus status = request.statusId() != null
                 ? findStatusOrThrow(request.statusId())
-                : statusRepository.findByIsDefaultTrue()
+                : visibleStatuses().stream().filter(CustomerStatus::isDefault).findFirst()
                         .orElseThrow(() -> new ApiException(ErrorCode.INTERNAL_ERROR,
                                 "No default customer status is configured"));
 
         Customer customer = Customer.builder()
+                .tenantId(tenantId)
                 .customerCode(nextCustomerCode())
                 .displayName(request.displayName())
                 .type(findTypeOrThrow(request.typeId()))
@@ -203,7 +207,7 @@ public class CustomerService {
                     "The customer is already archived or deleted");
         }
         String from = customer.getStatus().getName();
-        CustomerStatus archived = statusRepository.findByIsArchivedStateTrue()
+        CustomerStatus archived = visibleStatuses().stream().filter(CustomerStatus::isArchivedState).findFirst()
                 .orElseThrow(() -> new ApiException(ErrorCode.INTERNAL_ERROR,
                         "No archived status is configured"));
         customer.setStatus(archived);
@@ -223,7 +227,7 @@ public class CustomerService {
                     "Only archived or deleted customers can be restored");
         }
         String from = customer.getStatus().getName();
-        CustomerStatus target = statusRepository.findByIsDefaultTrue()
+        CustomerStatus target = visibleStatuses().stream().filter(CustomerStatus::isDefault).findFirst()
                 .orElseThrow(() -> new ApiException(ErrorCode.INTERNAL_ERROR,
                         "No default customer status is configured"));
         customer.setStatus(target);
@@ -245,7 +249,7 @@ public class CustomerService {
                     "The customer is already deleted");
         }
         String from = customer.getStatus().getName();
-        CustomerStatus deleted = statusRepository.findByIsDeletedStateTrue()
+        CustomerStatus deleted = visibleStatuses().stream().filter(CustomerStatus::isDeletedState).findFirst()
                 .orElseThrow(() -> new ApiException(ErrorCode.INTERNAL_ERROR,
                         "No deleted status is configured"));
         customer.setStatus(deleted);
@@ -285,7 +289,7 @@ public class CustomerService {
         byte[] content = ImageUploads.validated(file, storageProperties);
         Customer customer = findOrThrow(id);
         String oldKey = customer.getAvatarKey();
-        customer.setAvatarKey(fileStorage.store("customer-avatars/" + id, content,
+        customer.setAvatarKey(fileStorage.store("customer-avatars/" + tenantContext.requireTenantId() + "/" + id, content,
                 file.getContentType()));
         if (oldKey != null) {
             fileStorage.delete(oldKey);
@@ -295,7 +299,7 @@ public class CustomerService {
 
     @Transactional(readOnly = true)
     public Optional<FileStorage.StoredFile> loadAvatar(Long id) {
-        return customerRepository.findById(id)
+        return customerRepository.findByIdAndTenantId(id, tenantContext.requireTenantId())
                 .map(Customer::getAvatarKey)
                 .flatMap(fileStorage::load);
     }
@@ -337,7 +341,8 @@ public class CustomerService {
     }
 
     private void applySource(Customer customer, Long sourceId) {
-        customer.setSource(sourceId == null ? null : sourceRepository.findById(sourceId)
+        customer.setSource(sourceId == null ? null : sourceRepository.findVisible(tenantContext.requireTenantId()).stream()
+                .filter(source -> source.getId().equals(sourceId)).findFirst()
                 .orElseThrow(() -> ResourceNotFoundException.of("Customer source", sourceId)));
     }
 
@@ -345,7 +350,9 @@ public class CustomerService {
         if (tagIds == null) {
             return;
         }
-        List<CustomerTag> tags = tagRepository.findAllById(tagIds);
+        Set<Long> requested = new HashSet<>(tagIds);
+        List<CustomerTag> tags = tagRepository.findVisible(tenantContext.requireTenantId()).stream()
+                .filter(tag -> requested.contains(tag.getId())).toList();
         if (tags.size() != new HashSet<>(tagIds).size()) {
             throw new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "One or more tags do not exist");
         }
@@ -414,6 +421,7 @@ public class CustomerService {
         boolean explicitStatus = f.statusId() != null;
         boolean includeHidden = Boolean.TRUE.equals(f.includeHidden());
         return Specification.allOf(
+                CustomerSpecifications.hasTenant(tenantContext.requireTenantId()),
                 CustomerSpecifications.notMerged(),
                 CustomerSpecifications.globalSearch(f.search()),
                 CustomerSpecifications.hasContact(Kind.PHONE, f.phone()),
@@ -519,22 +527,50 @@ public class CustomerService {
     }
 
     private Customer findOrThrow(Long id) {
-        return customerRepository.findById(id)
+        return customerRepository.findByIdAndTenantId(id, tenantContext.requireTenantId())
                 .orElseThrow(() -> ResourceNotFoundException.of("Customer", id));
     }
 
     private Customer findWithDetailsOrThrow(Long id) {
-        return customerRepository.findWithDetailsById(id)
+        return customerRepository.findWithDetailsByIdAndTenantId(id, tenantContext.requireTenantId())
                 .orElseThrow(() -> ResourceNotFoundException.of("Customer", id));
     }
 
     private com.sami.app.crm.domain.CustomerType findTypeOrThrow(Long id) {
-        return typeRepository.findById(id)
+        return visibleTypes().stream().filter(type -> type.getId().equals(id)).findFirst()
                 .orElseThrow(() -> ResourceNotFoundException.of("Customer type", id));
     }
 
     private CustomerStatus findStatusOrThrow(Long id) {
-        return statusRepository.findById(id)
+        return visibleStatuses().stream().filter(status -> status.getId().equals(id)).findFirst()
                 .orElseThrow(() -> ResourceNotFoundException.of("Customer status", id));
+    }
+
+    private List<com.sami.app.crm.domain.CustomerType> visibleTypes() {
+        Map<String, com.sami.app.crm.domain.CustomerType> resolved = new LinkedHashMap<>();
+        Long tenantId = tenantContext.requireTenantId();
+        typeRepository.findVisible(tenantId).forEach(type -> {
+            String key = type.getCode().toLowerCase(java.util.Locale.ROOT);
+            if (type.getTenantId() == null) {
+                resolved.putIfAbsent(key, type);
+            } else {
+                resolved.put(key, type);
+            }
+        });
+        return List.copyOf(resolved.values());
+    }
+
+    private List<CustomerStatus> visibleStatuses() {
+        Map<String, CustomerStatus> resolved = new LinkedHashMap<>();
+        Long tenantId = tenantContext.requireTenantId();
+        statusRepository.findVisible(tenantId).forEach(status -> {
+            String key = status.getCode().toLowerCase(java.util.Locale.ROOT);
+            if (status.getTenantId() == null) {
+                resolved.putIfAbsent(key, status);
+            } else {
+                resolved.put(key, status);
+            }
+        });
+        return List.copyOf(resolved.values());
     }
 }

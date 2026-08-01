@@ -28,7 +28,10 @@ import java.util.Map;
 @Builder
 public class Segment extends BaseEntity {
 
-    @Column(nullable = false, unique = true, length = 100)
+    @Column(name = "tenant_id", nullable = false, updatable = false)
+    private Long tenantId;
+
+    @Column(nullable = false, length = 100)
     private String name;
 
     @Column(length = 255)

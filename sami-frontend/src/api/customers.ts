@@ -6,6 +6,7 @@ import type {
   CustomerEvent,
   CustomerFilterQuery,
   CustomerImportResult,
+  CrmStats,
   CustomerNote,
   CustomerNotePayload,
   CustomerPayload,
@@ -21,6 +22,9 @@ export type CustomerListParams = PageQuery & Omit<CustomerFilterQuery, 'tagIds'>
 
 /** Customer 360° API: CRUD, lifecycle, merge, timeline, notes, avatar, export. */
 export const customersApi = {
+  stats: (): Promise<CrmStats> =>
+    unwrap(http.get<ApiResponse<CrmStats>>('/v1/customers/stats')),
+
   list: (params: CustomerListParams = {}): Promise<PageResponse<Customer>> =>
     unwrap(http.get<ApiResponse<PageResponse<Customer>>>('/v1/customers', { params })),
 
@@ -130,6 +134,13 @@ export const customersApi = {
 
   blacklistHistory: (id: number): Promise<BlacklistEntry[]> =>
     unwrap(http.get<ApiResponse<BlacklistEntry[]>>(`/v1/customers/${id}/blacklist-history`)),
+
+  runSegment: (segmentId: number, params: PageQuery = {}): Promise<PageResponse<Customer>> =>
+    unwrap(
+      http.get<ApiResponse<PageResponse<Customer>>>(`/v1/customers/segments/${segmentId}/run`, {
+        params,
+      }),
+    ),
 
   // --- Import ----------------------------------------------------------------
 

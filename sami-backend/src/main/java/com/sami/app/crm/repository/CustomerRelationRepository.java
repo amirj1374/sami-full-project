@@ -15,19 +15,22 @@ public interface CustomerRelationRepository extends JpaRepository<CustomerRelati
     @EntityGraph(attributePaths = {"customer", "relatedCustomer", "relationType"})
     @Query("""
             SELECT r FROM CustomerRelation r
-            WHERE r.customer.id = :customerId OR r.relatedCustomer.id = :customerId
+            WHERE r.tenantId = :tenantId
+              AND (r.customer.id = :customerId OR r.relatedCustomer.id = :customerId)
             ORDER BY r.id
             """)
-    List<CustomerRelation> findAllInvolving(@Param("customerId") Long customerId);
+    List<CustomerRelation> findAllInvolving(@Param("tenantId") Long tenantId,
+                                             @Param("customerId") Long customerId);
 
-    boolean existsByCustomerIdAndRelatedCustomerIdAndRelationTypeId(
-            Long customerId, Long relatedCustomerId, Long relationTypeId);
+    boolean existsByTenantIdAndCustomerIdAndRelatedCustomerIdAndRelationTypeId(
+            Long tenantId, Long customerId, Long relatedCustomerId, Long relationTypeId);
 
     /** Duplicate check that excludes the row being re-parented (merge path). */
-    boolean existsByCustomerIdAndRelatedCustomerIdAndRelationTypeIdAndIdNot(
-            Long customerId, Long relatedCustomerId, Long relationTypeId, Long id);
+    boolean existsByTenantIdAndCustomerIdAndRelatedCustomerIdAndRelationTypeIdAndIdNot(
+            Long tenantId, Long customerId, Long relatedCustomerId, Long relationTypeId, Long id);
 
-    long countByRelationTypeId(Long relationTypeId);
+    List<CustomerRelation> findByTenantIdAndCustomerIdOrTenantIdAndRelatedCustomerId(
+            Long tenantId, Long customerId, Long tenantIdAgain, Long relatedCustomerId);
 
-    List<CustomerRelation> findByCustomerIdOrRelatedCustomerId(Long customerId, Long relatedCustomerId);
+    java.util.Optional<CustomerRelation> findByIdAndTenantId(Long id, Long tenantId);
 }

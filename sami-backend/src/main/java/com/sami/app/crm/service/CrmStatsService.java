@@ -2,6 +2,7 @@ package com.sami.app.crm.service;
 
 import com.sami.app.crm.dto.CrmStatsResponse;
 import com.sami.app.crm.repository.CustomerRepository;
+import com.sami.app.common.tenancy.TenantContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,16 +21,18 @@ import java.util.List;
 public class CrmStatsService {
 
     private final CustomerRepository customerRepository;
+    private final TenantContext tenantContext;
 
     @Transactional(readOnly = true)
     public CrmStatsResponse stats() {
         Instant thirtyDaysAgo = Instant.now().minus(30, ChronoUnit.DAYS);
+        Long tenantId = tenantContext.requireTenantId();
         return new CrmStatsResponse(
-                customerRepository.countByMergedIntoIsNull(),
-                customerRepository.countByCreatedAtAfterAndMergedIntoIsNull(thirtyDaysAgo),
-                buckets(customerRepository.countByStatus()),
-                buckets(customerRepository.countByType()),
-                buckets(customerRepository.countBySource()));
+                customerRepository.countByTenantIdAndMergedIntoIsNull(tenantId),
+                customerRepository.countByTenantIdAndCreatedAtAfterAndMergedIntoIsNull(tenantId, thirtyDaysAgo),
+                buckets(customerRepository.countByStatus(tenantId)),
+                buckets(customerRepository.countByType(tenantId)),
+                buckets(customerRepository.countBySource(tenantId)));
     }
 
     private List<CrmStatsResponse.Bucket> buckets(List<Object[]> rows) {

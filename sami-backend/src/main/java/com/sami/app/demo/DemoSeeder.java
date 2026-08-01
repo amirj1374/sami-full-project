@@ -332,13 +332,15 @@ public class DemoSeeder {
 
     @Transactional
     public int seedCustomers(Random rng, int target) {
-        CustomerType individual = customerTypeRepository.findByIsDefaultTrue()
-                .orElseGet(() -> customerTypeRepository.findAllByOrderByDisplayOrderAsc().get(0));
-        List<CustomerType> types = customerTypeRepository.findAllByOrderByDisplayOrderAsc();
-        CustomerStatus activeStatus = customerStatusRepository.findByIsDefaultTrue()
-                .orElseGet(() -> customerStatusRepository.findAllByOrderByDisplayOrderAsc().get(0));
-        List<CustomerSource> sources = customerSourceRepository.findAllByOrderByDisplayOrderAsc();
-        List<CustomerTag> tags = customerTagRepository.findAllByOrderByNameAsc();
+        Long tenantId = resolveTenantId();
+        List<CustomerType> types = customerTypeRepository.findVisible(tenantId);
+        CustomerType individual = types.stream().filter(CustomerType::isDefault).findFirst()
+                .orElseGet(() -> types.get(0));
+        List<CustomerStatus> statuses = customerStatusRepository.findVisible(tenantId);
+        CustomerStatus activeStatus = statuses.stream().filter(CustomerStatus::isDefault).findFirst()
+                .orElseGet(() -> statuses.get(0));
+        List<CustomerSource> sources = customerSourceRepository.findVisible(tenantId);
+        List<CustomerTag> tags = customerTagRepository.findVisible(tenantId);
 
         List<long[]> backdates = new ArrayList<>();
         List<CustomerEvent> events = new ArrayList<>();
@@ -364,6 +366,7 @@ public class DemoSeeder {
             }
 
             Customer c = Customer.builder()
+                    .tenantId(tenantId)
                     .customerCode("C" + String.format("%06d", code))
                     .firstName(first)
                     .lastName(last)
@@ -395,7 +398,7 @@ public class DemoSeeder {
             Customer persisted = customerRepository.save(c);
             long createdMillis = randomPastMillis(rng, 1100);
             backdates.add(new long[]{persisted.getId(), createdMillis});
-            events.addAll(buildTimeline(persisted.getId(), createdMillis, display, rng));
+            events.addAll(buildTimeline(tenantId, persisted.getId(), createdMillis, display, rng));
             created++;
 
             if (events.size() >= 400) {
@@ -412,10 +415,12 @@ public class DemoSeeder {
     }
 
     /** A realistic customer timeline: registration + a purchase/repair/payment history. */
-    private List<CustomerEvent> buildTimeline(Long customerId, long createdMillis, String display, Random rng) {
+    private List<CustomerEvent> buildTimeline(Long tenantId, Long customerId, long createdMillis,
+                                              String display, Random rng) {
         List<CustomerEvent> list = new ArrayList<>();
         Instant createdAt = Instant.ofEpochMilli(createdMillis);
         list.add(CustomerEvent.builder()
+                .tenantId(tenantId)
                 .customerId(customerId).eventType("CREATED").title("مشتری ثبت شد")
                 .sourceModule("crm").occurredAt(createdAt).build());
 
@@ -433,6 +438,7 @@ public class DemoSeeder {
             detail.put("amount", amount);
             detail.put("payment", rng.nextBoolean() ? "cash" : "installment");
             list.add(CustomerEvent.builder()
+                    .tenantId(tenantId)
                     .customerId(customerId).eventType("PURCHASE")
                     .title("خرید " + t.brand() + " " + t.model())
                     .detail(detail).sourceModule("sales")
@@ -447,6 +453,7 @@ public class DemoSeeder {
                 Map<String, Object> rd = new HashMap<>();
                 rd.put("issue", repairs[rng.nextInt(repairs.length)]);
                 list.add(CustomerEvent.builder()
+                        .tenantId(tenantId)
                         .customerId(customerId).eventType("REPAIR_REQUEST")
                         .title("پذیرش تعمیر: " + rd.get("issue"))
                         .detail(rd).sourceModule("repairs")

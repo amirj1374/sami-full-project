@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import { useDisplay } from 'vuetify'
 import { useI18n } from 'vue-i18n'
 import { useDebounceFn } from '@vueuse/core'
 import { customersApi, type CustomerListParams } from '@/api/customers'
@@ -11,12 +12,19 @@ import { useFormat } from '@/composables/useFormat'
 import CustomerFormDialog from '@/components/CustomerFormDialog.vue'
 import CustomerProfileDialog from '@/components/CustomerProfileDialog.vue'
 import CustomerMergeDialog from '@/components/CustomerMergeDialog.vue'
+import AppEmptyState from '@/components/AppEmptyState.vue'
+import AppLoadingState from '@/components/AppLoadingState.vue'
 import AppPageHeader from '@/components/AppPageHeader.vue'
+import CrmConfigPanel from '@/components/crm/CrmConfigPanel.vue'
+import CrmReportsPanel from '@/components/crm/CrmReportsPanel.vue'
+import CrmSegmentsPanel from '@/components/crm/CrmSegmentsPanel.vue'
+import { useNotifications } from '@/composables/useNotifications'
 import type {
   BlacklistReason,
   Customer,
   CustomerDetail,
   CustomerImportResult,
+  CrmStats,
   CustomerSource,
   CustomerStatus,
   CustomerTag,
@@ -25,10 +33,29 @@ import type {
 } from '@/types/models'
 
 const { t } = useI18n()
+const { smAndDown } = useDisplay()
 const { formatDate } = useFormat()
 const { can } = usePermission()
 const { text: srvLabel } = useServerLabel()
 const { message: errorMessage, set: setError, clear: clearError } = useApiError()
+const notifications = useNotifications()
+const tab = ref('customers')
+const stats = ref<CrmStats | null>(null)
+const statsLoading = ref(false)
+
+const tabs = computed(() => [
+  { value: 'customers', label: t('customers.tabs.customers'), icon: 'mdi-account-group-outline', allowed: true },
+  { value: 'reports', label: t('customers.tabs.reports'), icon: 'mdi-chart-box-outline', allowed: true },
+  { value: 'segments', label: t('customers.tabs.segments'), icon: 'mdi-account-filter-outline', allowed: true },
+  { value: 'config', label: t('customers.tabs.config'), icon: 'mdi-tune-variant', allowed: can('customers:manage-config') || can('customers:edit') },
+].filter((item) => item.allowed))
+
+const metrics = computed(() => stats.value ? [
+  { key: 'total', value: stats.value.total, icon: 'mdi-account-group-outline', color: 'primary' },
+  { key: 'newLast30Days', value: stats.value.newLast30Days, icon: 'mdi-account-plus-outline', color: 'success' },
+  { key: 'statuses', value: stats.value.byStatus.length, icon: 'mdi-state-machine', color: 'info' },
+  { key: 'segments', value: stats.value.byType.length, icon: 'mdi-shape-outline', color: 'secondary' },
+] : [])
 
 // --- Reference data ---------------------------------------------------------
 const types = ref<CustomerType[]>([])
@@ -38,7 +65,7 @@ const tags = ref<CustomerTag[]>([])
 const preferenceDefs = ref<PreferenceDefinition[]>([])
 const blacklistReasons = ref<BlacklistReason[]>([])
 
-onMounted(async () => {
+async function loadReferenceData() {
   try {
     ;[types.value, statuses.value, sources.value, tags.value, preferenceDefs.value, blacklistReasons.value] =
       await Promise.all([
@@ -52,6 +79,21 @@ onMounted(async () => {
   } catch (err) {
     setError(err)
   }
+}
+
+async function loadStats() {
+  statsLoading.value = true
+  try {
+    stats.value = await customersApi.stats()
+  } catch (err) {
+    setError(err)
+  } finally {
+    statsLoading.value = false
+  }
+}
+
+onMounted(() => {
+  void Promise.all([loadReferenceData(), loadStats(), loadItems(lastOptions.value)])
 })
 
 // --- Table state ------------------------------------------------------------
@@ -69,6 +111,7 @@ const items = ref<Customer[]>([])
 const totalItems = ref(0)
 const loading = ref(false)
 const lastOptions = ref<TableOptions>({ page: 1, itemsPerPage: 10, sortBy: [] })
+const pageCount = computed(() => Math.max(1, Math.ceil(totalItems.value / lastOptions.value.itemsPerPage)))
 
 const headers = computed(() => [
   { title: t('customers.headers.code'), key: 'customerCode' },
@@ -127,6 +170,7 @@ async function loadItems(options: TableOptions) {
 
 function refresh() {
   void loadItems(lastOptions.value)
+  void loadStats()
 }
 
 const reload = useDebounceFn(() => {
@@ -191,6 +235,7 @@ async function rowAction(customer: Customer, action: () => Promise<unknown>) {
   clearError()
   try {
     await action()
+    notifications.success(t('customers.notifications.updated'))
     refresh()
   } catch (err) {
     setError(err)
@@ -206,6 +251,7 @@ async function confirmDelete() {
     await customersApi.softDelete(deleteTarget.value.id)
     deleteTarget.value = null
     refresh()
+    notifications.success(t('customers.notifications.deleted'))
   } catch (err) {
     setError(err)
   } finally {
@@ -220,6 +266,7 @@ async function confirmPurge() {
     await customersApi.purge(purgeTarget.value.id)
     purgeTarget.value = null
     refresh()
+    notifications.success(t('customers.notifications.purged'))
   } catch (err) {
     setError(err)
   } finally {
@@ -250,6 +297,7 @@ async function confirmBlacklist() {
     })
     blacklistTarget.value = null
     refresh()
+    notifications.success(t('customers.notifications.blacklisted'))
   } catch (err) {
     setError(err)
   } finally {
@@ -272,6 +320,7 @@ async function onImportFile(event: Event) {
   try {
     importResult.value = await customersApi.importCsv(file)
     refresh()
+    notifications.success(t('customers.notifications.imported'))
   } catch (err) {
     setError(err)
   } finally {
@@ -293,6 +342,7 @@ async function exportCsv() {
     link.download = 'customers.csv'
     link.click()
     URL.revokeObjectURL(url)
+    notifications.success(t('customers.notifications.exported'))
   } catch (err) {
     setError(err)
   } finally {
@@ -309,8 +359,13 @@ function statusColor(status: CustomerStatus): string {
 </script>
 
 <template>
-  <div>
-    <AppPageHeader icon="mdi-account-group-outline" :title="t('customers.title')">
+  <div class="crm-page">
+    <AppPageHeader
+      icon="mdi-account-group-outline"
+      :eyebrow="t('customers.eyebrow')"
+      :title="t('customers.title')"
+      :subtitle="t('customers.subtitle')"
+    >
       <template #actions>
       <input
         ref="importInput"
@@ -347,7 +402,30 @@ function statusColor(status: CustomerStatus): string {
       {{ errorMessage }}
     </v-alert>
 
-    <v-card rounded="lg" border flat class="app-data-surface">
+    <AppLoadingState v-if="statsLoading && !stats" variant="cards" :rows="4" :label="t('common.loading')" />
+    <v-row v-else-if="stats" class="mb-2">
+      <v-col v-for="metric in metrics" :key="metric.key" cols="6" lg="3">
+        <v-card rounded="xl" class="crm-metric h-100">
+          <v-card-text>
+            <div class="d-flex align-start ga-3">
+              <v-avatar :color="metric.color" variant="tonal" rounded="lg"><v-icon :icon="metric.icon" /></v-avatar>
+              <div class="min-width-0">
+                <div class="text-caption text-medium-emphasis">{{ t(`customers.metrics.${metric.key}`) }}</div>
+                <div class="text-h6 text-sm-h5 font-weight-bold mt-1">{{ metric.value }}</div>
+              </div>
+            </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
+
+    <v-card rounded="xl" class="crm-tabs mb-5">
+      <v-tabs v-model="tab" color="primary" show-arrows density="comfortable">
+        <v-tab v-for="item in tabs" :key="item.value" :value="item.value" :prepend-icon="item.icon">{{ item.label }}</v-tab>
+      </v-tabs>
+    </v-card>
+
+    <v-card v-if="tab === 'customers'" rounded="xl" class="app-data-surface">
       <v-card-text>
         <v-row dense align="center">
           <v-col cols="12" sm="4">
@@ -399,6 +477,7 @@ function statusColor(status: CustomerStatus): string {
       </v-card-text>
 
       <v-data-table-server
+        v-if="!smAndDown"
         :headers="headers"
         :items="items"
         :items-length="totalItems"
@@ -507,7 +586,57 @@ function statusColor(status: CustomerStatus): string {
           </v-menu>
         </template>
       </v-data-table-server>
+
+      <AppLoadingState v-else-if="loading && !items.length" variant="table" :rows="5" :label="t('common.loading')" />
+      <div v-else-if="items.length" class="d-grid ga-3 pa-3 pt-0">
+        <v-card v-for="item in items" :key="item.id" rounded="xl" variant="outlined" @click="openProfile(item)">
+          <v-card-text>
+            <div class="d-flex align-start ga-3">
+              <v-avatar color="primary" variant="tonal" rounded="lg"><v-icon icon="mdi-account" /></v-avatar>
+              <div class="flex-grow-1 min-width-0">
+                <div class="d-flex align-center flex-wrap ga-2">
+                  <strong class="text-truncate">{{ item.displayName }}</strong>
+                  <v-chip :color="statusColor(item.status)" size="x-small" variant="tonal">{{ srvLabel(item.status.name) }}</v-chip>
+                </div>
+                <div class="text-caption text-medium-emphasis mt-1">{{ item.customerCode }} · {{ srvLabel(item.type.name) }}</div>
+                <div v-if="item.companyName" class="text-body-2 text-truncate mt-1">{{ item.companyName }}</div>
+                <div class="d-flex flex-wrap ga-1 mt-2">
+                  <v-chip v-for="tag in item.tags.slice(0, 3)" :key="tag.id" size="x-small" variant="tonal" :color="tag.color ?? undefined">{{ srvLabel(tag.name) }}</v-chip>
+                </div>
+              </div>
+            </div>
+            <div class="d-flex justify-end ga-1 mt-2" @click.stop>
+              <v-btn :aria-label="t('customers.actions.viewProfile')" icon="mdi-account-details" size="small" variant="text" @click="openProfile(item)" />
+              <v-btn v-if="can('customers:edit')" :aria-label="t('common.edit')" icon="mdi-pencil" size="small" variant="text" @click="openEdit(item)" />
+              <v-menu location="bottom end">
+                <template #activator="{ props: menuProps }"><v-btn :aria-label="t('customers.actions.more')" icon="mdi-dots-vertical" size="small" variant="text" v-bind="menuProps" /></template>
+                <v-list density="compact" min-width="220">
+                  <v-list-item v-if="can('customers:merge')" prepend-icon="mdi-account-convert" :title="t('customers.menu.merge')" @click="openMerge(item)" />
+                  <v-list-item v-if="can('customers:edit') && !item.status.isBlacklistState && !item.status.isDeletedState" prepend-icon="mdi-account-cancel" :title="t('customers.menu.blacklist')" @click="openBlacklist(item)" />
+                  <v-list-item v-if="can('customers:edit') && item.status.isBlacklistState" prepend-icon="mdi-account-check" :title="t('customers.menu.liftBlacklist')" @click="rowAction(item, () => customersApi.unblacklist(item.id))" />
+                  <v-list-item v-if="can('customers:archive') && !item.status.isArchivedState && !item.status.isDeletedState" prepend-icon="mdi-archive" :title="t('customers.menu.archive')" @click="rowAction(item, () => customersApi.archive(item.id))" />
+                  <v-list-item v-if="can('customers:restore') && (item.status.isArchivedState || item.status.isDeletedState)" prepend-icon="mdi-restore" :title="t('customers.menu.restore')" @click="rowAction(item, () => customersApi.restore(item.id))" />
+                  <v-list-item v-if="can('customers:delete') && !item.status.isDeletedState" prepend-icon="mdi-delete" :title="t('customers.menu.softDelete')" @click="deleteTarget = item" />
+                  <v-list-item v-if="can('customers:purge') && item.status.isDeletedState" prepend-icon="mdi-delete-forever" base-color="error" :title="t('customers.menu.deletePermanently')" @click="purgeTarget = item" />
+                </v-list>
+              </v-menu>
+            </div>
+          </v-card-text>
+        </v-card>
+        <v-pagination
+          v-if="pageCount > 1"
+          v-model="lastOptions.page"
+          :length="pageCount"
+          :total-visible="5"
+          @update:model-value="() => loadItems(lastOptions)"
+        />
+      </div>
+      <AppEmptyState v-else icon="mdi-account-search-outline" :title="t('customers.empty.title')" :description="t('customers.empty.description')" />
     </v-card>
+
+    <CrmReportsPanel v-else-if="tab === 'reports'" :stats="stats" :loading="statsLoading" @refresh="loadStats" />
+    <CrmSegmentsPanel v-else-if="tab === 'segments'" :types="types" :statuses="statuses" :sources="sources" :tags="tags" />
+    <CrmConfigPanel v-else-if="tab === 'config'" @changed="loadReferenceData" />
 
     <CustomerFormDialog
       v-model="formOpen"
@@ -560,13 +689,13 @@ function statusColor(status: CustomerStatus): string {
         <v-card-title class="text-h6">{{ t('customers.import.title') }}</v-card-title>
         <v-card-text>
           <i18n-t keypath="customers.import.summary" tag="p" class="text-body-1 mb-3">
-            <template #created><strong>{{ importResult?.created }}</strong></template>
-            <template #skipped><strong>{{ importResult?.skipped.length }}</strong></template>
+            <template #ok><strong>{{ importResult?.created }}</strong></template>
+            <template #failed><strong>{{ importResult?.skipped.length }}</strong></template>
           </i18n-t>
           <v-list v-if="importResult?.skipped.length" density="compact" class="border rounded" max-height="240" style="overflow-y: auto">
             <v-list-item v-for="row in importResult.skipped" :key="row.line">
               <v-list-item-title class="text-body-2">
-                {{ t('customers.import.skippedRow', { line: row.line, reason: row.reason }) }}
+                {{ t('customers.import.skippedRow', { row: row.line, reason: row.reason }) }}
               </v-list-item-title>
             </v-list-item>
           </v-list>
@@ -620,3 +749,17 @@ function statusColor(status: CustomerStatus): string {
     </v-dialog>
   </div>
 </template>
+
+<style scoped>
+.crm-page { min-width: 0; }
+.crm-metric, .crm-tabs { border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); }
+.crm-tabs { overflow: hidden; }
+.d-grid { display: grid; }
+.min-width-0 { min-width: 0; }
+@media (max-width: 599px) {
+  .crm-metric :deep(.v-card-text) { padding: 14px; }
+  .crm-metric :deep(.v-avatar) { width: 36px !important; height: 36px !important; }
+  .crm-tabs :deep(.v-tab) { min-width: 112px; }
+  :deep(.v-btn) { min-height: 44px; }
+}
+</style>

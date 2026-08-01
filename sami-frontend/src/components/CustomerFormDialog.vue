@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
+import { useDisplay } from 'vuetify'
 import { useI18n } from 'vue-i18n'
 import { customersApi } from '@/api/customers'
 import { useApiError } from '@/composables/useApiError'
@@ -35,6 +36,7 @@ const props = defineProps<{
 const emit = defineEmits<{ 'update:modelValue': [boolean]; saved: [] }>()
 
 const { t } = useI18n()
+const { smAndDown } = useDisplay()
 
 const open = computed({
   get: () => props.modelValue,
@@ -238,7 +240,7 @@ async function submit(ignoreDuplicates = false) {
 </script>
 
 <template>
-  <v-dialog v-model="open" max-width="820">
+  <v-dialog v-model="open" :fullscreen="smAndDown" max-width="820">
     <v-card rounded="lg">
       <v-card-title class="text-h6 pt-4 px-6">
         {{ isEdit ? t('customers.form.editTitle') : t('customers.form.newTitle') }}

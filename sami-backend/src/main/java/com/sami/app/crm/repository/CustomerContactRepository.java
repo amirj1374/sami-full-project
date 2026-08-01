@@ -18,10 +18,12 @@ public interface CustomerContactRepository extends JpaRepository<CustomerContact
     @Query("""
             SELECT DISTINCT c.customer.id FROM CustomerContact c
             WHERE c.kind = :kind AND lower(c.value) = lower(:value)
+              AND c.customer.tenantId = :tenantId
               AND c.customer.mergedInto IS NULL
               AND c.customer.id <> :excludeId
             """)
     List<Long> findOwnerIds(@Param("kind") CustomerContact.Kind kind,
                             @Param("value") String value,
-                            @Param("excludeId") long excludeId);
+                            @Param("excludeId") long excludeId,
+                            @Param("tenantId") Long tenantId);
 }

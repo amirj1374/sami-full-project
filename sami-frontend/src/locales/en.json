@@ -424,10 +424,38 @@
   },
   "customers": {
     "title": "Customers",
+    "eyebrow": "Customer relationship management",
+    "subtitle": "Manage customer profiles, lifecycle, segments and configurable CRM policies.",
+    "tabs": {
+      "customers": "Customers",
+      "reports": "Reports",
+      "segments": "Segments",
+      "config": "Configuration"
+    },
+    "metrics": {
+      "total": "Total customers",
+      "newLast30Days": "New in 30 days",
+      "statuses": "Active statuses",
+      "segments": "Customer types"
+    },
+    "notifications": {
+      "updated": "Customer updated",
+      "deleted": "Customer moved to deleted",
+      "purged": "Customer permanently deleted",
+      "blacklisted": "Customer added to the blacklist",
+      "imported": "Customer import completed",
+      "exported": "Customer export downloaded"
+    },
+    "empty": {
+      "title": "No customers found",
+      "description": "Adjust the filters or add the first customer."
+    },
     "actions": {
       "newCustomer": "New customer",
       "exportCsv": "Export CSV",
-      "importCsv": "Import CSV"
+      "importCsv": "Import CSV",
+      "viewProfile": "View customer profile",
+      "more": "More actions"
     },
     "filters": {
       "searchPlaceholder": "Search by name, code, phone…",
@@ -557,15 +585,19 @@
       "tabs": {
         "timeline": "Timeline",
         "notes": "Notes",
-        "relations": "Relations"
+        "relations": "Relations",
+        "blacklist": "Blacklist history"
       },
       "systemAuthor": "System",
+      "changeAvatar": "Change photo",
+      "avatarUpdated": "Customer photo updated",
       "notes": {
         "add": "Add a note",
         "addButton": "Add note",
         "empty": "No notes yet",
         "priority": "Priority",
-        "visibility": "Visibility"
+        "visibility": "Visibility",
+        "deleted": "Note deleted"
       },
       "priority": {
         "LOW": "Low",
@@ -581,7 +613,103 @@
         "empty": "No relations yet",
         "type": "Relation type",
         "search": "Search for a customer",
-        "note": "Note"
+        "note": "Note",
+        "saved": "Customer relation saved",
+        "deleted": "Customer relation removed"
+      },
+      "blacklist": {
+        "empty": "This customer has no blacklist history.",
+        "active": "Active",
+        "lifted": "Lifted"
+      }
+    },
+    "segments": {
+      "title": "Customer segments",
+      "subtitle": "Save reusable filters and evaluate them against live customer data.",
+      "new": "New segment",
+      "edit": "Edit segment",
+      "name": "Segment name",
+      "description": "Description",
+      "inactiveDays": "No activity for days",
+      "run": "Run segment",
+      "saved": "Segment saved",
+      "deleted": "Segment deleted",
+      "empty": "No saved segments",
+      "emptyDescription": "Create a segment to reuse customer filters and reporting audiences.",
+      "allCustomers": "All customers",
+      "results": "Results for {name}",
+      "noResults": "No customers match this segment",
+      "deleteTitle": "Delete segment",
+      "deleteBody": "Delete the saved segment {name}?",
+      "filterNames": {
+        "search": "Search",
+        "phone": "Phone",
+        "email": "Email",
+        "nationalCode": "National code",
+        "city": "City",
+        "statusId": "Status",
+        "typeId": "Type",
+        "sourceId": "Source",
+        "tagIds": "Tags",
+        "eventType": "Event",
+        "eventSinceDays": "Event recency",
+        "noEventSinceDays": "Inactivity",
+        "includeHidden": "Hidden records"
+      }
+    },
+    "reports": {
+      "title": "CRM reports",
+      "subtitle": "Live customer distribution by lifecycle status, type and acquisition source.",
+      "byStatus": "Customers by status",
+      "byType": "Customers by type",
+      "bySource": "Customers by source",
+      "empty": "No report data available"
+    },
+    "config": {
+      "title": "CRM configuration",
+      "subtitle": "Configure customer classifications, preferences and duplicate detection without code changes.",
+      "types": "Types",
+      "statuses": "Statuses",
+      "sources": "Sources",
+      "tags": "Tags",
+      "preferences": "Preferences",
+      "duplicateRules": "Duplicate rules",
+      "code": "Code",
+      "name": "Name",
+      "label": "Label",
+      "description": "Description",
+      "color": "Color",
+      "displayOrder": "Display order",
+      "active": "Active",
+      "blocking": "Blocks normal customer operations",
+      "hiddenByDefault": "Hidden from customer lists by default",
+      "required": "Required",
+      "preferenceKey": "Preference key",
+      "fieldType": "Field type",
+      "minLength": "Minimum length",
+      "maxLength": "Maximum length",
+      "pattern": "Validation pattern",
+      "options": "Options",
+      "optionsHint": "Enter one option per line.",
+      "platformDefault": "Platform default",
+      "ruleHint": "This rule is applied before a customer is created or updated.",
+      "saved": "CRM configuration saved",
+      "deleted": "CRM configuration item deleted",
+      "empty": "No configuration items",
+      "deleteTitle": "Delete configuration item",
+      "deleteBody": "Delete {name}? Items in use or platform defaults remain protected.",
+      "fieldTypes": {
+        "TEXT": "Text",
+        "NUMBER": "Number",
+        "DATE": "Date",
+        "BOOLEAN": "Yes / no",
+        "SELECT": "Selection"
+      },
+      "ruleNames": {
+        "NATIONAL_CODE": "National code",
+        "PASSPORT_NUMBER": "Passport number",
+        "PHONE": "Phone number",
+        "EMAIL": "Email address"
       }
     }
   },

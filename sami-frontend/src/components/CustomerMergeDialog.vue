@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { useDisplay } from 'vuetify'
 import { useI18n } from 'vue-i18n'
 import { customersApi } from '@/api/customers'
 import { useApiError } from '@/composables/useApiError'
@@ -24,6 +25,7 @@ const open = computed({
 })
 
 const { t } = useI18n()
+const { smAndDown } = useDisplay()
 const { message: errorMessage, set: setError, clear: clearError } = useApiError()
 const search = ref('')
 const candidates = ref<Customer[]>([])
@@ -76,7 +78,7 @@ async function merge() {
 </script>
 
 <template>
-  <v-dialog v-model="open" max-width="560">
+  <v-dialog v-model="open" :fullscreen="smAndDown" max-width="560">
     <v-card rounded="lg">
       <v-card-title class="text-h6 pt-4 px-6">{{ t('customers.merge.title') }}</v-card-title>
 

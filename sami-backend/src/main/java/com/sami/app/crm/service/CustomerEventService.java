@@ -4,6 +4,8 @@ import com.sami.app.crm.domain.CustomerEvent;
 import com.sami.app.crm.dto.CustomerEventResponse;
 import com.sami.app.crm.event.CustomerDomainEvent;
 import com.sami.app.crm.repository.CustomerEventRepository;
+import com.sami.app.crm.repository.CustomerRepository;
+import com.sami.app.common.exception.ResourceNotFoundException;
 import com.sami.app.security.CurrentActor;
 import com.sami.app.common.tenancy.TenantContext;
 import lombok.RequiredArgsConstructor;
@@ -51,6 +53,7 @@ public class CustomerEventService {
     public static final String IMPORTED = "IMPORTED";
 
     private final CustomerEventRepository eventRepository;
+    private final CustomerRepository customerRepository;
     private final ApplicationEventPublisher eventPublisher;
 
     /** Appends one CRM event within the calling transaction. */
@@ -67,7 +70,11 @@ public class CustomerEventService {
     @Transactional(propagation = Propagation.MANDATORY)
     public void record(Long customerId, String eventType, String title,
                        Map<String, Object> detail, String sourceModule) {
+        Long tenantId = tenantContext.requireTenantId();
+        customerRepository.findByIdAndTenantId(customerId, tenantId)
+                .orElseThrow(() -> ResourceNotFoundException.of("Customer", customerId));
         CustomerEvent event = eventRepository.save(CustomerEvent.builder()
+                .tenantId(tenantId)
                 .customerId(customerId)
                 .eventType(eventType)
                 .title(title)
@@ -80,16 +87,19 @@ public class CustomerEventService {
         // @EventListener (in-transaction) or @TransactionalEventListener
         // (after commit) without any dependency on CRM internals.
         eventPublisher.publishEvent(new CustomerDomainEvent(
-                tenantContext.requireTenantId(), customerId, eventType, title, event.getDetail(), sourceModule,
+                tenantId, customerId, eventType, title, event.getDetail(), sourceModule,
                 event.getOccurredAt()));
     }
 
     @Transactional(readOnly = true)
     public Page<CustomerEventResponse> timeline(Long customerId, String eventType, Pageable pageable) {
+        Long tenantId = tenantContext.requireTenantId();
+        customerRepository.findByIdAndTenantId(customerId, tenantId)
+                .orElseThrow(() -> ResourceNotFoundException.of("Customer", customerId));
         Page<CustomerEvent> page = (eventType == null || eventType.isBlank())
-                ? eventRepository.findByCustomerIdOrderByOccurredAtDesc(customerId, pageable)
-                : eventRepository.findByCustomerIdAndEventTypeOrderByOccurredAtDesc(
-                        customerId, eventType, pageable);
+                ? eventRepository.findByTenantIdAndCustomerIdOrderByOccurredAtDesc(tenantId, customerId, pageable)
+                : eventRepository.findByTenantIdAndCustomerIdAndEventTypeOrderByOccurredAtDesc(
+                        tenantId, customerId, eventType, pageable);
         return page.map(CustomerEventResponse::from);
     }
 }

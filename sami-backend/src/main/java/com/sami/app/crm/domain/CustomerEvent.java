@@ -37,6 +37,9 @@ public class CustomerEvent {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "tenant_id", nullable = false, updatable = false)
+    private Long tenantId;
+
     @Column(name = "customer_id", nullable = false)
     private Long customerId;
 

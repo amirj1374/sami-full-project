@@ -32,7 +32,10 @@ import java.util.List;
 @Builder
 public class PreferenceDefinition extends BaseEntity {
 
-    @Column(name = "pref_key", nullable = false, unique = true, length = 64)
+    @Column(name = "tenant_id", updatable = false)
+    private Long tenantId;
+
+    @Column(name = "pref_key", nullable = false, length = 64)
     private String prefKey;
 
     @Column(nullable = false, length = 100)
