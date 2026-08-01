@@ -43,6 +43,9 @@ services:
       retries: 5
 
   backend:
+    # The explicit image name lets release automation load a verified image TAR
+    # and recreate this service without rebuilding source on the server.
+    image: ${BACKEND_IMAGE:-sami-backend:test}
     build:
       context: .
       args:
@@ -78,6 +81,9 @@ services:
       - "8080"
 
   frontend:
+    # Keep the prebuilt release tag configurable while preserving the existing
+    # local `docker compose ... up --build` workflow.
+    image: ${FRONTEND_IMAGE:-sami-frontend:test}
     build:
       # Sibling monorepo directory; VITE_API_BASE_URL defaults to same-origin "/api".
       context: ../sami-frontend

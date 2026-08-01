@@ -1,6 +1,6 @@
 # SAMI ERP — reusable development context
 
-Last repository inspection: 2026-08-01
+Last repository inspection: 2026-08-02
 Workspace: `C:\Users\Amir-Js\OneDrive\Documents\sami-full-project`
 
 This file is a fast-start snapshot for Codex and developers. It reduces repeated discovery but does not override current repository files. Re-check the named source files whenever a relevant area changes.
@@ -177,13 +177,19 @@ Full stack:
   request `/actuator/health`.
 - nginx expects a network hostname `backend` on port `8080`.
 - `sami-backend/docker-compose.yml` runs PostgreSQL plus the backend for development.
-- `sami-backend/docker-compose.prod.yml` builds PostgreSQL, backend and the sibling frontend for production.
+- `sami-backend/docker-compose.prod.yml` builds PostgreSQL, backend and the sibling frontend for production; explicit configurable backend/frontend image names also support verified prebuilt-image deployment without rebuilding on the server.
 - `.env.example` documents database, staff/portal JWT, CORS and bootstrap-admin variables.
 - Production Compose requires distinct staff and portal JWT secrets and fails fast
   when either is absent.
 - Production Compose waits for PostgreSQL and backend health, publishes only the
   frontend port, exposes backend health through nginx at `/health`, and persists
   legacy uploads, managed files and staging in named volumes.
+- `scripts/deploy.ps1` is the canonical Windows release orchestrator for guarded
+  `linux/amd64` build, image verification, atomic TAR export/upload, SHA256
+  validation, backend/frontend-only recreation, health checks, and application-
+  image rollback. SSH is key-based and non-interactive by default. See
+  `DEPLOYMENT_AUTOMATION_GUIDE.md`; no runtime secret or private key belongs in
+  repository configuration.
 
 The production Compose file remains located under `sami-backend`; run it from that directory. Some README/Compose comments still mention the historical V1..V9 range and should not be treated as current migration inventory.
 

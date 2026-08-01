@@ -1,5 +1,10 @@
 # SAMI Project Setup and Deployment
 
+> For the guarded Windows-to-VPS image build, export, upload, deployment, and
+> rollback workflow, use [`DEPLOYMENT_AUTOMATION_GUIDE.md`](DEPLOYMENT_AUTOMATION_GUIDE.md).
+> It is the canonical runbook for `scripts/deploy.ps1`; this broader document
+> remains the source for local setup and manual deployment operations.
+
 This guide documents repository-supported ways to run and deploy the complete
 SAMI monorepo. Commands assume the repository root unless a working directory
 is stated.

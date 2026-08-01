@@ -1,2 +1,5 @@
 .idea/
-deployment-artifacts/*.tar
+/.env
+/deployment-artifacts/
+/scripts/release-config.ps1
+/scripts/release-config.local.ps1
