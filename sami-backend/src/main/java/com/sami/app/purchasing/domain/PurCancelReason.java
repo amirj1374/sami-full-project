@@ -20,7 +20,10 @@ import lombok.Setter;
 @Builder
 public class PurCancelReason extends BaseEntity {
 
-    @Column(nullable = false, unique = true, length = 64)
+    @Column(name = "tenant_id")
+    private Long tenantId;
+
+    @Column(nullable = false, length = 64)
     private String code;
 
     @Column(nullable = false, length = 100)

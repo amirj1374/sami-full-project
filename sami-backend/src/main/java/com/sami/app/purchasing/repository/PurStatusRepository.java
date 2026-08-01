@@ -11,6 +11,8 @@ public interface PurStatusRepository extends JpaRepository<PurStatus, Long> {
 
     List<PurStatus> findAllByOrderByDisplayOrderAsc();
 
+    List<PurStatus> findByTenantIdIsNullOrTenantIdOrderByDisplayOrderAsc(Long tenantId);
+
     Optional<PurStatus> findByIsDraftStateTrue();
 
     Optional<PurStatus> findByIsPendingStateTrue();
@@ -28,4 +30,8 @@ public interface PurStatusRepository extends JpaRepository<PurStatus, Long> {
     boolean existsByCodeIgnoreCase(String code);
 
     boolean existsByCodeIgnoreCaseAndIdNot(String code, Long id);
+
+    boolean existsByTenantIdAndCodeIgnoreCase(Long tenantId, String code);
+
+    boolean existsByTenantIdAndCodeIgnoreCaseAndIdNot(Long tenantId, String code, Long id);
 }

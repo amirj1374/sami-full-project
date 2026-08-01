@@ -7,5 +7,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface PurchaseUnitIdentifierRepository
         extends JpaRepository<PurchaseUnitIdentifier, Long> {
 
-    boolean existsByIdentifierTypeIdAndValue(Long identifierTypeId, String value);
+    boolean existsByTenantIdAndIdentifierTypeIdAndValue(Long tenantId, Long identifierTypeId, String value);
 }

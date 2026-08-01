@@ -26,6 +26,9 @@ import java.math.BigDecimal;
 @Builder
 public class PurApprovalRule extends BaseEntity {
 
+    @Column(name = "tenant_id")
+    private Long tenantId;
+
     @Column(nullable = false, length = 100)
     private String name;
 

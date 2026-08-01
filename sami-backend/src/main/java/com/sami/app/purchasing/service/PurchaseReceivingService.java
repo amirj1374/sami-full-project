@@ -3,6 +3,7 @@ package com.sami.app.purchasing.service;
 import com.sami.app.common.exception.ApiException;
 import com.sami.app.common.exception.ErrorCode;
 import com.sami.app.common.exception.ResourceNotFoundException;
+import com.sami.app.common.tenancy.TenantContext;
 import com.sami.app.inventory.publicapi.InventoryStockOperations;
 import com.sami.app.inventory.publicapi.InventoryStockOperations.PurchaseReceiptCommand;
 import com.sami.app.inventory.publicapi.InventoryStockOperations.ReceiptLine;
@@ -16,8 +17,6 @@ import com.sami.app.purchasing.domain.PurchaseReceiptItem;
 import com.sami.app.purchasing.domain.PurchaseUnitIdentifier;
 import com.sami.app.purchasing.dto.PurchaseDtos.ReceiveRequest;
 import com.sami.app.purchasing.dto.PurchaseDtos.ReceiptResponse;
-import com.sami.app.purchasing.repository.PurIdentifierTypeRepository;
-import com.sami.app.purchasing.repository.PurStatusRepository;
 import com.sami.app.purchasing.repository.PurchaseReceiptRepository;
 import com.sami.app.purchasing.repository.PurchaseUnitIdentifierRepository;
 import com.sami.app.security.CurrentActor;
@@ -49,22 +48,24 @@ public class PurchaseReceivingService {
 
     private final PurchaseService purchaseService;
     private final PurchaseReceiptRepository receiptRepository;
-    private final PurStatusRepository statusRepository;
-    private final PurIdentifierTypeRepository identifierTypeRepository;
+    private final PurchasingConfigService config;
     private final PurchaseUnitIdentifierRepository identifierRepository;
+    private final TenantContext tenantContext;
     private final PurchaseLogService logs;
     private final InventoryStockOperations inventory;
 
     @Transactional(readOnly = true)
     public List<ReceiptResponse> history(Long purchaseId) {
-        return receiptRepository.findByPurchaseIdOrderByCreatedAtDesc(purchaseId).stream()
+        purchaseService.findWithDetailsOrThrow(purchaseId);
+        return receiptRepository.findByPurchaseIdAndTenantIdOrderByCreatedAtDesc(
+                        purchaseId, tenantContext.requireTenantId()).stream()
                 .map(ReceiptResponse::from)
                 .toList();
     }
 
     @Transactional
     public ReceiptResponse receive(Long purchaseId, ReceiveRequest request) {
-        Purchase purchase = purchaseService.findWithDetailsOrThrow(purchaseId);
+        Purchase purchase = purchaseService.findWithDetailsForUpdateOrThrow(purchaseId);
         if (!purchase.getStatus().isAllowsReceiving()) {
             throw new ApiException(ErrorCode.OPERATION_NOT_ALLOWED,
                     "This purchase is not receivable in status '"
@@ -72,6 +73,7 @@ public class PurchaseReceivingService {
         }
 
         PurchaseReceipt receipt = PurchaseReceipt.builder()
+                .tenantId(tenantContext.requireTenantId())
                 .purchase(purchase)
                 .note(request.note())
                 .createdBy(CurrentActor.id())
@@ -118,11 +120,8 @@ public class PurchaseReceivingService {
 
         boolean fullyReceived = purchase.getItems().stream()
                 .allMatch(i -> i.remainingQuantity().compareTo(BigDecimal.ZERO) == 0);
-        PurStatus target = (fullyReceived
-                ? statusRepository.findByIsCompletedStateTrue()
-                : statusRepository.findByIsPartialStateTrue())
-                .orElseThrow(() -> new ApiException(ErrorCode.INTERNAL_ERROR,
-                        "Receiving statuses are not configured"));
+        PurStatus target = fullyReceived
+                ? config.requireCompletedStatus() : config.requirePartialStatus();
         purchase.setStatus(target);
 
         logs.record(purchase, PurchaseLogService.RECEIVED, "Goods received",
@@ -165,15 +164,15 @@ public class PurchaseReceivingService {
             for (ReceiveRequest.IdentifierValue value
                     : unit.identifiers() == null ? List.<ReceiveRequest.IdentifierValue>of()
                     : unit.identifiers()) {
-                PurIdentifierType type = identifierTypeRepository.findById(value.identifierTypeId())
-                        .orElseThrow(() -> ResourceNotFoundException.of("Identifier type",
-                                value.identifierTypeId()));
+                PurIdentifierType type = config.requireIdentifierType(value.identifierTypeId());
                 String trimmed = value.value().trim();
-                if (identifierRepository.existsByIdentifierTypeIdAndValue(type.getId(), trimmed)) {
+                if (identifierRepository.existsByTenantIdAndIdentifierTypeIdAndValue(
+                        tenantContext.requireTenantId(), type.getId(), trimmed)) {
                     throw new ApiException(ErrorCode.RESOURCE_CONFLICT,
                             "%s '%s' already exists in the system".formatted(type.getName(), trimmed));
                 }
                 receiptItem.getIdentifiers().add(PurchaseUnitIdentifier.builder()
+                        .tenantId(tenantContext.requireTenantId())
                         .receiptItem(receiptItem)
                         .unitIndex(unitIndex)
                         .identifierType(type)

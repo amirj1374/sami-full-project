@@ -10,5 +10,5 @@ import java.util.List;
 public interface PurchaseReturnRepository extends JpaRepository<PurchaseReturn, Long> {
 
     @EntityGraph(attributePaths = {"items", "items.purchaseItem"})
-    List<PurchaseReturn> findByPurchaseIdOrderByCreatedAtDesc(Long purchaseId);
+    List<PurchaseReturn> findByPurchaseIdAndTenantIdOrderByCreatedAtDesc(Long purchaseId, Long tenantId);
 }

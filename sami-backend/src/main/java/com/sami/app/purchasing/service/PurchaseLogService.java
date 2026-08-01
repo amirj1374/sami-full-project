@@ -44,6 +44,7 @@ public class PurchaseLogService {
     @Transactional(propagation = Propagation.MANDATORY)
     public void record(Purchase purchase, String action, String title, Map<String, Object> detail) {
         PurchaseLog log = logRepository.save(PurchaseLog.builder()
+                .tenantId(purchase.getTenantId())
                 .purchaseId(purchase.getId())
                 .action(action)
                 .title(title)
@@ -52,13 +53,14 @@ public class PurchaseLogService {
                 .actorEmail(CurrentActor.email())
                 .build());
         eventPublisher.publishEvent(new PurchaseDomainEvent(
-                tenantContext.requireTenantId(), purchase.getId(), purchase.getPurchaseNumber(), action,
+                purchase.getTenantId(), purchase.getId(), purchase.getPurchaseNumber(), action,
                 log.getDetail(), log.getOccurredAt()));
     }
 
     @Transactional(readOnly = true)
     public Page<LogResponse> history(Long purchaseId, Pageable pageable) {
-        return logRepository.findByPurchaseIdOrderByOccurredAtDesc(purchaseId, pageable)
+        return logRepository.findByPurchaseIdAndTenantIdOrderByOccurredAtDesc(
+                        purchaseId, tenantContext.requireTenantId(), pageable)
                 .map(LogResponse::from);
     }
 }

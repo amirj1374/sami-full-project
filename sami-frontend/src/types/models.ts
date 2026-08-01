@@ -1183,6 +1183,7 @@ export interface PurType {
   isDefault: boolean
   active: boolean
   isSystem: boolean
+  tenantOwned: boolean
   displayOrder: number
 }
 
@@ -1192,6 +1193,7 @@ export interface PurCancelReason {
   name: string
   active: boolean
   isSystem: boolean
+  tenantOwned: boolean
   displayOrder: number
 }
 
@@ -1203,6 +1205,7 @@ export interface PurIdentifierType {
   satisfiesImei: boolean
   active: boolean
   isSystem: boolean
+  tenantOwned: boolean
   displayOrder: number
 }
 
@@ -1216,6 +1219,34 @@ export interface PurWarehouse {
 
 export interface PurApprovalRule {
   id: number
+  name: string
+  minAmount: number
+  active: boolean
+  tenantOwned: boolean
+}
+
+export interface PurTypePayload {
+  code: string
+  name: string
+  description?: string
+  numberPrefix: string
+  active: boolean
+  displayOrder: number
+}
+
+export interface PurCancelReasonPayload {
+  code: string
+  name: string
+  active: boolean
+  displayOrder: number
+}
+
+export interface PurIdentifierTypePayload extends PurCancelReasonPayload {
+  satisfiesSerial: boolean
+  satisfiesImei: boolean
+}
+
+export interface PurApprovalRulePayload {
   name: string
   minAmount: number
   active: boolean
@@ -1353,6 +1384,48 @@ export interface PurchaseAttachment {
   fileSize: number
   uploadedByEmail: string | null
   createdAt: string
+}
+
+export interface PurchaseDashboard {
+  totalPurchases: number
+  drafts: number
+  pendingApproval: number
+  openReceipts: number
+  completed: number
+  committedAmount: number
+  receivedAmount: number
+  overdueLines: number
+}
+
+export interface PurchaseReportGroup {
+  key: string
+  label: string
+  count: number
+  amount: number
+}
+
+export interface PurchaseOverdueLine {
+  purchaseId: number
+  purchaseNumber: string
+  supplierName: string
+  itemId: number
+  productName: string
+  expectedDelivery: string
+  orderedQuantity: number
+  remainingQuantity: number
+}
+
+export interface PurchaseReport {
+  byStatus: PurchaseReportGroup[]
+  byType: PurchaseReportGroup[]
+  bySupplier: PurchaseReportGroup[]
+  overdueLines: PurchaseOverdueLine[]
+}
+
+export interface PurchaseImportResult {
+  created: number
+  skipped: number
+  purchaseNumbers: string[]
 }
 
 // --- Products --------------------------------------------------------------

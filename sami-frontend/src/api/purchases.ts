@@ -1,17 +1,24 @@
 import type { ApiResponse, PageQuery, PageResponse } from '@/types/api'
 import type {
   PurApprovalRule,
+  PurApprovalRulePayload,
   PurCancelReason,
+  PurCancelReasonPayload,
   PurIdentifierType,
+  PurIdentifierTypePayload,
   PurStatus,
   PurType,
+  PurTypePayload,
   PurWarehouse,
   PurchaseAttachment,
+  PurchaseDashboard,
   PurchaseDetail,
   PurchaseFilterQuery,
+  PurchaseImportResult,
   PurchaseLogEntry,
   PurchasePayload,
   PurchaseReceipt,
+  PurchaseReport,
   PurchaseReturn,
   PurchaseRow,
   ReceivePayload,
@@ -21,10 +28,41 @@ import { http, unwrap } from './http'
 
 export type PurchaseListParams = PageQuery & PurchaseFilterQuery
 
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = filename
+  document.body.appendChild(anchor)
+  anchor.click()
+  anchor.remove()
+  URL.revokeObjectURL(url)
+}
+
 /** Purchasing API: documents, workflow, receiving, returns, attachments. */
 export const purchasesApi = {
   list: (params: PurchaseListParams = {}): Promise<PageResponse<PurchaseRow>> =>
     unwrap(http.get<ApiResponse<PageResponse<PurchaseRow>>>('/v1/purchases', { params })),
+
+  dashboard: (): Promise<PurchaseDashboard> =>
+    unwrap(http.get<ApiResponse<PurchaseDashboard>>('/v1/purchases/dashboard')),
+
+  report: (params: PurchaseFilterQuery = {}): Promise<PurchaseReport> =>
+    unwrap(http.get<ApiResponse<PurchaseReport>>('/v1/purchases/reports', { params })),
+
+  exportCsv: async (params: PurchaseFilterQuery = {}): Promise<void> => {
+    const response = await http.get<Blob>('/v1/purchases/export.csv', {
+      params,
+      responseType: 'blob',
+    })
+    downloadBlob(response.data, 'purchases.csv')
+  },
+
+  importCsv: async (file: File): Promise<PurchaseImportResult> => {
+    const form = new FormData()
+    form.append('file', file)
+    return unwrap(http.post<ApiResponse<PurchaseImportResult>>('/v1/purchases/import', form))
+  },
 
   get: (id: number): Promise<PurchaseDetail> =>
     unwrap(http.get<ApiResponse<PurchaseDetail>>(`/v1/purchases/${id}`)),
@@ -100,15 +138,51 @@ export const purchasingConfigApi = {
   types: (): Promise<PurType[]> =>
     unwrap(http.get<ApiResponse<PurType[]>>('/v1/purchasing/types')),
 
+  createType: (payload: PurTypePayload): Promise<PurType> =>
+    unwrap(http.post<ApiResponse<PurType>>('/v1/purchasing/types', payload)),
+
+  updateType: (id: number, payload: PurTypePayload): Promise<PurType> =>
+    unwrap(http.put<ApiResponse<PurType>>(`/v1/purchasing/types/${id}`, payload)),
+
+  deleteType: (id: number): Promise<void> =>
+    http.delete(`/v1/purchasing/types/${id}`).then(() => undefined),
+
   cancelReasons: (): Promise<PurCancelReason[]> =>
     unwrap(http.get<ApiResponse<PurCancelReason[]>>('/v1/purchasing/cancel-reasons')),
 
+  createCancelReason: (payload: PurCancelReasonPayload): Promise<PurCancelReason> =>
+    unwrap(http.post<ApiResponse<PurCancelReason>>('/v1/purchasing/cancel-reasons', payload)),
+
+  updateCancelReason: (id: number, payload: PurCancelReasonPayload): Promise<PurCancelReason> =>
+    unwrap(http.put<ApiResponse<PurCancelReason>>(`/v1/purchasing/cancel-reasons/${id}`, payload)),
+
+  deleteCancelReason: (id: number): Promise<void> =>
+    http.delete(`/v1/purchasing/cancel-reasons/${id}`).then(() => undefined),
+
   identifierTypes: (): Promise<PurIdentifierType[]> =>
     unwrap(http.get<ApiResponse<PurIdentifierType[]>>('/v1/purchasing/identifier-types')),
+
+  createIdentifierType: (payload: PurIdentifierTypePayload): Promise<PurIdentifierType> =>
+    unwrap(http.post<ApiResponse<PurIdentifierType>>('/v1/purchasing/identifier-types', payload)),
+
+  updateIdentifierType: (id: number, payload: PurIdentifierTypePayload): Promise<PurIdentifierType> =>
+    unwrap(http.put<ApiResponse<PurIdentifierType>>(`/v1/purchasing/identifier-types/${id}`, payload)),
+
+  deleteIdentifierType: (id: number): Promise<void> =>
+    http.delete(`/v1/purchasing/identifier-types/${id}`).then(() => undefined),
 
   warehouses: (): Promise<PurWarehouse[]> =>
     unwrap(http.get<ApiResponse<PurWarehouse[]>>('/v1/purchasing/warehouses')),
 
   approvalRules: (): Promise<PurApprovalRule[]> =>
     unwrap(http.get<ApiResponse<PurApprovalRule[]>>('/v1/purchasing/approval-rules')),
+
+  createApprovalRule: (payload: PurApprovalRulePayload): Promise<PurApprovalRule> =>
+    unwrap(http.post<ApiResponse<PurApprovalRule>>('/v1/purchasing/approval-rules', payload)),
+
+  updateApprovalRule: (id: number, payload: PurApprovalRulePayload): Promise<PurApprovalRule> =>
+    unwrap(http.put<ApiResponse<PurApprovalRule>>(`/v1/purchasing/approval-rules/${id}`, payload)),
+
+  deleteApprovalRule: (id: number): Promise<void> =>
+    http.delete(`/v1/purchasing/approval-rules/${id}`).then(() => undefined),
 }

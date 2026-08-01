@@ -33,6 +33,9 @@ public class PurchaseUnitIdentifier {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "tenant_id", nullable = false)
+    private Long tenantId;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "receipt_item_id", nullable = false)
     private PurchaseReceiptItem receiptItem;

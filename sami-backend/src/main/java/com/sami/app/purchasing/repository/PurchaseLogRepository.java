@@ -8,5 +8,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 /** Data-access for the append-only {@link PurchaseLog}. */
 public interface PurchaseLogRepository extends JpaRepository<PurchaseLog, Long> {
 
-    Page<PurchaseLog> findByPurchaseIdOrderByOccurredAtDesc(Long purchaseId, Pageable pageable);
+    Page<PurchaseLog> findByPurchaseIdAndTenantIdOrderByOccurredAtDesc(
+            Long purchaseId, Long tenantId, Pageable pageable);
 }

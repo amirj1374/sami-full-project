@@ -10,5 +10,11 @@ public interface PurCancelReasonRepository extends JpaRepository<PurCancelReason
 
     List<PurCancelReason> findAllByOrderByDisplayOrderAsc();
 
+    List<PurCancelReason> findByTenantIdIsNullOrTenantIdOrderByDisplayOrderAsc(Long tenantId);
+
     boolean existsByCodeIgnoreCase(String code);
+
+    boolean existsByTenantIdAndCodeIgnoreCase(Long tenantId, String code);
+
+    boolean existsByTenantIdAndCodeIgnoreCaseAndIdNot(Long tenantId, String code, Long id);
 }

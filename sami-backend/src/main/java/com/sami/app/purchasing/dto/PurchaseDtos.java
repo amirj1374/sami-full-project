@@ -145,6 +145,39 @@ public final class PurchaseDtos {
         }
     }
 
+    public record DashboardResponse(
+            long totalPurchases,
+            long drafts,
+            long pendingApproval,
+            long openReceipts,
+            long completed,
+            BigDecimal committedAmount,
+            BigDecimal receivedAmount,
+            long overdueLines
+    ) {
+    }
+
+    public record ReportGroup(String key, String label, long count, BigDecimal amount) {
+    }
+
+    public record OverdueLineResponse(
+            Long purchaseId, String purchaseNumber, String supplierName,
+            Long itemId, String productName, LocalDate expectedDelivery,
+            BigDecimal orderedQuantity, BigDecimal remainingQuantity
+    ) {
+    }
+
+    public record ReportResponse(
+            List<ReportGroup> byStatus,
+            List<ReportGroup> byType,
+            List<ReportGroup> bySupplier,
+            List<OverdueLineResponse> overdueLines
+    ) {
+    }
+
+    public record ImportResponse(int created, int skipped, List<String> purchaseNumbers) {
+    }
+
     // -------------------------------------------------------------- requests
 
     public record ItemRequest(

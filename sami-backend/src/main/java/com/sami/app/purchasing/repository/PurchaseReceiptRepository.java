@@ -11,5 +11,5 @@ public interface PurchaseReceiptRepository extends JpaRepository<PurchaseReceipt
 
     @EntityGraph(attributePaths = {"items", "items.purchaseItem",
             "items.identifiers", "items.identifiers.identifierType"})
-    List<PurchaseReceipt> findByPurchaseIdOrderByCreatedAtDesc(Long purchaseId);
+    List<PurchaseReceipt> findByPurchaseIdAndTenantIdOrderByCreatedAtDesc(Long purchaseId, Long tenantId);
 }

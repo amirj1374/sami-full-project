@@ -28,6 +28,9 @@ import java.util.List;
 @Builder
 public class PurchaseReturn extends BaseEntity {
 
+    @Column(name = "tenant_id", nullable = false)
+    private Long tenantId;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "purchase_id", nullable = false)
     private Purchase purchase;
