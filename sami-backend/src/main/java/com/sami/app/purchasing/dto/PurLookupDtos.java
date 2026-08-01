@@ -41,12 +41,12 @@ public final class PurLookupDtos {
 
     public record TypeResponse(
             Long id, String code, String name, String description, String numberPrefix,
-            boolean isDefault, boolean active, boolean isSystem, int displayOrder
+            boolean isDefault, boolean active, boolean isSystem, boolean tenantOwned, int displayOrder
     ) {
         public static TypeResponse from(PurType t) {
             return new TypeResponse(t.getId(), t.getCode(), t.getName(), t.getDescription(),
                     t.getNumberPrefix(), t.isDefault(), t.isActive(), t.isSystem(),
-                    t.getDisplayOrder());
+                    t.getTenantId() != null, t.getDisplayOrder());
         }
     }
 
@@ -61,21 +61,41 @@ public final class PurLookupDtos {
     }
 
     public record CancelReasonResponse(Long id, String code, String name,
-                                       boolean active, boolean isSystem, int displayOrder) {
+                                       boolean active, boolean isSystem, boolean tenantOwned,
+                                       int displayOrder) {
         public static CancelReasonResponse from(PurCancelReason r) {
             return new CancelReasonResponse(r.getId(), r.getCode(), r.getName(),
-                    r.isActive(), r.isSystem(), r.getDisplayOrder());
+                    r.isActive(), r.isSystem(), r.getTenantId() != null, r.getDisplayOrder());
         }
+    }
+
+    public record CancelReasonRequest(
+            @NotBlank @Pattern(regexp = SLUG, message = SLUG_MESSAGE) String code,
+            @NotBlank @Size(max = 100) String name,
+            boolean active,
+            int displayOrder
+    ) {
     }
 
     public record IdentifierTypeResponse(Long id, String code, String name,
                                          boolean satisfiesSerial, boolean satisfiesImei,
-                                         boolean active, boolean isSystem, int displayOrder) {
+                                         boolean active, boolean isSystem, boolean tenantOwned,
+                                         int displayOrder) {
         public static IdentifierTypeResponse from(PurIdentifierType t) {
             return new IdentifierTypeResponse(t.getId(), t.getCode(), t.getName(),
                     t.isSatisfiesSerial(), t.isSatisfiesImei(), t.isActive(),
-                    t.isSystem(), t.getDisplayOrder());
+                    t.isSystem(), t.getTenantId() != null, t.getDisplayOrder());
         }
+    }
+
+    public record IdentifierTypeRequest(
+            @NotBlank @Pattern(regexp = SLUG, message = SLUG_MESSAGE) String code,
+            @NotBlank @Size(max = 100) String name,
+            boolean satisfiesSerial,
+            boolean satisfiesImei,
+            boolean active,
+            int displayOrder
+    ) {
     }
 
     public record WarehouseResponse(Long id, String code, String name,
@@ -86,9 +106,11 @@ public final class PurLookupDtos {
         }
     }
 
-    public record ApprovalRuleResponse(Long id, String name, BigDecimal minAmount, boolean active) {
+    public record ApprovalRuleResponse(Long id, String name, BigDecimal minAmount,
+                                       boolean active, boolean tenantOwned) {
         public static ApprovalRuleResponse from(PurApprovalRule r) {
-            return new ApprovalRuleResponse(r.getId(), r.getName(), r.getMinAmount(), r.isActive());
+            return new ApprovalRuleResponse(r.getId(), r.getName(), r.getMinAmount(),
+                    r.isActive(), r.getTenantId() != null);
         }
     }
 

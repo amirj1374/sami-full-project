@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
+import { useDisplay } from 'vuetify'
 import { useI18n } from 'vue-i18n'
 import { purchasesApi } from '@/api/purchases'
 import { productsApi } from '@/api/products'
 import { suppliersApi } from '@/api/suppliers'
 import { useApiError } from '@/composables/useApiError'
+import { useNotifications } from '@/composables/useNotifications'
 import type {
   Product,
   PurType,
@@ -29,6 +31,8 @@ const props = defineProps<{
 const emit = defineEmits<{ 'update:modelValue': [boolean]; saved: [] }>()
 
 const { t } = useI18n()
+const { smAndDown } = useDisplay()
+const notifications = useNotifications()
 
 const open = computed({
   get: () => props.modelValue,
@@ -164,6 +168,7 @@ async function submit() {
       await purchasesApi.create(payload)
     }
     open.value = false
+    notifications.success(t('purchases.notifications.saved'))
     emit('saved')
   } catch (err) {
     setFormError(err)
@@ -174,13 +179,13 @@ async function submit() {
 </script>
 
 <template>
-  <v-dialog v-model="open" max-width="960">
+  <v-dialog v-model="open" :fullscreen="smAndDown" max-width="960" persistent>
     <v-card rounded="lg">
       <v-card-title class="text-h6 pt-4 px-6">
         {{ isEdit ? t('purchases.form.editTitle', { number: purchase?.purchase.purchaseNumber }) : t('purchases.newPurchase') }}
       </v-card-title>
 
-      <v-card-text class="px-6" style="max-height: 65vh; overflow-y: auto">
+      <v-card-text class="purchase-form-body px-4 px-sm-6">
         <v-alert v-if="formError" type="error" variant="tonal" density="compact" class="mb-4">
           {{ formError }}
         </v-alert>
@@ -314,7 +319,7 @@ async function submit() {
         </div>
       </v-card-text>
 
-      <v-card-actions class="px-6 pb-4">
+      <v-card-actions class="purchase-form-actions px-4 px-sm-6 pb-4">
         <v-spacer />
         <v-btn variant="text" @click="open = false">{{ t('common.cancel') }}</v-btn>
         <v-btn color="primary" :loading="saving" @click="submit">{{ t('purchases.form.saveDraft') }}</v-btn>
@@ -322,3 +327,12 @@ async function submit() {
     </v-card>
   </v-dialog>
 </template>
+
+<style scoped>
+.purchase-form-body { max-height: 65vh; overflow-y: auto; }
+@media (max-width: 599px) {
+  .purchase-form-body { max-height: none; }
+  .purchase-form-actions { position: sticky; bottom: 0; background: rgb(var(--v-theme-surface)); z-index: 1; }
+  .purchase-form-actions :deep(.v-btn) { min-height: 44px; }
+}
+</style>

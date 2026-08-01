@@ -4,6 +4,7 @@ import com.sami.app.common.exception.ApiException;
 import com.sami.app.common.exception.ErrorCode;
 import com.sami.app.common.exception.ResourceNotFoundException;
 import com.sami.app.common.storage.FileStorage;
+import com.sami.app.common.tenancy.TenantContext;
 import com.sami.app.purchasing.domain.Purchase;
 import com.sami.app.purchasing.domain.PurchaseAttachment;
 import com.sami.app.purchasing.dto.PurchaseDtos.AttachmentResponse;
@@ -32,10 +33,13 @@ public class PurchaseAttachmentService {
     private final PurchaseAttachmentRepository attachmentRepository;
     private final FileStorage fileStorage;
     private final PurchaseLogService logs;
+    private final TenantContext tenantContext;
 
     @Transactional(readOnly = true)
     public List<AttachmentResponse> list(Long purchaseId) {
-        return attachmentRepository.findByPurchaseIdOrderByCreatedAtDesc(purchaseId).stream()
+        purchaseService.findWithDetailsOrThrow(purchaseId);
+        return attachmentRepository.findByPurchaseIdAndTenantIdOrderByCreatedAtDesc(
+                        purchaseId, tenantContext.requireTenantId()).stream()
                 .map(AttachmentResponse::from)
                 .toList();
     }
@@ -53,10 +57,12 @@ public class PurchaseAttachmentService {
         } catch (IOException e) {
             throw new ApiException(ErrorCode.BAD_REQUEST, "Could not read the uploaded file");
         }
-        String key = fileStorage.store("purchase-attachments/" + purchaseId, content,
+        String key = fileStorage.store("purchase-attachments/"
+                        + tenantContext.requireTenantId() + "/" + purchaseId, content,
                 file.getContentType());
 
         PurchaseAttachment attachment = attachmentRepository.save(PurchaseAttachment.builder()
+                .tenantId(tenantContext.requireTenantId())
                 .purchase(purchase)
                 .fileKey(key)
                 .fileName(file.getOriginalFilename() == null ? "attachment"
@@ -74,8 +80,8 @@ public class PurchaseAttachmentService {
 
     @Transactional(readOnly = true)
     public Optional<DownloadedFile> download(Long purchaseId, Long attachmentId) {
-        return attachmentRepository.findById(attachmentId)
-                .filter(a -> a.getPurchase().getId().equals(purchaseId))
+        return attachmentRepository.findByIdAndPurchaseIdAndTenantId(
+                        attachmentId, purchaseId, tenantContext.requireTenantId())
                 .flatMap(a -> fileStorage.load(a.getFileKey())
                         .map(f -> new DownloadedFile(a.getFileName(),
                                 a.getContentType() != null ? a.getContentType() : f.contentType(),
@@ -84,8 +90,8 @@ public class PurchaseAttachmentService {
 
     @Transactional
     public void delete(Long purchaseId, Long attachmentId) {
-        PurchaseAttachment attachment = attachmentRepository.findById(attachmentId)
-                .filter(a -> a.getPurchase().getId().equals(purchaseId))
+        PurchaseAttachment attachment = attachmentRepository.findByIdAndPurchaseIdAndTenantId(
+                        attachmentId, purchaseId, tenantContext.requireTenantId())
                 .orElseThrow(() -> ResourceNotFoundException.of("Attachment", attachmentId));
         fileStorage.delete(attachment.getFileKey());
         attachmentRepository.delete(attachment);

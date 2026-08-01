@@ -723,7 +723,26 @@
   },
   "purchases": {
     "title": "Purchases",
+    "eyebrow": "Procurement operations",
+    "subtitle": "Manage purchase orders, approvals, receiving, supplier returns and delivery performance.",
     "newPurchase": "New purchase",
+    "import": "Import CSV",
+    "export": "Export CSV",
+    "tabs": {
+      "orders": "Purchase orders",
+      "reports": "Reports",
+      "config": "Configuration"
+    },
+    "metrics": {
+      "totalPurchases": "Total purchases",
+      "pendingApproval": "Pending approval",
+      "openReceipts": "Open receiving",
+      "overdueLines": "Overdue lines"
+    },
+    "empty": {
+      "title": "No purchase orders found",
+      "description": "Create a purchase or adjust the filters to see matching orders."
+    },
     "filters": {
       "searchPlaceholder": "Search by number or supplier…",
       "allStatuses": "All statuses",
@@ -742,6 +761,7 @@
       "created": "Created"
     },
     "actions": {
+      "view": "View purchase",
       "submit": "Submit",
       "approve": "Approve",
       "reject": "Reject",
@@ -825,6 +845,51 @@
       "returnable": "Returnable",
       "reasonRequired": "Return reason",
       "submit": "Submit return"
+    },
+    "reports": {
+      "title": "Purchasing reports",
+      "subtitle": "Review purchasing volume, supplier concentration and overdue deliveries.",
+      "byStatus": "By status",
+      "byType": "By type",
+      "bySupplier": "By supplier",
+      "purchaseCount": "{count} purchases",
+      "overdue": "Overdue delivery lines",
+      "remainingValue": "{value} remaining",
+      "noData": "No report data for this period",
+      "noOverdue": "No overdue delivery lines"
+    },
+    "config": {
+      "title": "Purchasing configuration",
+      "subtitle": "Manage tenant purchase types, cancellation reasons, identifiers and approval thresholds.",
+      "types": "Purchase types",
+      "reasons": "Cancellation reasons",
+      "identifiers": "Identifier types",
+      "rules": "Approval rules",
+      "code": "Code",
+      "name": "Name",
+      "prefix": "Number prefix",
+      "description": "Description",
+      "displayOrder": "Display order",
+      "threshold": "Approval threshold",
+      "active": "Active",
+      "satisfiesSerial": "Can satisfy a serial-number requirement",
+      "satisfiesImei": "Can satisfy an IMEI requirement",
+      "platformDefault": "Platform default",
+      "prefixValue": "Prefix: {value}",
+      "thresholdValue": "Threshold: {value}",
+      "otherIdentifier": "Additional identifier",
+      "empty": "No configuration entries found",
+      "saved": "Purchasing configuration saved.",
+      "deleted": "Purchasing configuration deleted.",
+      "deleteTitle": "Delete configuration",
+      "deleteBody": "Delete {name}? This cannot be undone."
+    },
+    "notifications": {
+      "saved": "Purchase draft saved.",
+      "updated": "Purchase updated.",
+      "deleted": "Purchase draft deleted.",
+      "exported": "Purchase export downloaded.",
+      "imported": "Import complete: {created} created, {skipped} skipped."
     }
   },
   "dash": {

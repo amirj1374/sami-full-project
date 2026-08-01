@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
@@ -20,6 +21,14 @@ public interface SupplierRepository
     @EntityGraph(attributePaths = {"type", "status", "paymentTerm", "tags", "categories",
             "channels", "addresses", "contacts", "bankAccounts"})
     Optional<Supplier> findWithDetailsById(Long id);
+
+    @Query(value = "SELECT * FROM suppliers WHERE id = :id AND tenant_id = :tenantId", nativeQuery = true)
+    Optional<Supplier> findByIdAndTenantId(@Param("id") Long id, @Param("tenantId") Long tenantId);
+
+    @Query(value = "SELECT * FROM suppliers WHERE tenant_id = :tenantId "
+            + "AND lower(supplier_code) = lower(:supplierCode)", nativeQuery = true)
+    Optional<Supplier> findByTenantIdAndSupplierCodeIgnoreCase(
+            @Param("tenantId") Long tenantId, @Param("supplierCode") String supplierCode);
 
     @Override
     @EntityGraph(attributePaths = {"type", "status", "paymentTerm", "tags", "categories"})

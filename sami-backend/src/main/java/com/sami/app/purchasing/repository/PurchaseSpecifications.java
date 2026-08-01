@@ -16,6 +16,10 @@ public final class PurchaseSpecifications {
     private PurchaseSpecifications() {
     }
 
+    public static Specification<Purchase> hasTenant(Long tenantId) {
+        return (root, query, cb) -> cb.equal(root.get("tenantId"), tenantId);
+    }
+
     /** Global search: purchase number, supplier name/code, or notes. */
     public static Specification<Purchase> globalSearch(String search) {
         if (search == null || search.isBlank()) {

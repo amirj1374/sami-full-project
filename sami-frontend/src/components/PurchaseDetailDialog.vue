@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
+import { useDisplay } from 'vuetify'
 import { useI18n } from 'vue-i18n'
 import { purchasesApi } from '@/api/purchases'
 import { useApiError } from '@/composables/useApiError'
 import { usePermission } from '@/composables/usePermission'
 import { useFormat } from '@/composables/useFormat'
 import { useServerLabel } from '@/composables/useServerLabel'
+import { useNotifications } from '@/composables/useNotifications'
 import type {
   PurCancelReason,
   PurIdentifierType,
@@ -38,12 +40,15 @@ const open = computed({
 })
 
 const { t } = useI18n()
+const { smAndDown } = useDisplay()
 const { can } = usePermission()
+const notifications = useNotifications()
 const { message: errorMessage, set: setError, clear: clearError } = useApiError()
 const { formatDateTime } = useFormat()
 const { lookupLabel } = useServerLabel()
 
 const detail = ref<PurchaseDetail | null>(null)
+const loading = ref(false)
 const tab = ref<'items' | 'history' | 'attachments'>('items')
 const busy = ref(false)
 
@@ -54,6 +59,7 @@ const attachments = ref<PurchaseAttachment[]>([])
 
 async function reload() {
   if (!props.purchaseId) return
+  loading.value = true
   clearError()
   try {
     detail.value = await purchasesApi.get(props.purchaseId)
@@ -65,11 +71,14 @@ async function reload() {
     logs.value = (await purchasesApi.logs(props.purchaseId, { size: 30 })).content
   } catch (err) {
     setError(err)
+  } finally {
+    loading.value = false
   }
 }
 
 watch(open, (isOpen) => {
   if (!isOpen) return
+  detail.value = null
   tab.value = 'items'
   receiveOpen.value = false
   returnOpen.value = false
@@ -83,6 +92,7 @@ async function action(fn: () => Promise<unknown>) {
   try {
     await fn()
     await reload()
+    notifications.success(t('purchases.notifications.updated'))
     emit('changed')
   } catch (err) {
     setError(err)
@@ -222,15 +232,17 @@ const status = computed(() => detail.value?.purchase.status)
 </script>
 
 <template>
-  <v-dialog v-model="open" max-width="960">
+  <v-dialog v-model="open" :fullscreen="smAndDown" max-width="960">
+    <v-card v-if="loading && !detail" rounded="lg">
+      <v-skeleton-loader type="heading, paragraph, actions, table" />
+    </v-card>
     <v-card v-if="detail" rounded="lg">
-      <v-card-title class="text-h6 pt-4 px-6 d-flex align-center flex-wrap">
+      <v-card-title class="text-h6 pt-4 px-4 px-sm-6 d-flex align-center flex-wrap ga-2">
         {{ detail.purchase.purchaseNumber }}
-        <v-chip size="small" variant="tonal" class="ms-3">{{ lookupLabel(detail.purchase.type.name) }}</v-chip>
+        <v-chip size="small" variant="tonal">{{ lookupLabel(detail.purchase.type.name) }}</v-chip>
         <v-chip
           size="small"
           variant="tonal"
-          class="ms-2"
           :color="status?.isTerminal ? (status?.isCompletedState ? 'success' : 'error') : 'info'"
         >
           {{ lookupLabel(status?.name) }}
@@ -239,13 +251,13 @@ const status = computed(() => detail.value?.purchase.status)
         <span class="text-subtitle-1">{{ detail.purchase.totalAmount.toFixed(2) }}</span>
       </v-card-title>
 
-      <v-card-subtitle class="px-6">
+      <v-card-subtitle class="px-4 px-sm-6 purchase-subtitle">
         {{ t('purchases.detail.supplier') }}: {{ detail.purchase.supplierName }} ({{ detail.purchase.supplierCode }})
         <template v-if="detail.purchase.warehouse"> · {{ lookupLabel(detail.purchase.warehouse.name) }}</template>
         <template v-if="detail.cancelReason"> · {{ t('purchases.detail.cancelled') }}: {{ detail.cancelReason }}</template>
       </v-card-subtitle>
 
-      <v-card-text class="px-6">
+      <v-card-text class="px-4 px-sm-6 purchase-detail-body">
         <v-alert v-if="errorMessage" type="error" variant="tonal" density="compact" class="mb-3">
           {{ errorMessage }}
         </v-alert>
@@ -318,9 +330,9 @@ const status = computed(() => detail.value?.purchase.status)
         </v-tabs>
         <v-divider class="mb-3" />
 
-        <v-window v-model="tab" style="max-height: 45vh; overflow-y: auto">
+        <v-window v-model="tab" class="purchase-detail-window">
           <v-window-item value="items">
-            <v-table density="compact">
+            <v-table v-if="!smAndDown" density="compact">
               <thead>
                 <tr>
                   <th>{{ t('purchases.detail.itemsTable.product') }}</th>
@@ -356,6 +368,30 @@ const status = computed(() => detail.value?.purchase.status)
                 </tr>
               </tbody>
             </v-table>
+            <div v-else class="d-grid ga-3">
+              <v-card v-for="item in detail.items" :key="item.id" variant="outlined" rounded="lg">
+                <v-card-text>
+                  <div class="d-flex align-start ga-2">
+                    <div class="flex-grow-1 min-width-0">
+                      <strong>{{ item.productName }}</strong>
+                      <div class="text-caption text-medium-emphasis">
+                        {{ item.productSku }}<span v-if="item.description"> · {{ item.description }}</span>
+                      </div>
+                    </div>
+                    <strong>{{ item.lineTotal.toFixed(2) }}</strong>
+                  </div>
+                  <div class="purchase-item-metrics mt-3">
+                    <span>{{ t('purchases.detail.itemsTable.qty') }}<strong>{{ item.quantity }} {{ item.unit }}</strong></span>
+                    <span>{{ t('purchases.detail.itemsTable.received') }}<strong>{{ item.receivedQuantity }}</strong></span>
+                    <span>{{ t('purchases.detail.itemsTable.remaining') }}<strong>{{ item.remainingQuantity }}</strong></span>
+                  </div>
+                  <div v-if="item.requiresSerial || item.requiresImei" class="mt-3">
+                    <v-chip v-if="item.requiresSerial" size="x-small" variant="tonal" class="me-1">{{ t('purchases.detail.flags.sn') }}</v-chip>
+                    <v-chip v-if="item.requiresImei" size="x-small" variant="tonal">{{ t('purchases.detail.flags.imei') }}</v-chip>
+                  </div>
+                </v-card-text>
+              </v-card>
+            </div>
           </v-window-item>
 
           <v-window-item value="history">
@@ -445,7 +481,7 @@ const status = computed(() => detail.value?.purchase.status)
     </v-card>
 
     <!-- Cancel dialog -->
-    <v-dialog v-model="cancelOpen" max-width="420">
+    <v-dialog v-model="cancelOpen" :fullscreen="smAndDown" max-width="420">
       <v-card rounded="lg">
         <v-card-title class="text-h6">{{ t('purchases.actions.cancelPurchase') }}</v-card-title>
         <v-card-text>
@@ -470,13 +506,13 @@ const status = computed(() => detail.value?.purchase.status)
     </v-dialog>
 
     <!-- Receive dialog -->
-    <v-dialog v-model="receiveOpen" max-width="720">
+    <v-dialog v-model="receiveOpen" :fullscreen="smAndDown" max-width="720">
       <v-card rounded="lg">
         <v-card-title class="text-h6">{{ t('purchases.receiving.title') }}</v-card-title>
         <v-card-text style="max-height: 55vh; overflow-y: auto">
           <div v-for="line in receiveLines" :key="line.item.id" class="mb-4">
-            <div class="d-flex align-center ga-3">
-              <span class="text-body-2" style="min-width: 220px">
+            <div class="receive-line d-flex align-center ga-3">
+              <span class="receive-product text-body-2">
                 {{ line.item.productName }}
                 <span class="text-caption text-medium-emphasis">
                   {{ t('purchases.receiving.remaining', { quantity: line.item.remainingQuantity }) }}
@@ -498,7 +534,7 @@ const status = computed(() => detail.value?.purchase.status)
               <div
                 v-for="(unit, ui) in line.units"
                 :key="ui"
-                class="d-flex align-center ga-2 mt-2 ms-6"
+                class="identifier-line d-flex align-center ga-2 mt-2 ms-sm-6"
               >
                 <span class="text-caption" style="min-width: 48px">{{ t('purchases.receiving.unit', { number: ui + 1 }) }}</span>
                 <v-text-field
@@ -524,7 +560,7 @@ const status = computed(() => detail.value?.purchase.status)
     </v-dialog>
 
     <!-- Return dialog -->
-    <v-dialog v-model="returnOpen" max-width="560">
+    <v-dialog v-model="returnOpen" :fullscreen="smAndDown" max-width="560">
       <v-card rounded="lg">
         <v-card-title class="text-h6">{{ t('purchases.actions.returnToSupplier') }}</v-card-title>
         <v-card-text>
@@ -532,9 +568,9 @@ const status = computed(() => detail.value?.purchase.status)
           <div
             v-for="item in detail?.items.filter((i) => returnable(i) > 0)"
             :key="item.id"
-            class="d-flex align-center ga-3 mb-2"
+            class="return-line d-flex align-center ga-3 mb-2"
           >
-            <span class="text-body-2" style="min-width: 220px">
+            <span class="return-product text-body-2">
               {{ item.productName }}
               <span class="text-caption text-medium-emphasis">{{ t('purchases.returns.returnable', { quantity: returnable(item) }) }}</span>
             </span>
@@ -560,3 +596,21 @@ const status = computed(() => detail.value?.purchase.status)
     </v-dialog>
   </v-dialog>
 </template>
+
+<style scoped>
+.purchase-detail-window { max-height: 45vh; overflow-y: auto; }
+.d-grid { display: grid; }
+.purchase-item-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.purchase-item-metrics span { display: grid; gap: 2px; color: rgb(var(--v-theme-on-surface-variant)); font-size: 0.75rem; }
+.purchase-item-metrics strong { color: rgb(var(--v-theme-on-surface)); font-size: 0.875rem; }
+.receive-product, .return-product { min-width: 220px; }
+@media (max-width: 599px) {
+  .purchase-subtitle { white-space: normal; }
+  .purchase-detail-body { padding-bottom: 88px; }
+  .purchase-detail-window { max-height: none; overflow: visible; }
+  .receive-line, .return-line, .identifier-line { align-items: stretch !important; flex-direction: column; }
+  .receive-product, .return-product { min-width: 0; }
+  .receive-line :deep(.v-input), .return-line :deep(.v-input), .identifier-line :deep(.v-input) { max-width: none !important; width: 100%; }
+  :deep(.v-btn) { min-height: 44px; }
+}
+</style>

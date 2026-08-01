@@ -19,5 +19,7 @@ public interface ProductRepository
 
     Optional<Product> findByTenantIdAndSku(Long tenantId, String sku);
 
+    Optional<Product> findByTenantIdAndSkuIgnoreCase(Long tenantId, String sku);
+
     boolean existsByTenantIdAndSku(Long tenantId, String sku);
 }

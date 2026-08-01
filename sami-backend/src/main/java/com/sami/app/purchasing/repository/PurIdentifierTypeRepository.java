@@ -10,7 +10,13 @@ public interface PurIdentifierTypeRepository extends JpaRepository<PurIdentifier
 
     List<PurIdentifierType> findAllByOrderByDisplayOrderAsc();
 
+    List<PurIdentifierType> findByTenantIdIsNullOrTenantIdOrderByDisplayOrderAsc(Long tenantId);
+
     List<PurIdentifierType> findByActiveTrueOrderByDisplayOrderAsc();
 
     boolean existsByCodeIgnoreCase(String code);
+
+    boolean existsByTenantIdAndCodeIgnoreCase(Long tenantId, String code);
+
+    boolean existsByTenantIdAndCodeIgnoreCaseAndIdNot(Long tenantId, String code, Long id);
 }

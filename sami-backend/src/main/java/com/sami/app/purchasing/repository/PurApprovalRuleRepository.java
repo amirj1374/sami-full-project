@@ -9,4 +9,6 @@ import java.util.List;
 public interface PurApprovalRuleRepository extends JpaRepository<PurApprovalRule, Long> {
 
     List<PurApprovalRule> findByActiveTrue();
+
+    List<PurApprovalRule> findByTenantIdIsNullOrTenantId(Long tenantId);
 }

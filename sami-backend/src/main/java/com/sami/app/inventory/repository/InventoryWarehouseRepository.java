@@ -18,6 +18,8 @@ public interface InventoryWarehouseRepository extends JpaRepository<InventoryWar
 
     Optional<InventoryWarehouse> findByTenantIdAndDefaultWarehouseTrueAndActiveTrue(Long tenantId);
 
+    Optional<InventoryWarehouse> findByTenantIdAndCodeIgnoreCase(Long tenantId, String code);
+
     boolean existsByTenantIdAndCodeIgnoreCase(Long tenantId, String code);
 
     boolean existsByTenantIdAndCodeIgnoreCaseAndIdNot(Long tenantId, String code, Long id);

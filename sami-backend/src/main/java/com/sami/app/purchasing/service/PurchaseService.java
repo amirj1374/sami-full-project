@@ -20,10 +20,6 @@ import com.sami.app.purchasing.dto.PurchaseDtos.PurchaseDetailResponse;
 import com.sami.app.purchasing.dto.PurchaseDtos.PurchaseFilter;
 import com.sami.app.purchasing.dto.PurchaseDtos.PurchaseRequest;
 import com.sami.app.purchasing.dto.PurchaseDtos.PurchaseRowResponse;
-import com.sami.app.purchasing.repository.PurApprovalRuleRepository;
-import com.sami.app.purchasing.repository.PurCancelReasonRepository;
-import com.sami.app.purchasing.repository.PurStatusRepository;
-import com.sami.app.purchasing.repository.PurTypeRepository;
 import com.sami.app.purchasing.repository.PurchaseRepository;
 import com.sami.app.purchasing.repository.PurchaseSpecifications;
 import com.sami.app.security.CurrentActor;
@@ -53,12 +49,9 @@ import java.util.Map;
 public class PurchaseService {
 
     private final PurchaseRepository purchaseRepository;
-    private final PurStatusRepository statusRepository;
-    private final PurTypeRepository typeRepository;
-    private final PurCancelReasonRepository cancelReasonRepository;
+    private final PurchasingConfigService config;
     private final InventoryWarehouseRepository warehouseRepository;
     private final TenantContext tenantContext;
-    private final PurApprovalRuleRepository approvalRuleRepository;
     private final SupplierRepository supplierRepository;
     private final ProductRepository productRepository;
     private final PurchaseNumberGenerator numberGenerator;
@@ -70,6 +63,7 @@ public class PurchaseService {
     @Transactional(readOnly = true)
     public Page<PurchaseRowResponse> list(PurchaseFilter filter, Pageable pageable) {
         Specification<Purchase> spec = Specification.allOf(
+                PurchaseSpecifications.hasTenant(tenantContext.requireTenantId()),
                 PurchaseSpecifications.globalSearch(filter.search()),
                 PurchaseSpecifications.hasSupplier(filter.supplierId()),
                 PurchaseSpecifications.hasStatus(filter.statusId()),
@@ -92,12 +86,22 @@ public class PurchaseService {
     /** Creates a draft. Drafts affect nothing outside this module. */
     @Transactional
     public PurchaseDetailResponse create(PurchaseRequest request) {
-        PurType type = typeRepository.findById(request.typeId())
-                .orElseThrow(() -> ResourceNotFoundException.of("Purchase type", request.typeId()));
-        PurStatus draft = structural(statusRepository.findByIsDraftStateTrue(), "draft");
+        return createInternal(request, null);
+    }
+
+    @Transactional
+    PurchaseDetailResponse createImported(PurchaseRequest request, String importKey) {
+        return createInternal(request, importKey);
+    }
+
+    private PurchaseDetailResponse createInternal(PurchaseRequest request, String importKey) {
+        PurType type = config.requireType(request.typeId());
+        PurStatus draft = config.requireDraftStatus();
 
         Purchase purchase = Purchase.builder()
+                .tenantId(tenantContext.requireTenantId())
                 .purchaseNumber(numberGenerator.next(type))
+                .importKey(importKey)
                 .type(type)
                 .status(draft)
                 .supplier(findSupplierOrThrow(request.supplierId()))
@@ -125,8 +129,7 @@ public class PurchaseService {
             throw new ApiException(ErrorCode.RESOURCE_CONFLICT,
                     "The purchase was modified by someone else; reload and retry");
         }
-        purchase.setType(typeRepository.findById(request.typeId())
-                .orElseThrow(() -> ResourceNotFoundException.of("Purchase type", request.typeId())));
+        purchase.setType(config.requireType(request.typeId()));
         purchase.setSupplier(findSupplierOrThrow(request.supplierId()));
         applyHeaderAndItems(purchase, request);
 
@@ -166,11 +169,10 @@ public class PurchaseService {
         }
 
         purchase.setSubmittedAt(Instant.now());
-        boolean needsApproval = approvalRuleRepository.findByActiveTrue().stream()
-                .anyMatch(rule -> purchase.getTotalAmount().compareTo(rule.getMinAmount()) >= 0);
+        boolean needsApproval = config.requiresApproval(purchase.getTotalAmount());
 
         if (needsApproval) {
-            purchase.setStatus(structural(statusRepository.findByIsPendingStateTrue(), "pending"));
+            purchase.setStatus(config.requirePendingStatus());
             logs.record(purchase, PurchaseLogService.SUBMITTED, "Submitted for approval",
                     Map.of("total", purchase.getTotalAmount()));
         } else {
@@ -197,7 +199,7 @@ public class PurchaseService {
             throw new ApiException(ErrorCode.OPERATION_NOT_ALLOWED,
                     "Only purchases pending approval can be rejected");
         }
-        purchase.setStatus(structural(statusRepository.findByIsRejectedStateTrue(), "rejected"));
+        purchase.setStatus(config.requireRejectedStatus());
         logs.record(purchase, PurchaseLogService.REJECTED, "Purchase rejected",
                 note == null || note.isBlank() ? null : Map.of("note", note));
         return PurchaseDetailResponse.from(purchase);
@@ -211,11 +213,9 @@ public class PurchaseService {
             throw new ApiException(ErrorCode.OPERATION_NOT_ALLOWED,
                     "Completed, cancelled or rejected purchases cannot be cancelled");
         }
-        PurCancelReason reason = cancelReasonRepository.findById(request.reasonId())
-                .orElseThrow(() -> ResourceNotFoundException.of("Cancellation reason",
-                        request.reasonId()));
+        PurCancelReason reason = config.requireCancelReason(request.reasonId());
 
-        purchase.setStatus(structural(statusRepository.findByIsCancelledStateTrue(), "cancelled"));
+        purchase.setStatus(config.requireCancelledStatus());
         purchase.setCancelledAt(Instant.now());
         purchase.setCancelledBy(CurrentActor.id());
         purchase.setCancelReason(reason);
@@ -229,7 +229,7 @@ public class PurchaseService {
     // -------------------------------------------------------------- internals
 
     private void approveInternal(Purchase purchase, String title) {
-        purchase.setStatus(structural(statusRepository.findByIsApprovedStateTrue(), "approved"));
+        purchase.setStatus(config.requireApprovedStatus());
         purchase.setApprovedAt(Instant.now());
         purchase.setApprovedBy(CurrentActor.id());
         logs.record(purchase, PurchaseLogService.APPROVED, title,
@@ -254,7 +254,8 @@ public class PurchaseService {
         for (ItemRequest item : request.items()) {
             PurchaseItem line = PurchaseItem.builder()
                     .purchase(purchase)
-                    .product(productRepository.findById(item.productId())
+                    .product(productRepository.findByIdAndTenantId(item.productId(),
+                                    tenantContext.requireTenantId())
                             .orElseThrow(() -> ResourceNotFoundException.of("Product",
                                     item.productId())))
                     .description(item.description())
@@ -277,17 +278,18 @@ public class PurchaseService {
     }
 
     private Supplier findSupplierOrThrow(Long supplierId) {
-        return supplierRepository.findById(supplierId)
+        return supplierRepository.findByIdAndTenantId(supplierId, tenantContext.requireTenantId())
                 .orElseThrow(() -> ResourceNotFoundException.of("Supplier", supplierId));
     }
 
-    private PurStatus structural(java.util.Optional<PurStatus> status, String role) {
-        return status.orElseThrow(() -> new ApiException(ErrorCode.INTERNAL_ERROR,
-                "No " + role + " purchase status is configured"));
+    Purchase findWithDetailsOrThrow(Long id) {
+        return purchaseRepository.findWithDetailsByIdAndTenantId(
+                        id, tenantContext.requireTenantId())
+                .orElseThrow(() -> ResourceNotFoundException.of("Purchase", id));
     }
 
-    Purchase findWithDetailsOrThrow(Long id) {
-        return purchaseRepository.findWithDetailsById(id)
+    Purchase findWithDetailsForUpdateOrThrow(Long id) {
+        return purchaseRepository.findForUpdate(id, tenantContext.requireTenantId())
                 .orElseThrow(() -> ResourceNotFoundException.of("Purchase", id));
     }
 }

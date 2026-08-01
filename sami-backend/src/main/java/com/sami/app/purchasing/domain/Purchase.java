@@ -38,8 +38,14 @@ import java.util.List;
 @Builder
 public class Purchase extends BaseEntity {
 
-    @Column(name = "purchase_number", nullable = false, unique = true, length = 40)
+    @Column(name = "tenant_id", nullable = false)
+    private Long tenantId;
+
+    @Column(name = "purchase_number", nullable = false, length = 40)
     private String purchaseNumber;
+
+    @Column(name = "import_key", length = 160)
+    private String importKey;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "type_id", nullable = false)

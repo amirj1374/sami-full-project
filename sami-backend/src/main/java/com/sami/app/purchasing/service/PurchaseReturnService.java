@@ -3,6 +3,7 @@ package com.sami.app.purchasing.service;
 import com.sami.app.common.exception.ApiException;
 import com.sami.app.common.exception.ErrorCode;
 import com.sami.app.common.exception.ResourceNotFoundException;
+import com.sami.app.common.tenancy.TenantContext;
 import com.sami.app.inventory.publicapi.InventoryStockOperations;
 import com.sami.app.inventory.publicapi.InventoryStockOperations.StockLine;
 import com.sami.app.inventory.publicapi.InventoryStockOperations.SupplierReturnCommand;
@@ -35,17 +36,20 @@ public class PurchaseReturnService {
     private final PurchaseReturnRepository returnRepository;
     private final PurchaseLogService logs;
     private final InventoryStockOperations inventory;
+    private final TenantContext tenantContext;
 
     @Transactional(readOnly = true)
     public List<ReturnResponse> history(Long purchaseId) {
-        return returnRepository.findByPurchaseIdOrderByCreatedAtDesc(purchaseId).stream()
+        purchaseService.findWithDetailsOrThrow(purchaseId);
+        return returnRepository.findByPurchaseIdAndTenantIdOrderByCreatedAtDesc(
+                        purchaseId, tenantContext.requireTenantId()).stream()
                 .map(ReturnResponse::from)
                 .toList();
     }
 
     @Transactional
     public ReturnResponse returnToSupplier(Long purchaseId, ReturnRequest request) {
-        Purchase purchase = purchaseService.findWithDetailsOrThrow(purchaseId);
+        Purchase purchase = purchaseService.findWithDetailsForUpdateOrThrow(purchaseId);
         if (purchase.getStatus().isCancelledState() || purchase.getStatus().isRejectedState()
                 || purchase.getStatus().isDraftState() || purchase.getStatus().isPendingState()) {
             throw new ApiException(ErrorCode.OPERATION_NOT_ALLOWED,
@@ -53,6 +57,7 @@ public class PurchaseReturnService {
         }
 
         PurchaseReturn purchaseReturn = PurchaseReturn.builder()
+                .tenantId(tenantContext.requireTenantId())
                 .purchase(purchase)
                 .reason(request.reason().trim())
                 .createdBy(CurrentActor.id())

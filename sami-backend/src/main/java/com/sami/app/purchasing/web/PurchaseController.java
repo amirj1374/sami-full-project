@@ -5,6 +5,8 @@ import com.sami.app.common.api.PageResponse;
 import com.sami.app.purchasing.dto.PurchaseDtos.AttachmentResponse;
 import com.sami.app.purchasing.dto.PurchaseDtos.CancelRequest;
 import com.sami.app.purchasing.dto.PurchaseDtos.LogResponse;
+import com.sami.app.purchasing.dto.PurchaseDtos.DashboardResponse;
+import com.sami.app.purchasing.dto.PurchaseDtos.ImportResponse;
 import com.sami.app.purchasing.dto.PurchaseDtos.PurchaseDetailResponse;
 import com.sami.app.purchasing.dto.PurchaseDtos.PurchaseFilter;
 import com.sami.app.purchasing.dto.PurchaseDtos.PurchaseRequest;
@@ -13,8 +15,11 @@ import com.sami.app.purchasing.dto.PurchaseDtos.ReceiptResponse;
 import com.sami.app.purchasing.dto.PurchaseDtos.ReceiveRequest;
 import com.sami.app.purchasing.dto.PurchaseDtos.ReturnRequest;
 import com.sami.app.purchasing.dto.PurchaseDtos.ReturnResponse;
+import com.sami.app.purchasing.dto.PurchaseDtos.ReportResponse;
 import com.sami.app.purchasing.service.PurchaseAttachmentService;
 import com.sami.app.purchasing.service.PurchaseLogService;
+import com.sami.app.purchasing.service.PurchaseImportService;
+import com.sami.app.purchasing.service.PurchaseReportingService;
 import com.sami.app.purchasing.service.PurchaseReceivingService;
 import com.sami.app.purchasing.service.PurchaseReturnService;
 import com.sami.app.purchasing.service.PurchaseService;
@@ -25,6 +30,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ContentDisposition;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -41,6 +47,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.nio.charset.StandardCharsets;
 
 /** Purchase documents: drafts, workflow, receiving, returns, attachments, history. */
 @RestController
@@ -54,6 +61,8 @@ public class PurchaseController {
     private final PurchaseReturnService returnService;
     private final PurchaseAttachmentService attachmentService;
     private final PurchaseLogService logService;
+    private final PurchaseReportingService reportingService;
+    private final PurchaseImportService importService;
 
     // ----------------------------------------------------------------- reads
 
@@ -64,6 +73,38 @@ public class PurchaseController {
             PurchaseFilter filter,
             @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
         return ApiResponse.ok(PageResponse.from(purchaseService.list(filter, pageable)));
+    }
+
+    @GetMapping("/dashboard")
+    @PreAuthorize("@authz.hasAny('purchasing:report','purchasing:view')")
+    @Operation(summary = "Purchasing operational dashboard")
+    public ApiResponse<DashboardResponse> dashboard() {
+        return ApiResponse.ok(reportingService.dashboard());
+    }
+
+    @GetMapping("/reports")
+    @PreAuthorize("@authz.has('purchasing:report')")
+    @Operation(summary = "Purchasing status, type, supplier and overdue reports")
+    public ApiResponse<ReportResponse> reports(PurchaseFilter filter) {
+        return ApiResponse.ok(reportingService.report(filter));
+    }
+
+    @GetMapping(value = "/export.csv", produces = "text/csv;charset=UTF-8")
+    @PreAuthorize("@authz.has('purchasing:export')")
+    @Operation(summary = "Export filtered purchases as Excel-compatible UTF-8 CSV")
+    public ResponseEntity<byte[]> export(PurchaseFilter filter) {
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("text/csv;charset=UTF-8"))
+                .header("Content-Disposition", ContentDisposition.attachment()
+                        .filename("purchases.csv", StandardCharsets.UTF_8).build().toString())
+                .body(reportingService.exportCsv(filter));
+    }
+
+    @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("@authz.has('purchasing:import')")
+    @Operation(summary = "Import purchase drafts from a validated, idempotent CSV file")
+    public ApiResponse<ImportResponse> importCsv(@RequestParam("file") MultipartFile file) {
+        return ApiResponse.ok(importService.importCsv(file));
     }
 
     @GetMapping("/{id}")
@@ -200,8 +241,9 @@ public class PurchaseController {
                         .contentType(MediaType.parseMediaType(
                                 file.contentType() != null ? file.contentType()
                                         : "application/octet-stream"))
-                        .header("Content-Disposition",
-                                "attachment; filename=\"" + file.fileName() + "\"")
+                        .header("Content-Disposition", ContentDisposition.attachment()
+                                .filename(file.fileName(), StandardCharsets.UTF_8)
+                                .build().toString())
                         .body(file.content()))
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }

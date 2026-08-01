@@ -11,9 +11,15 @@ public interface PurTypeRepository extends JpaRepository<PurType, Long> {
 
     List<PurType> findAllByOrderByDisplayOrderAsc();
 
+    List<PurType> findByTenantIdIsNullOrTenantIdOrderByDisplayOrderAsc(Long tenantId);
+
     Optional<PurType> findByIsDefaultTrue();
 
     boolean existsByCodeIgnoreCase(String code);
 
     boolean existsByCodeIgnoreCaseAndIdNot(String code, Long id);
+
+    boolean existsByTenantIdAndCodeIgnoreCase(Long tenantId, String code);
+
+    boolean existsByTenantIdAndCodeIgnoreCaseAndIdNot(Long tenantId, String code, Long id);
 }
