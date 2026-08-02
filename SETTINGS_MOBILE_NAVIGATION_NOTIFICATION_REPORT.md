@@ -37,3 +37,10 @@ Production defaults to `false` in application and Compose configuration.
 
 - Closed-application Web Push remains unavailable until a backend subscription contract, VAPID configuration, provider, and delivery worker are approved and implemented.
 - The migration seeds the demo scheduler for tenants existing at migration time. Future tenant provisioning must create the system job through the existing Scheduler service.
+
+## Integration checkpoint
+
+- Feature commit: `9a64389` (`feat(settings): add PWA access mobile preferences and demo notifications`)
+- Validated development commit: `e652595`
+- Revalidated on 2026-08-02: frontend contract/localization tests (9/9), TypeScript type-check, production build, and focused backend preference/notification tests all passed.
+- No push or deployment was performed.
