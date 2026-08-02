@@ -8,7 +8,18 @@
    ============================================================================ */
 
 :root {
-  --app-font-family: 'Vazirmatn Variable', 'Roboto', system-ui, -apple-system, sans-serif;
+  /* One self-hosted variable family covers Persian and Latin from weight 100–900. */
+  --app-font-family-fa: 'Vazirmatn Variable', Vazirmatn, Tahoma, Arial, sans-serif;
+  --app-font-family-en: 'Vazirmatn Variable', 'Segoe UI', Roboto, Arial, sans-serif;
+  --app-font-family: var(--app-font-family-en);
+  --app-type-display-size: clamp(1.75rem, 4vw, 2.5rem);
+  --app-type-page-size: clamp(1.35rem, 3vw, 2rem);
+  --app-type-section-size: 1.125rem;
+  --app-type-body-size: 0.9375rem;
+  --app-type-label-size: 0.875rem;
+  --app-type-caption-size: 0.75rem;
+  --app-type-line-height: 1.6;
+  --app-type-heading-line-height: 1.35;
 
   /* Spacing scale (4pt grid) */
   --app-space-1: 4px;
@@ -55,37 +66,108 @@
   --app-nav-muted: #93A4BC;
 }
 
+html:lang(fa) {
+  --app-font-family: var(--app-font-family-fa);
+  --app-type-line-height: 1.75;
+  --app-type-heading-line-height: 1.45;
+}
+
 html,
 body {
   margin: 0;
   padding: 0;
 }
 
-body {
+html,
+body,
+#app,
+.v-application,
+.v-overlay-container {
   font-family: var(--app-font-family);
+  font-synthesis: none;
   text-rendering: optimizeLegibility;
+}
+
+body {
+  font-size: var(--app-type-body-size);
+  line-height: var(--app-type-line-height);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 .v-application {
-  font-family: var(--app-font-family) !important;
-  letter-spacing: 0.1px;
+  line-height: var(--app-type-line-height);
   background: rgb(var(--v-theme-background));
   color: rgb(var(--v-theme-on-background));
+}
+
+/* Native controls, teleported Vuetify overlays and chart labels must not fall
+   back to browser UI fonts on Android/iOS. */
+button,
+input,
+textarea,
+select,
+option,
+optgroup,
+.v-overlay-container,
+.v-overlay-container .v-overlay__content,
+.v-tooltip,
+.v-snackbar,
+.v-menu,
+svg text {
+  font-family: inherit;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+html:lang(en) .v-application {
+  letter-spacing: 0.1px;
+}
+
+html:lang(fa) .v-application {
+  letter-spacing: 0;
+}
+
+html:lang(fa) input,
+html:lang(fa) textarea,
+html:lang(fa) select,
+html:lang(fa) button,
+html:lang(fa) .v-btn,
+html:lang(fa) .v-field,
+html:lang(fa) .v-label {
+  letter-spacing: 0;
 }
 
 /* Tighten heading rhythm for a denser, more professional feel */
 .v-application h1,
 .v-application h2,
 .v-application h3 {
-  letter-spacing: -0.35px;
+  line-height: var(--app-type-heading-line-height);
   text-wrap: balance;
+}
+
+html:lang(en) .v-application h1,
+html:lang(en) .v-application h2,
+html:lang(en) .v-application h3 {
+  letter-spacing: -0.35px;
+}
+
+html:lang(fa) .v-application h1,
+html:lang(fa) .v-application h2,
+html:lang(fa) .v-application h3 {
+  letter-spacing: 0;
 }
 
 .v-application .text-h4 { font-weight: 740 !important; }
 .v-application .text-h5 { font-weight: 720 !important; }
-.v-application .text-subtitle-1 { letter-spacing: -0.08px !important; }
+.v-application .text-subtitle-1 { line-height: var(--app-type-heading-line-height); }
+html:lang(en) .v-application .text-subtitle-1 { letter-spacing: -0.08px !important; }
+html:lang(fa) .v-application .text-subtitle-1 { letter-spacing: 0 !important; }
 
 /* ---- Enterprise inputs -------------------------------------------------- */
 .v-application .v-field {

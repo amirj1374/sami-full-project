@@ -1,5 +1,5 @@
 /* SAMI PWA service worker: application shell only; business APIs are network-only. */
-const VERSION = 'sami-shell-v1'
+const VERSION = 'sami-shell-v2'
 const STATIC_CACHE = `${VERSION}-static`
 const SHELL_CACHE = `${VERSION}-shell`
 const SHELL = ['/', '/index.html', '/manifest.webmanifest', '/icons/sami-app-icon.svg']
