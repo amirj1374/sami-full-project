@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { useDisplay } from 'vuetify'
 import { useAuthStore } from '@/stores/auth'
 import { useMenuStore } from '@/stores/menu'
+import { useUserExperienceStore } from '@/stores/userExperience'
 import { useNavHistory } from '@/composables/useNavHistory'
 import { useServerLabel } from '@/composables/useServerLabel'
 import { useThemeMode, type ThemeMode } from '@/composables/useThemeMode'
@@ -12,11 +13,13 @@ import type { MenuItem } from '@/types/models'
 import ChangePasswordDialog from '@/components/ChangePasswordDialog.vue'
 import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
 import CommandPalette from '@/components/CommandPalette.vue'
+import StaffNotificationMenu from '@/components/StaffNotificationMenu.vue'
 
 const { t } = useI18n()
 const { mobile } = useDisplay()
 const auth = useAuthStore()
 const menu = useMenuStore()
+const userExperience = useUserExperienceStore()
 const router = useRouter()
 const route = useRoute()
 const { favorites, recent, isFavorite, toggleFavorite, recordVisit } = useNavHistory()
@@ -117,7 +120,44 @@ watch(
   },
   { immediate: true },
 )
-const mobileNavItems = computed(() => menu.items.slice(0, 4))
+const mobileNavCandidates = computed(() => menu.items.filter((item) =>
+  menu.isNavigable(item) && !menu.showsPlaceholder(item) && menu.hasFrontendRoute(item),
+))
+const recommendedMobileCodes = computed(() => mobileNavCandidates.value.slice(0, 4).map((item) => item.code))
+const sanitizedMobileCodes = computed(() => {
+  const allowed = new Set(mobileNavCandidates.value.map((item) => item.code))
+  const stored = userExperience.preferences.mobileNavigationCodes
+  const base = userExperience.preferences.mobileNavigationConfigured ? stored : recommendedMobileCodes.value
+  const selected = [...new Set(base)].filter((code) => allowed.has(code)).slice(0, 4)
+  const targetCount = userExperience.preferences.mobileNavigationConfigured
+    ? Math.min(stored.length, 4)
+    : Math.min(recommendedMobileCodes.value.length, 4)
+  for (const code of recommendedMobileCodes.value) {
+    if (selected.length >= targetCount) break
+    if (!selected.includes(code)) selected.push(code)
+  }
+  return selected
+})
+const mobileNavItems = computed(() => sanitizedMobileCodes.value
+  .map((code) => mobileNavCandidates.value.find((item) => item.code === code))
+  .filter((item): item is MenuItem => !!item))
+
+watch(
+  [() => menu.loaded, () => auth.user?.id],
+  ([menuLoaded, userId]) => {
+    if (menuLoaded && userId) void userExperience.load()
+  },
+  { immediate: true },
+)
+
+watch(sanitizedMobileCodes, (codes) => {
+  if (!userExperience.loaded || !userExperience.preferences.mobileNavigationConfigured) return
+  if (codes.join('|') === userExperience.preferences.mobileNavigationCodes.join('|')) return
+  void userExperience.save({
+    mobileNavigationCodes: codes,
+    demoNotificationsEnabled: userExperience.preferences.demoNotificationsEnabled,
+  })
+})
 
 onMounted(() => window.addEventListener('keydown', onGlobalKey))
 onBeforeUnmount(() => window.removeEventListener('keydown', onGlobalKey))
@@ -327,21 +367,7 @@ async function logout(): Promise<void> {
     </v-menu>
 
     <!-- Notifications -->
-    <v-menu v-if="!mobile" location="bottom end" :close-on-content-click="false">
-      <template #activator="{ props: p }">
-        <v-btn icon="mdi-bell-outline" variant="text" v-bind="p" :aria-label="t('layout.notifications')" />
-      </template>
-      <v-card min-width="320" max-width="360">
-        <div class="px-4 py-3 text-subtitle-2 font-weight-bold">{{ t('layout.notifications') }}</div>
-        <v-divider />
-        <div class="pa-6">
-          <div class="text-center">
-            <v-icon icon="mdi-bell-sleep-outline" size="36" class="mb-2 text-disabled" />
-            <div class="text-body-2 text-medium-emphasis">{{ t('layout.noNotifications') }}</div>
-          </div>
-        </div>
-      </v-card>
-    </v-menu>
+    <StaffNotificationMenu />
 
     <!-- Theme switch -->
     <v-menu v-if="!mobile" location="bottom end">
@@ -547,6 +573,14 @@ async function logout(): Promise<void> {
 }
 .app-bottom-nav :deep(.v-btn__content) {
   gap: 3px;
+  max-width: 100%;
+}
+.app-bottom-nav :deep(.v-btn__content > span:last-child) {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .app-breadcrumbs :deep(.v-breadcrumbs-item) {
   font-size: 0.72rem;

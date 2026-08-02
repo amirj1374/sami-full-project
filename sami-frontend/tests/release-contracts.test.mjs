@@ -112,3 +112,25 @@ test('Sales menu namespace matches its route permission and localized label', ()
   assert.equal(english.server.module.sales, 'Sales')
   assert.equal(persian.server.module.sales, 'فروش')
 })
+
+test('PWA banner dismissal is independent from permanent install capability', () => {
+  const pwa = read('src/composables/usePwa.ts')
+  const banner = read('src/components/AppPwaStatus.vue')
+  const settings = read('src/views/ProfileView.vue')
+
+  assert.match(pwa, /sami\.pwa\.install-banner-dismissed\.v1/)
+  assert.match(banner, /dismissInstallBanner/)
+  assert.match(settings, /promptInstall/)
+  assert.match(settings, /settings\.application\.instructions/)
+})
+
+test('mobile navigation preferences are user-scoped and capped at four modules', () => {
+  const shell = read('src/layouts/DefaultLayout.vue')
+  const settings = read('src/views/ProfileView.vue')
+  const api = read('src/api/userExperience.ts')
+
+  assert.match(api, /\/v1\/users\/me\/preferences/)
+  assert.match(shell, /\.slice\(0, 4\)/)
+  assert.match(settings, /selectedCodes\.value\.length >= 4/)
+  assert.doesNotMatch(shell, /localStorage.*mobile/i)
+})

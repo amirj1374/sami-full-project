@@ -8,6 +8,8 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
@@ -56,4 +58,8 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
     List<User> findByRoleId(Long roleId);
 
     long countByStatusId(Long statusId);
+
+    @Query("SELECT u FROM User u JOIN FETCH u.status s WHERE u.tenantId = :tenantId "
+            + "AND u.deletedAt IS NULL AND u.archivedAt IS NULL AND s.allowsLogin = TRUE")
+    List<User> findActiveStaffByTenantId(@Param("tenantId") Long tenantId);
 }

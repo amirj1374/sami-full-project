@@ -69,6 +69,7 @@ services:
       BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:-admin@sami.local}
       BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:?BOOTSTRAP_ADMIN_PASSWORD is required in production}
       BOOTSTRAP_ADMIN_NAME: ${BOOTSTRAP_ADMIN_NAME:-Administrator}
+      DEMO_HOURLY_NOTIFICATION_ENABLED: ${DEMO_HOURLY_NOTIFICATION_ENABLED:-false}
       STORAGE_BASE_PATH: /app/data/uploads
       FILES_BASE_PATH: /app/data/files
       FILES_STAGING_PATH: /app/data/files-staging

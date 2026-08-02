@@ -44,6 +44,7 @@ services:
       BOOTSTRAP_ADMIN_ENABLED: ${BOOTSTRAP_ADMIN_ENABLED:-true}
       BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:-admin@sami.local}
       BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:-Admin123!}
+      DEMO_HOURLY_NOTIFICATION_ENABLED: ${DEMO_HOURLY_NOTIFICATION_ENABLED:-false}
       STORAGE_BASE_PATH: /app/data/uploads
     volumes:
       - uploads:/app/data/uploads

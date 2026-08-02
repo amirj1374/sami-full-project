@@ -1398,6 +1398,49 @@
     "dark": "Dark",
     "system": "System"
   },
+  "settings": {
+    "saved": "Your application settings were saved.",
+    "application": {
+      "title": "Application installation",
+      "description": "Install SAMI on this device for quicker, app-like access.",
+      "install": "Install application",
+      "installed": "The application is installed on this device.",
+      "installAccepted": "Application installation started.",
+      "installFailed": "The browser could not start installation.",
+      "instructions": {
+        "ios-safari": "In Safari, open Share and choose “Add to Home Screen”.",
+        "browser-menu": "The browser is not currently offering direct installation. Use its application or install menu when available.",
+        "unsupported": "This browser does not support direct application installation."
+      }
+    },
+    "mobileNav": {
+      "title": "Mobile Bottom Navigation",
+      "description": "Choose and order up to {count} permitted modules. The More button always remains available.",
+      "preview": "Mobile navigation preview",
+      "add": "Add a permitted module",
+      "remove": "Remove item",
+      "moveUp": "Move item up",
+      "moveDown": "Move item down",
+      "restore": "Restore recommended defaults"
+    },
+    "notifications": {
+      "title": "Notification preferences",
+      "demo": "Enable demo notifications",
+      "demoHint": "When the demo feature is enabled on the server, SAMI creates at most one light in-app reminder per hour for this account."
+    }
+  },
+  "notifications": {
+    "markAllRead": "Mark all as read",
+    "demo": {
+      "title": "A friendly note from SAMI",
+      "messages": {
+        "0": "Friendly reminder: don’t forget to give SAMI a test run 😄",
+        "1": "SAMI is awake—and promises the reports are too ☕",
+        "2": "A tiny ERP check now may save a big spreadsheet later 😉",
+        "3": "Everything looks calm. A perfect time to explore SAMI 🚀"
+      }
+    }
+  },
   "automation": {
     "title": "Automation",
     "eyebrow": "Business process automation",

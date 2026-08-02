@@ -8,8 +8,27 @@ interface BeforeInstallPromptEvent extends Event {
 const online = ref(typeof navigator === 'undefined' ? true : navigator.onLine)
 const installEvent = ref<BeforeInstallPromptEvent | null>(null)
 const updateRegistration = ref<ServiceWorkerRegistration | null>(null)
-const installed = ref(typeof window !== 'undefined' && window.matchMedia('(display-mode: standalone)').matches)
+const installed = ref(typeof window !== 'undefined' && (
+  window.matchMedia('(display-mode: standalone)').matches
+  || ('standalone' in navigator && (navigator as Navigator & { standalone?: boolean }).standalone === true)
+))
+const installBusy = ref(false)
+const installError = ref<string | null>(null)
+const BANNER_DISMISSED_KEY = 'sami.pwa.install-banner-dismissed.v1'
+const bannerDismissed = ref(typeof localStorage !== 'undefined' && localStorage.getItem(BANNER_DISMISSED_KEY) === '1')
 let initialized = false
+
+export type PwaInstallInstruction = 'ios-safari' | 'browser-menu' | 'unsupported'
+
+function isIos(): boolean {
+  if (typeof navigator === 'undefined') return false
+  return /iphone|ipad|ipod/i.test(navigator.userAgent)
+}
+
+function isSafari(): boolean {
+  if (typeof navigator === 'undefined') return false
+  return /safari/i.test(navigator.userAgent) && !/crios|fxios|edgios|chrome|android/i.test(navigator.userAgent)
+}
 
 export function usePwa() {
   function initialize(): void {
@@ -39,12 +58,32 @@ export function usePwa() {
     })
   }
 
-  async function install(): Promise<boolean> {
+  async function promptInstall(): Promise<boolean> {
     if (!installEvent.value) return false
-    await installEvent.value.prompt()
-    const choice = await installEvent.value.userChoice
-    installEvent.value = null
-    return choice.outcome === 'accepted'
+    installBusy.value = true
+    installError.value = null
+    try {
+      await installEvent.value.prompt()
+      const choice = await installEvent.value.userChoice
+      installEvent.value = null
+      return choice.outcome === 'accepted'
+    } catch (cause) {
+      installError.value = cause instanceof Error ? cause.message : String(cause)
+      return false
+    } finally {
+      installBusy.value = false
+    }
+  }
+
+  function getInstallInstructions(): PwaInstallInstruction {
+    if (isIos() && isSafari()) return 'ios-safari'
+    if (typeof window !== 'undefined' && window.isSecureContext) return 'browser-menu'
+    return 'unsupported'
+  }
+
+  function dismissInstallBanner(): void {
+    bannerDismissed.value = true
+    localStorage.setItem(BANNER_DISMISSED_KEY, '1')
   }
 
   function applyUpdate(): void {
@@ -53,12 +92,23 @@ export function usePwa() {
 
   return {
     online: computed(() => online.value),
+    isInstallSupported: computed(() => !installed.value && (
+      !!installEvent.value || getInstallInstructions() !== 'unsupported'
+    )),
+    canPromptInstall: computed(() => !!installEvent.value && !installed.value),
     canInstall: computed(() => !!installEvent.value && !installed.value),
     updateAvailable: computed(() => !!updateRegistration.value),
+    isInstalled: computed(() => installed.value),
     installed: computed(() => installed.value),
+    installBusy: computed(() => installBusy.value),
+    installError: computed(() => installError.value),
+    showInstallBanner: computed(() => !!installEvent.value && !installed.value && !bannerDismissed.value),
     initialize,
     watchRegistration,
-    install,
+    install: promptInstall,
+    promptInstall,
+    getInstallInstructions,
+    dismissInstallBanner,
     applyUpdate,
   }
 }

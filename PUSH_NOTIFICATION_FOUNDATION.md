@@ -8,6 +8,19 @@ Notification Center remains the future decision layer. Business modules will pub
 
 ## Current implementation
 
+### In-app notification centre
+
+Authenticated staff now have a tenant/user-scoped in-app notification inbox at
+`/api/v1/notifications`, including unread count, mark-read, and mark-all-read
+operations. The application shell renders the inbox and unread badge. The
+hourly customer-demo generator is an opt-in producer for this inbox; it is
+disabled deployment-wide by default and does not represent a business-module
+integration.
+
+This does not make closed-app Web Push ready. Browser subscriptions are still
+device-local and no backend subscription persistence, VAPID delivery provider,
+or server delivery lifecycle has been implemented.
+
 ### Service worker
 
 The existing production service worker now:
@@ -106,7 +119,8 @@ The backend must persist subscription endpoint and encryption key material becau
 
 ## Required backend APIs
 
-These contracts are documentation only; they are not implemented by this change.
+These Web Push contracts are documentation only; the in-app notification APIs
+described above do not implement them.
 
 ### Configuration
 

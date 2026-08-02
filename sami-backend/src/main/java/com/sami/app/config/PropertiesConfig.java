@@ -6,6 +6,7 @@ import com.sami.app.common.scheduler.SchedulerProperties;
 import com.sami.app.demo.DemoProperties;
 import com.sami.app.files.FilesProperties;
 import com.sami.app.portal.PortalProperties;
+import com.sami.app.notification.DemoNotificationProperties;
 import com.sami.app.licensing.LicensingProperties;
 import com.sami.app.purchasing.PurchasingProperties;
 import com.sami.app.supplier.SupplierProperties;
@@ -27,7 +28,8 @@ import org.springframework.context.annotation.Configuration;
         LicensingProperties.class,
         FilesProperties.class,
         SchedulerProperties.class,
-        PortalProperties.class
+        PortalProperties.class,
+        DemoNotificationProperties.class
 })
 public class PropertiesConfig {
 }

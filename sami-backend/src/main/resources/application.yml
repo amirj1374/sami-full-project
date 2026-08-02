@@ -104,6 +104,10 @@ app:
     poll-seconds: ${SCHEDULER_POLL_SECONDS:30}
     batch-size: ${SCHEDULER_BATCH_SIZE:20}
     startup-delay-seconds: ${SCHEDULER_STARTUP_DELAY:60}
+  notifications:
+    demo:
+      # Deployment kill switch. A user must additionally opt in from Settings.
+      enabled: ${DEMO_HOURLY_NOTIFICATION_ENABLED:false}
   # Customer portal. `jwt-secret` MUST differ from the staff JWT secret: the
   # separation is what stops a staff token verifying as a customer token, and
   # vice versa. The service refuses to start on a missing or short key.

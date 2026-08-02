@@ -4,6 +4,7 @@ import type { CurrentUser } from '@/types/models'
 import { authApi, type LoginPayload, type RegisterPayload } from '@/api/auth'
 import { tokenStorage } from '@/api/tokenStorage'
 import { useMenuStore } from '@/stores/menu'
+import { useUserExperienceStore } from '@/stores/userExperience'
 import { MOCK_MODE } from '@/mocks/config'
 
 /**
@@ -77,6 +78,7 @@ export const useAuthStore = defineStore('auth', () => {
     tokenStorage.clear()
     user.value = null
     useMenuStore().reset()
+    useUserExperienceStore().reset()
   }
 
   /**

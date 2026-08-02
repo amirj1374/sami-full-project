@@ -50,7 +50,7 @@ Primary structure:
 - `src/api`: centralized typed Axios clients.
 - `src/types`: shared API/domain TypeScript contracts.
 - `src/schemas`: Zod and form validation.
-- `src/stores`: Pinia authentication and menu state.
+- `src/stores`: Pinia authentication, menu and authenticated user-experience preference state.
 - `src/composables`: permissions, errors, formatting, theme and navigation helpers.
 - `src/directives`: declarative permission presentation.
 - `src/router`: lazy routes and permission metadata.
@@ -70,6 +70,10 @@ Verified conventions:
 - Client permission codes and super-admin bypass for presentation/routing.
 - Pinia for cross-page state; local refs/computed state inside views/components.
 - Backend-driven menu loading.
+- Per-user mobile navigation preferences are stored by the backend; the shell
+  always re-filters them through the current permission-filtered module menu.
+- PWA install capability is centralized in `usePwa`; initial banner dismissal
+  is device-local and separate from permanent install access in Profile/Settings.
 - Vue Router route metadata for authentication and permissions.
 - English/Persian localization with RTL support.
 - Standard API envelope represented in `src/types/api.ts`.
@@ -159,10 +163,13 @@ Backend runtime:
 - Database defaults: PostgreSQL at `localhost:5432/sami`.
 - Production secrets must be supplied through environment variables.
 
-Migration range is `V1` through `V36`. `V31` completes Sales, `V32` introduces
+Migration range is `V1` through `V37`. `V31` completes Sales, `V32` introduces
 Inventory, `V33` completes Purchasing, `V34` completes CRM, and `V35` applies
 release hardening. `V36` preserves the transformed Sales module row and its
 grants while aligning its registry code with the `sales:*` permission namespace.
+`V37` adds tenant/user-scoped application preferences, the staff in-app
+notification inbox, and the existing-scheduler definition for opt-in hourly
+demo notifications.
 
 ## Container and deployment context
 
@@ -179,6 +186,8 @@ Full stack:
 - `sami-backend/docker-compose.yml` runs PostgreSQL plus the backend for development.
 - `sami-backend/docker-compose.prod.yml` builds PostgreSQL, backend and the sibling frontend for production; explicit configurable backend/frontend image names also support verified prebuilt-image deployment without rebuilding on the server.
 - `.env.example` documents database, staff/portal JWT, CORS and bootstrap-admin variables.
+- `DEMO_HOURLY_NOTIFICATION_ENABLED` is the disabled-by-default deployment kill
+  switch for hourly demo inbox messages; each user must additionally opt in.
 - Production Compose requires distinct staff and portal JWT secrets and fails fast
   when either is absent.
 - Production Compose waits for PostgreSQL and backend health, publishes only the
