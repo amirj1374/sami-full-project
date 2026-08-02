@@ -97,4 +97,4 @@ The frontend nginx image resolves the `backend` hostname at startup as designed 
 ## Git integration
 
 - Feature branch: `codex/fix-mobile-font-system`.
-- Development integration commit: `PENDING_INTEGRATION_SHA`.
+- Development integration commit: `54fb9950c8e5a7ead4454dee724ca95490b9a8fc`.
