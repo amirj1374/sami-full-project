@@ -36,6 +36,14 @@
   --app-radius-lg: 16px;
   --app-radius-xl: 22px;
   --app-control-height: 48px;
+  /* Form rhythm: one source for pages, dialogs and teleported overlays. */
+  --app-form-control-height: 44px;
+  --app-form-label-gap: 7px;
+  --app-form-message-gap: 4px;
+  --app-form-field-gap: 16px;
+  --app-form-section-gap: 24px;
+  --app-form-dialog-padding: 24px;
+  --app-form-footer-padding: 16px;
   --app-border: rgba(var(--v-border-color), var(--v-border-opacity));
   --app-surface-muted: rgb(var(--v-theme-surface-container));
   --app-surface-raised: rgb(var(--v-theme-surface-bright));
@@ -171,6 +179,7 @@ html:lang(fa) .v-application .text-subtitle-1 { letter-spacing: 0 !important; }
 
 /* ---- Enterprise inputs -------------------------------------------------- */
 .v-application .v-field {
+  border-radius: var(--app-radius) !important;
   transition:
     border-color var(--app-dur-fast) var(--app-ease),
     box-shadow var(--app-dur-fast) var(--app-ease),
@@ -190,11 +199,45 @@ html:lang(fa) .v-application .text-subtitle-1 { letter-spacing: 0 !important; }
   background: rgba(var(--v-theme-on-surface), 0.035);
 }
 .v-application .v-field__input {
-  min-height: var(--app-control-height);
+  min-height: var(--app-form-control-height);
+  padding-block: 8px;
 }
 .v-application .v-input__details {
+  min-height: 0;
   padding-inline: 12px;
-  padding-top: 5px;
+  padding-top: var(--app-form-message-gap);
+  margin-bottom: 0;
+}
+.v-application .v-input__details:empty {
+  display: none;
+}
+.v-application .v-messages {
+  min-height: 0;
+  font-size: 0.75rem;
+}
+.v-application .v-input--error .v-messages {
+  margin-bottom: 0;
+}
+.v-application .v-field-label--floating {
+  opacity: 1;
+  font-size: var(--app-type-label-size);
+  font-weight: 600;
+}
+.v-application .v-field-label:not(.v-field-label--floating) {
+  opacity: 0;
+}
+
+/* Rows inside actual forms own the 16px vertical rhythm. Explicit compact
+   inline editors and filter bars retain their local density/spacing. */
+.v-application form > .v-row,
+.v-application .v-form > .v-row,
+.v-application .v-dialog .v-card-text > .v-row {
+  row-gap: var(--app-form-field-gap);
+}
+.v-application form > .v-row > .v-col,
+.v-application .v-form > .v-row > .v-col,
+.v-application .v-dialog .v-card-text > .v-row > .v-col {
+  padding-block: 0;
 }
 
 /* ---- Surfaces and component hierarchy ---------------------------------- */
@@ -351,12 +394,19 @@ html:lang(fa) .v-application .text-subtitle-1 { letter-spacing: 0 !important; }
   padding-block: 12px;
 }
 .v-dialog .v-card-title {
-  min-height: 64px;
+  min-height: 56px;
+  padding: 16px var(--app-form-dialog-padding) !important;
   align-items: center;
   border-bottom: 1px solid rgba(var(--v-border-color), 0.1);
 }
+.v-dialog .v-card-text {
+  padding: var(--app-form-dialog-padding) !important;
+  overscroll-behavior: contain;
+  scroll-padding-block: var(--app-form-section-gap) 88px;
+}
 .v-dialog .v-card-actions {
-  min-height: 64px;
+  min-height: 60px;
+  padding: var(--app-form-footer-padding) var(--app-form-dialog-padding) !important;
   border-top: 1px solid rgba(var(--v-border-color), 0.1);
 }
 .v-snackbar .v-snackbar__wrapper {
@@ -382,7 +432,7 @@ html:lang(fa) .v-application .text-subtitle-1 { letter-spacing: 0 !important; }
     min-height: 44px;
   }
   .v-application .v-field__input {
-    min-height: 52px;
+    min-height: 48px;
   }
 }
 
@@ -393,6 +443,10 @@ html:lang(fa) .v-application .text-subtitle-1 { letter-spacing: 0 !important; }
     --app-space-5: 20px;
     --app-space-6: 26px;
     --app-space-8: 36px;
+    --app-form-control-height: 48px;
+    --app-form-field-gap: 14px;
+    --app-form-section-gap: 20px;
+    --app-form-dialog-padding: 16px;
   }
   .v-application .v-card-title {
     padding-inline: var(--app-space-4);
@@ -406,11 +460,27 @@ html:lang(fa) .v-application .text-subtitle-1 { letter-spacing: 0 !important; }
   }
   .v-application .v-dialog > .v-overlay__content > .v-card {
     max-height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .v-application .v-dialog .v-card-title,
+  .v-application .v-dialog .v-toolbar {
+    flex: 0 0 auto;
+  }
+  .v-application .v-dialog .v-card-text {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    max-height: none !important;
+    padding: var(--app-form-dialog-padding) !important;
+    -webkit-overflow-scrolling: touch;
   }
   .v-application .v-card-actions .v-btn {
     min-height: 44px;
   }
   .v-application .v-dialog .v-card-actions {
+    flex: 0 0 auto;
     position: sticky;
     bottom: 0;
     z-index: 2;
@@ -418,6 +488,10 @@ html:lang(fa) .v-application .text-subtitle-1 { letter-spacing: 0 !important; }
     background: rgba(var(--v-theme-surface-bright), 0.96);
     border-top: 1px solid var(--app-border);
     backdrop-filter: blur(12px);
+  }
+  .v-application .v-dialog .v-card-actions .v-btn:not(.v-btn--icon) {
+    flex: 1 1 0;
+    min-width: 0;
   }
   .v-application .v-main {
     padding-bottom: calc(70px + env(safe-area-inset-bottom));

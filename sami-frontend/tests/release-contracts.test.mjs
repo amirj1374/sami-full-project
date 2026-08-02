@@ -144,6 +144,29 @@ test('mobile navigation preferences are user-scoped and capped at four modules',
   assert.doesNotMatch(shell, /localStorage.*mobile/i)
 })
 
+test('all forms inherit the shared mobile-first rhythm and persistent labels', () => {
+  const vuetify = read('src/plugins/vuetify.ts')
+  const styles = read('src/styles/global.css')
+
+  for (const control of ['VTextField', 'VTextarea', 'VSelect', 'VAutocomplete', 'VCombobox', 'VFileInput']) {
+    assert.match(vuetify, new RegExp(`${control}: \\{[^}]*density: 'compact'[^}]*active: true`), control)
+  }
+  for (const token of [
+    '--app-form-control-height',
+    '--app-form-label-gap',
+    '--app-form-message-gap',
+    '--app-form-field-gap',
+    '--app-form-section-gap',
+    '--app-form-dialog-padding',
+    '--app-form-footer-padding',
+  ]) {
+    assert.match(styles, new RegExp(token), token)
+  }
+  assert.match(styles, /\.v-dialog \.v-card-actions[\s\S]*position: sticky/)
+  assert.match(styles, /env\(safe-area-inset-bottom\)/)
+  assert.match(styles, /max-height: calc\(100dvh/)
+})
+
 test('Legacy Asan archive upload uses the shared multipart request convention', () => {
   const legacyClient = read('src/api/legacyImports.ts')
 

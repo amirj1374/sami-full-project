@@ -39,17 +39,17 @@ withDefaults(
   border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
   border-radius: var(--app-radius);
   background: rgb(var(--v-theme-surface));
-  padding: var(--app-space-4) var(--app-space-5) var(--app-space-5);
+  padding: var(--app-space-4);
   box-shadow: var(--app-shadow-sm);
 }
 .app-form-section + .app-form-section {
-  margin-top: var(--app-space-4);
+  margin-top: var(--app-form-section-gap);
 }
 .app-form-section__head {
   display: flex;
   align-items: flex-start;
   gap: var(--app-space-3);
-  margin-bottom: var(--app-space-4);
+  margin-bottom: var(--app-form-field-gap);
 }
 .app-form-section__icon {
   flex: none;
@@ -79,5 +79,18 @@ withDefaults(
 }
 .app-form-section__aside {
   flex: none;
+}
+
+@media (max-width: 599px) {
+  .app-form-section {
+    padding: var(--app-space-3);
+  }
+  .app-form-section__head {
+    gap: var(--app-space-2);
+  }
+  .app-form-section__icon {
+    width: 34px;
+    height: 34px;
+  }
 }
 </style>
