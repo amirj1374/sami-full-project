@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Purchase receiving: full, partial and multiple receipts with per-line
@@ -63,10 +64,30 @@ public class PurchaseReceivingService {
     @Transactional(readOnly = true)
     public List<ReceiptResponse> history(Long purchaseId) {
         purchaseService.findWithDetailsOrThrow(purchaseId);
-        return receiptRepository.findByPurchaseIdAndTenantIdOrderByCreatedAtDesc(
-                        purchaseId, tenantContext.requireTenantId()).stream()
-                .map(ReceiptResponse::from)
+        Long tenantId = tenantContext.requireTenantId();
+        List<PurchaseReceipt> receipts = receiptRepository
+                .findByPurchaseIdAndTenantIdOrderByCreatedAtDesc(purchaseId, tenantId);
+        Map<Long, List<PurchaseUnitIdentifier>> identifiersByReceiptItem = identifierRepository
+                .findByReceiptItemReceiptIdInAndTenantIdOrderByReceiptItemIdAscUnitIndexAscIdAsc(
+                        receipts.stream().map(PurchaseReceipt::getId).toList(), tenantId)
+                .stream()
+                .collect(Collectors.groupingBy(identifier -> identifier.getReceiptItem().getId(),
+                        LinkedHashMap::new, Collectors.toList()));
+        return receipts.stream()
+                .map(receipt -> toResponse(receipt, identifiersByReceiptItem))
                 .toList();
+    }
+
+    private ReceiptResponse toResponse(PurchaseReceipt receipt,
+                                       Map<Long, List<PurchaseUnitIdentifier>> identifiersByReceiptItem) {
+        return new ReceiptResponse(receipt.getId(), receipt.getNote(), receipt.getCreatedByEmail(),
+                receipt.getCreatedAt(), receipt.getItems().stream().map(item ->
+                        new ReceiptResponse.ReceiptLineResponse(item.getPurchaseItem().getId(), item.getQuantity(),
+                                identifiersByReceiptItem.getOrDefault(item.getId(), List.of()).stream().map(identifier ->
+                                        new ReceiptResponse.IdentifierResponse(identifier.getUnitIndex(),
+                                                identifier.getIdentifierType().getName(), identifier.getValue()))
+                                        .toList()))
+                        .toList());
     }
 
     @Transactional
