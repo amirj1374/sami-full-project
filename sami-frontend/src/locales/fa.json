@@ -1142,7 +1142,10 @@
       "calendar": "تقویم کاری",
       "organization": "سازمان",
       "communication": "مرکز ارتباطات",
-      "inventory": "مدیریت موجودی"
+      "inventory": "مدیریت موجودی",
+      "legacy-import": "ورود و مقایسه داده‌های قدیمی",
+      "hamta": "مدیریت کدهای فعال‌سازی همتا",
+      "market-sync": "همگام‌سازی بازار"
     },
     "action": {
       "view": "مشاهده",

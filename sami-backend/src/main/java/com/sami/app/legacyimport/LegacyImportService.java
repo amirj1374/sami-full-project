@@ -2,6 +2,8 @@ package com.sami.app.legacyimport;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sami.app.common.exception.ApiException;
+import com.sami.app.common.exception.ErrorCode;
 import com.sami.app.common.storage.FileStorage;
 import com.sami.app.common.tenancy.TenantContext;
 import lombok.RequiredArgsConstructor;
@@ -31,13 +33,17 @@ public class LegacyImportService {
 
     @Transactional
     public Map<String,Object> upload(MultipartFile file) {
-        if (file == null || file.isEmpty()) throw new IllegalArgumentException("A non-empty RAR archive is required");
-        if (file.getSize() > properties.maxUploadBytes()) throw new IllegalArgumentException("Archive exceeds the configured upload limit");
+        if (file == null || file.isEmpty()) throw badRequest("A non-empty RAR archive is required");
+        if (file.getSize() > properties.maxUploadBytes()) throw badRequest("Archive exceeds the configured upload limit");
         String name = file.getOriginalFilename() == null ? "legacy.rar" : file.getOriginalFilename();
-        if (!name.toLowerCase().endsWith(".rar")) throw new IllegalArgumentException("Only .rar archives are accepted");
+        if (!name.toLowerCase().endsWith(".rar")) throw badRequest("Only .rar archives are accepted");
         try {
             byte[] bytes = file.getBytes();
-            AsanLegacyImportAdapter.requireRarSignature(bytes);
+            try {
+                AsanLegacyImportAdapter.requireRarSignature(bytes);
+            } catch (IllegalArgumentException ex) {
+                throw badRequest("Only valid RAR archives are accepted");
+            }
             Long tenant = tenants.requireTenantId();
             String hash = sha256(bytes);
             String key = storage.store("legacy-imports/" + tenant, bytes, "application/vnd.rar");
@@ -51,9 +57,9 @@ public class LegacyImportService {
                 return batch(id);
             } catch (DuplicateKeyException ex) {
                 storage.delete(key);
-                throw new IllegalArgumentException("This archive has already been uploaded for the current tenant");
+                throw badRequest("This archive has already been uploaded for the current tenant");
             }
-        } catch (IOException e) { throw new IllegalArgumentException("Archive upload could not be read", e); }
+        } catch (IOException e) { throw badRequest("Archive upload could not be read"); }
     }
 
     public List<Map<String,Object>> list() {
@@ -173,6 +179,7 @@ public class LegacyImportService {
     private static int severity(LegacyImportAdapter.Analysis a,String s) { return (int)a.messages().stream().filter(m->s.equals(m.severity())).count(); }
     private static Map<String,Object> summary(LegacyImportAdapter.Analysis a) { return Map.of("fileCount",a.files().size(),"datasetCount",a.datasets().size(),"supportedFiles",a.files().stream().filter(f->"SUPPORTED".equals(f.supportStatus())).count(),"partialFiles",a.files().stream().filter(f->"PARTIAL".equals(f.supportStatus())).count(),"unsupportedFiles",a.files().stream().filter(f->"UNSUPPORTED".equals(f.supportStatus())).count()); }
     private static String extension(String n) { int i=n.lastIndexOf('.'); return i<0?null:n.substring(i+1).toLowerCase(); }
+    private static ApiException badRequest(String message) { return new ApiException(ErrorCode.BAD_REQUEST, message); }
     private static String basename(String n) { String clean=n.replace('\\','/'); return clean.substring(clean.lastIndexOf('/')+1); }
     private static String sha256(byte[] bytes) { try { return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes)); } catch(Exception e){throw new IllegalStateException(e);} }
 }

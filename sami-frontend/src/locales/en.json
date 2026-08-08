@@ -1142,7 +1142,10 @@
       "calendar": "Business Calendar",
       "organization": "Organisation",
       "communication": "Communication Hub",
-      "inventory": "Inventory"
+      "inventory": "Inventory",
+      "legacy-import": "Legacy Data Import & Comparison",
+      "hamta": "HAMTA Activation Codes",
+      "market-sync": "Market Sync"
     },
     "action": {
       "view": "View",

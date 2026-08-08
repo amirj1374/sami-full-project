@@ -1,6 +1,8 @@
 package com.sami.app.legacyimport;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sami.app.common.exception.ApiException;
+import com.sami.app.common.exception.ErrorCode;
 import com.sami.app.common.storage.FileStorage;
 import com.sami.app.common.tenancy.TenantContext;
 import org.junit.jupiter.api.Test;
@@ -51,7 +53,8 @@ class LegacyImportServiceTest {
         when(jdbc.queryForObject(contains("INSERT INTO legacy_import_batches"),eq(Long.class),any(Object[].class)))
                 .thenThrow(new DuplicateKeyException("duplicate"));
 
-        assertThatThrownBy(() -> service.upload(file)).isInstanceOf(IllegalArgumentException.class)
+        assertThatThrownBy(() -> service.upload(file)).isInstanceOf(ApiException.class)
+                .satisfies(ex -> assertThat(((ApiException) ex).getErrorCode()).isEqualTo(ErrorCode.BAD_REQUEST))
                 .hasMessageContaining("already been uploaded");
         verify(storage).delete("opaque-key");
     }

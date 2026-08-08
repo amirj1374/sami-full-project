@@ -144,6 +144,23 @@ test('mobile navigation preferences are user-scoped and capped at four modules',
   assert.doesNotMatch(shell, /localStorage.*mobile/i)
 })
 
+test('Legacy Asan archive upload uses the shared multipart request convention', () => {
+  const legacyClient = read('src/api/legacyImports.ts')
+
+  assert.match(legacyClient, /new FormData\(\)/)
+  assert.match(legacyClient, /headers:\s*\{\s*'Content-Type':\s*'multipart\/form-data'\s*\}/)
+})
+
+test('active integration menu modules have localized server labels', () => {
+  const english = JSON.parse(read('src/locales/en.json'))
+  const persian = JSON.parse(read('src/locales/fa.json'))
+
+  for (const code of ['legacy-import', 'hamta', 'market-sync']) {
+    assert.ok(english.server.module[code], `Missing English module label for ${code}`)
+    assert.ok(persian.server.module[code], `Missing Persian module label for ${code}`)
+  }
+})
+
 test('HAMTA workflow is localized, permission-gated, IMEI-linked, and printable', () => {
   const router = read('src/router/index.ts')
   const view = read('src/views/HamtaView.vue')

@@ -6,7 +6,12 @@ export const legacyImportsApi = {
   list: (): Promise<LegacyBatch[]> => unwrap(http.get<ApiResponse<LegacyBatch[]>>('/v1/legacy-imports')),
   upload: (file: File): Promise<LegacyBatch> => {
     const data = new FormData(); data.append('file', file)
-    return unwrap(http.post<ApiResponse<LegacyBatch>>('/v1/legacy-imports', data))
+    // The shared client defaults JSON requests to application/json.  This
+    // endpoint accepts a multipart part named `file`, so it must opt into the
+    // established upload convention used by the file and customer clients.
+    return unwrap(http.post<ApiResponse<LegacyBatch>>('/v1/legacy-imports', data, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }))
   },
   analyze: (id: number): Promise<LegacyBatch> => unwrap(http.post<ApiResponse<LegacyBatch>>(`/v1/legacy-imports/${id}/analyze`)),
   execute: (id: number): Promise<LegacyBatch> => unwrap(http.post<ApiResponse<LegacyBatch>>(`/v1/legacy-imports/${id}/import`)),
