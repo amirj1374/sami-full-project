@@ -14,6 +14,7 @@ public record ProductResponse(
         BigDecimal price,
         int stockQuantity,
         boolean active,
+        boolean hamtaEligible,
         Instant createdAt,
         Instant updatedAt
 ) {
@@ -27,6 +28,7 @@ public record ProductResponse(
                 product.getPrice(),
                 product.getStockQuantity(),
                 product.isActive(),
+                product.isHamtaEligible(),
                 product.getCreatedAt(),
                 product.getUpdatedAt()
         );

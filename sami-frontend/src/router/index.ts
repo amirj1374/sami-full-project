@@ -114,6 +114,12 @@ const routes: RouteRecordRaw[] = [
         meta: { requiresAuth: true, permission: 'legacy-import:view' },
       },
       {
+        path: 'hamta',
+        name: 'hamta',
+        component: () => import('@/views/HamtaView.vue'),
+        meta: { requiresAuth: true, permission: 'hamta:view' },
+      },
+      {
         path: 'licensing',
         name: 'licensing',
         component: () => import('@/views/LicensingView.vue'),

@@ -48,4 +48,7 @@ public class Product extends BaseEntity {
 
     @Column(nullable = false)
     private boolean active;
+
+    @Column(name = "hamta_eligible", nullable = false)
+    private boolean hamtaEligible;
 }

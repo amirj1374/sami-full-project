@@ -31,6 +31,8 @@ public record CreateProductRequest(
         @PositiveOrZero(message = "Stock quantity must be zero or positive")
         int stockQuantity,
 
-        boolean active
+        boolean active,
+
+        boolean hamtaEligible
 ) {
 }

@@ -15,6 +15,7 @@ export const productSchema = (t: TranslateFn) =>
       .int(t('validation.stockInteger'))
       .min(0, t('validation.stockMin')),
     active: z.boolean(),
+    hamtaEligible: z.boolean(),
   })
 
 export type ProductForm = z.infer<ReturnType<typeof productSchema>>

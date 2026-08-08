@@ -2,6 +2,10 @@
 
 Last repository inspection: 2026-08-08
 
+Current schema extends through `V41`. CR-001 HAMTA activation-code custody is
+owned by canonical serialized inventory and integrates eligible used-phone
+Purchasing, Sales invoice/delivery, reporting, permissions and audit.
+
 This is the concise Codex technical snapshot. Current source/configuration is
 authoritative. Start with `AGENTS.md`, `docs/21-ai-agent-guide.md`, the relevant
 repository skill and `docs/HANDOFF_NEXT_SESSION.md`.

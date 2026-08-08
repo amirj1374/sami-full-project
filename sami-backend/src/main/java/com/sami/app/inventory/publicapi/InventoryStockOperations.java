@@ -21,7 +21,7 @@ public interface InventoryStockOperations {
 
     void customerReturn(CustomerReturnCommand command);
 
-    record SerialIdentity(String serialNumber, String imei) {
+    record SerialIdentity(String serialNumber, String imei, String hamtaActivationCode) {
     }
 
     record ReceiptLine(Long sourceLineId, Long productId, BigDecimal quantity,

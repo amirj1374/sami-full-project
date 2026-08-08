@@ -254,7 +254,10 @@ public final class PurchaseDtos {
         ) {
         }
 
-        public record UnitIdentifiers(@Valid List<IdentifierValue> identifiers) {
+        public record UnitIdentifiers(
+                @Valid List<IdentifierValue> identifiers,
+                @Size(max = 128) String hamtaActivationCode
+        ) {
         }
 
         public record IdentifierValue(

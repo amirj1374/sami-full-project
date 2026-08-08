@@ -65,6 +65,7 @@ public class ProductService {
                 .price(request.price())
                 .stockQuantity(request.stockQuantity())
                 .active(request.active())
+                .hamtaEligible(request.hamtaEligible())
                 .build();
 
         Product saved = productRepository.saveAndFlush(product);
@@ -83,6 +84,7 @@ public class ProductService {
         product.setPrice(request.price());
         product.setStockQuantity(request.stockQuantity());
         product.setActive(request.active());
+        product.setHamtaEligible(request.hamtaEligible());
         if (previousStock != request.stockQuantity()) {
             productRepository.flush();
             publishStockChange(product, previousStock, request.stockQuantity());

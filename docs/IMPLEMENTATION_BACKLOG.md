@@ -1,5 +1,9 @@
 # SAMI ERP implementation backlog
 
+CR-001 HAMTA activation-code management is implemented in `V41`; its remaining
+PostgreSQL/Flyway, container and live-stack gates are recorded in
+`HAMTA_ACTIVATION_CODE_IMPLEMENTATION_REPORT.md`.
+
 This is the canonical prioritized list of incomplete work. It complements the
 current status in `docs/05-module-catalog.md`; historical backlog and release
 reports remain evidence, not current scheduling authority.

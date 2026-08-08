@@ -2,6 +2,11 @@
 
 Updated: 2026-08-08 (Asia/Tehran)
 
+CR-001 HAMTA activation-code management is implemented through `V41`. Local
+backend/frontend source gates pass; PostgreSQL/Flyway, Docker/Compose/nginx and
+container health gates remain blocked by workstation tooling. See
+`HAMTA_ACTIVATION_CODE_IMPLEMENTATION_REPORT.md`.
+
 ## Current repository state
 
 - Authoritative branch: `development`.
