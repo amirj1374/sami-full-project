@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.LinkedHashMap;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -143,14 +144,24 @@ public class HamtaService {
     @Transactional(readOnly = true)
     public List<Map<String,Object>> report(Boolean delivered, Long productId) {
         Long tenantId = tenantContext.requireTenantId();
-        return jdbc.queryForList("""
+        StringBuilder sql = new StringBuilder("""
                 select h.id,p.name product_name,p.sku,iu.imei,iu.serial_number,h.activation_code,h.delivered,
                        h.delivery_datetime,h.delivered_by_user_id,h.delivered_sale_id,h.created_at
                 from hamta_activations h join inventory_serial_units iu on iu.id=h.serial_unit_id and iu.tenant_id=h.tenant_id
                 join products p on p.id=iu.product_id and p.tenant_id=h.tenant_id
-                where h.tenant_id=? and (? is null or h.delivered=?) and (? is null or p.id=?)
-                order by h.created_at desc
-                """, tenantId, delivered, delivered, productId, productId);
+                where h.tenant_id=?
+                """);
+        List<Object> parameters = new ArrayList<>(List.of(tenantId));
+        if (delivered != null) {
+            sql.append(" and h.delivered=?");
+            parameters.add(delivered);
+        }
+        if (productId != null) {
+            sql.append(" and p.id=?");
+            parameters.add(productId);
+        }
+        sql.append(" order by h.created_at desc");
+        return jdbc.queryForList(sql.toString(), parameters.toArray());
     }
 
     private void requireSale(Long saleId, boolean completed) {
