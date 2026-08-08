@@ -367,7 +367,9 @@ async function logout(): Promise<void> {
     </v-menu>
 
     <!-- Notifications -->
-    <StaffNotificationMenu />
+    <div class="app-mobile-notifications">
+      <StaffNotificationMenu />
+    </div>
 
     <!-- Theme switch -->
     <v-menu v-if="!mobile" location="bottom end">
@@ -588,7 +590,7 @@ async function logout(): Promise<void> {
 }
 .app-mobile-title {
   min-width: 0;
-  max-width: 42vw;
+  max-width: 28vw;
 }
 @media (max-width: 599px) {
   .app-topbar {
@@ -598,6 +600,14 @@ async function logout(): Promise<void> {
     width: 100%;
     max-width: none;
     padding: 18px 14px max(24px, env(safe-area-inset-bottom)) !important;
+  }
+}
+@media (max-width: 419px) {
+  .app-mobile-title {
+    display: none;
+  }
+  .app-mobile-notifications {
+    display: none;
   }
 }
 </style>

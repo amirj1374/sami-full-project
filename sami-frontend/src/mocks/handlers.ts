@@ -22,6 +22,32 @@ export const handlers = [
   http.get('/api/v1/users/me', () => ok(mockUser)),
   http.get('/api/v1/menu', () => ok(mockMenu)),
 
+  // Legacy import evidence fixtures support responsive/RTL UI validation without a database.
+  http.get('*/api/v1/legacy-imports', () => ok([{
+    id: 1, source_system: 'ASAN', original_filename: 'ji14050511.rar', sha256: 'fixture-sha256',
+    status: 'COMPLETED_WITH_WARNINGS', dataset_count: 57, record_count: 7444,
+    warning_count: 184, error_count: 0, created_at: '2026-08-08T08:00:00Z',
+  }])),
+  http.get('*/api/v1/legacy-imports/1/datasets', () => ok([{
+    id: 1, dataset_key: 'sh_tm_n.dat#My_Zone', source_table: 'My_Zone',
+    semantic_type: 'REFERENCE_GEOGRAPHY', support_status: 'SUPPORTED',
+    source_record_count: 7401, imported_record_count: 7401,
+    field_dictionary: [
+      { sourceField: 'ShahrCode', sourceType: 'NUMERIC', meaning: 'Legacy identifier/code', confidence: 'HIGH' },
+      { sourceField: 'Shahr', sourceType: 'MEMO', meaning: 'My_Zone source field', confidence: 'HIGH' },
+      { sourceField: 'Ostan', sourceType: 'MEMO', meaning: 'My_Zone source field', confidence: 'HIGH' },
+    ],
+  }])),
+  http.get('*/api/v1/legacy-imports/1/files', () => ok([{
+    id: 1, safe_name: 'sh_tm_n.dat', size_bytes: 2228224, format: 'MICROSOFT_JET', support_status: 'SUPPORTED',
+  }])),
+  http.get('*/api/v1/legacy-imports/1/messages', () => ok([{
+    severity: 'WARNING', code: 'UNSUPPORTED_LAYOUT', message: 'Binary layout was not decoded without authoritative schema.',
+  }])),
+  http.get('*/api/v1/legacy-imports/1/records', () => ok([{
+    source_record_id: 'fixture-1', legacy_code: '1001', semantic_type: 'REFERENCE_GEOGRAPHY',
+  }])),
+
   // Lifecycle: the stage catalogue and the modules that carry the statuses.
   // Registered before the generic /modules fallback so the literal path wins.
   http.get('*/api/v1/modules/lifecycle-statuses', () => ok(mockLifecycleStatuses)),
