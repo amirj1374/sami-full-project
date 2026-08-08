@@ -120,6 +120,12 @@ const routes: RouteRecordRaw[] = [
         meta: { requiresAuth: true, permission: 'hamta:view' },
       },
       {
+        path: 'market-sync',
+        name: 'market-sync',
+        component: () => import('@/views/MarketSyncView.vue'),
+        meta: { requiresAuth: true, permission: 'market-sync:view' },
+      },
+      {
         path: 'licensing',
         name: 'licensing',
         component: () => import('@/views/LicensingView.vue'),
