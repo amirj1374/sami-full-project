@@ -4,13 +4,14 @@ This is the documentation entry point. When documents disagree, current source
 and configuration win. Use the ownership table below before consulting
 historical reports.
 
-## Document ownership
+## Canonical current documents
 
 | Document | Canonical responsibility |
 |---|---|
 | `docs/PROJECT_INDEX.md` | Documentation map and trust hierarchy |
 | `.agents/SAMI_PROJECT_CONTEXT.md` | Concise reusable Codex technical context |
 | `docs/HANDOFF_NEXT_SESSION.md` | Current development handoff and immediate priorities |
+| `END_OF_DAY_HANDOFF_REPORT.md` | Latest session consolidation, validation and push evidence |
 | `docs/05-module-catalog.md` | Current module capability/status catalog |
 | `docs/15-testing-and-quality.md` | Current validation commands and required gates |
 | `docs/16-configuration-and-environments.md` | Configuration groups, ports and environment topology |
@@ -82,7 +83,7 @@ historical reports.
 - `scripts/verify-deployment.ps1` — non-mutating deployment smoke checks.
 - The actual deployed customer revision is currently unverified; historical reports do not establish live state.
 
-## Feature Reports
+## Historical implementation reports
 
 - `SALES_RELEASE_REPORT.md` and `SALES_DOMAIN_DESIGN.md` — Sales design/release evidence.
 - `INVENTORY_RELEASE_REPORT.md` — Inventory release evidence.
@@ -97,6 +98,7 @@ historical reports.
 ## Current Handoff
 
 - `docs/HANDOFF_NEXT_SESSION.md` — current repository facts, tooling blockers and next five tasks.
+- `END_OF_DAY_HANDOFF_REPORT.md` — latest consolidation, migration, validation, security and push evidence.
 - `.agents/SAMI_PROJECT_CONTEXT.md` — compact context for future Codex work.
 - `REPOSITORY_RECONCILIATION_REPORT.md` — latest cleanup/reconciliation evidence.
 
@@ -114,10 +116,12 @@ Specialized workflows live under `.agents/skills/`: project context,
 architecture audit, module/backend/frontend builders, contract validation,
 migration guardian, repository reconciliation, UI/UX, reporting and release
 gate. Contribution rules are in `docs/20-contribution-guide.md`.
-# Current implementation update — 2026-08-08
+## Current implementation update — 2026-08-08
 
 - Customer Purchase / Trade-in: Purchasing now supports Supplier or CRM Customer sellers with valuation, inspection, settlement, linked Sale, CRM timeline, inventory and IMEI integrity (`V38`).
 - Data Quality: production route and lifecycle are active (`V39`).
 - Legacy Asan import and comparison: tenant-safe staging, verified Jet parsing, RAR controls and conservative comparison are implemented (`V40`).
+- HAMTA activation-code custody is implemented through Purchasing, Inventory and Sales (`V41`).
+- Market Sync source/pricing/inventory/rules/health ownership is implemented; external source and website connectors remain partial (`V42`).
 - Font system: Vazirmatn Variable is globally bundled and browser-verified.
 - Full phase evidence and Web Push approval proposal: [`FULL_NEXT_PHASE_IMPLEMENTATION_REPORT.md`](../FULL_NEXT_PHASE_IMPLEMENTATION_REPORT.md).

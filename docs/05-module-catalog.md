@@ -24,14 +24,15 @@ alone.
 | Suppliers | COMPLETE | `supplier`; `SuppliersView.vue` | Supplier documents still overlap legacy storage ownership |
 | Products | COMPLETE | `product`; `ProductsView.vue` | Complete for basic CRUD; Inventory owns stock; variants/lots are not implemented |
 | Inventory | COMPLETE | `inventory`; `InventoryView.vue`; `InventoryStockOperations`; V32 | Moving weighted-average model; no speculative lot/variant model |
-| Purchasing | ACTIVE_DEVELOPMENT | `purchasing`; `PurchasesView.vue`; V33 | Supplier workflow is complete; customer-origin purchasing/trade-in is absent from current Git refs |
+| Purchasing | COMPLETE | `purchasing`; `PurchasesView.vue`; Customer Purchase dialogs; V33/V38 | Supplier and CRM Customer sellers, inspection, valuation, settlement, linked-Sale and Inventory receipt are implemented; Accounting posting remains outside the approved scope |
 | Sales | COMPLETE | `sales`; `SalesView.vue`; V31/V32/V36 | Inventory integration is canonical; no purchase-offset accounting contract |
-| HAMTA activation codes | ACTIVE_DEVELOPMENT | `hamta`; `HamtaView.vue`; Purchasing/Inventory/Sales integration; V41 | Source and fixture-backed UI gates pass; fresh PostgreSQL/Flyway, container stack and live bilingual smoke remain blocked |
-| Market Sync and Auto Pricing | ACTIVE_DEVELOPMENT | `marketsync`; `MarketSyncView.vue`; Product/Inventory/Sales/Scheduler integration; V42 | Local source/UI gates pass; live Rond contract, website connector, fresh PostgreSQL/Flyway and container validation remain blocked |
+| Legacy Asan Import and Comparison | COMPLETE | `legacyimport`; `LegacyImportsView.vue`; V40 | Customer-UI scope is complete and never writes canonical data; fresh Flyway/container/live-stack validation remains blocked |
+| HAMTA activation codes | COMPLETE | `hamta`; `HamtaView.vue`; Purchasing/Inventory/Sales integration; V41 | Implementation/source/fixture gates pass; fresh PostgreSQL/Flyway, container stack and live bilingual smoke remain blocked |
+| Market Sync and Auto Pricing | PARTIAL | `marketsync`; `MarketSyncView.vue`; Product/Inventory/Sales/Scheduler integration; V42 | Local implementation gates pass; authorized Rond contracts, real website connector, fresh Flyway and container/live validation remain missing |
 | Automation | COMPLETE | `automation`; `AutomationsView.vue`; V29 | Events are process-local; timeout cancellation is cooperative |
 | Licensing | COMPLETE | `licensing`; `LicensingView.vue`; V30 | External signing/billing providers remain deployment-specific |
 | Background Scheduler | COMPLETE | `common.scheduler`; `SchedulerView.vue`; V24 | Timeout does not guarantee termination of a non-cooperative handler |
-| Data Quality | PARTIAL | `dataquality`; typed client and `DataQualityView.vue`; V13 | V35 disables navigation; view exists but lacks current release/browser validation and broader workflow completion |
+| Data Quality | COMPLETE | `dataquality`; typed client and `DataQualityView.vue`; V13/V39 | Active at `/data-quality`; local contract, localization, build and responsive validation pass; production-like infrastructure gate remains pending |
 | Files and Media | PARTIAL | `files`; typed client and `FilesView.vue`; V18 | V35 disables navigation; central/legacy storage ownership and release validation remain incomplete |
 | Dynamic Forms and Metadata | PARTIAL | `metadata`; V15 | V35 disables navigation; backend/API exists but no complete routed management experience |
 | Notifications | PARTIAL | `notification`; staff inbox/menu; V37 | In-app notifications are implemented; backend Web Push subscriptions/VAPID delivery are not |
@@ -47,17 +48,9 @@ alone.
 | Installments | PLANNED | portal/workflow references only | Ownership and accounting boundary are undecided |
 | Accounting | PLANNED | Sales-local accounting entries only | No canonical General Ledger, chart of accounts or posting contract |
 
-The frontend source contains partial views for Data Quality, Files and
-Appointments. They are deliberately not static routes: V35 disables those
-modules and `sami-frontend/tests/release-contracts.test.mjs` protects that
-boundary. Re-enable them only through a dedicated completion task with a new
-forward migration and full release validation.
+The frontend source contains partial views for Files and Appointments. They are
+deliberately not static routes: V35 disables those modules and
+`sami-frontend/tests/release-contracts.test.mjs` protects that boundary.
 
 See [module notes](modules/README.md) for package entry points and
 [IMPLEMENTATION_BACKLOG.md](IMPLEMENTATION_BACKLOG.md) for prioritized work.
-# Current lifecycle update — 2026-08-08
-
-- **Purchasing:** active; supports both supplier-origin and customer-origin purchases/trade-ins. Customer-origin records remain CRM customers and include inspection, valuation, settlement, optional Sale linkage, inventory receipt and serial/IMEI integrity.
-- **Data Quality:** active and production-ready in both backend and frontend as of V39.
-- **Files/Media and Appointments/Resources:** remain partial and intentionally not directly routed.
-- **Web Push:** browser foundation only; backend VAPID/subscription delivery awaits architecture/security approval.

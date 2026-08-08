@@ -2,133 +2,128 @@
 
 Updated: 2026-08-08 (Asia/Tehran)
 
-CR-001 HAMTA activation-code management is implemented through `V41`. Market
-Sync and Auto Pricing is implemented through `V42`; its Rond source and website
-publication connectors remain intentionally disabled/fail-safe. Local
-backend/frontend source gates pass; PostgreSQL/Flyway, Docker/Compose/nginx and
-container health gates remain blocked by workstation tooling. See
-`HAMTA_ACTIVATION_CODE_IMPLEMENTATION_REPORT.md`.
-Market Sync evidence is in `MARKET_SYNC_AUTO_PRICING_IMPLEMENTATION_REPORT.md`.
+## Current authoritative state
 
-## Current repository state
+- Branch: `development`
+- End-of-day revision: resolve with `git rev-parse HEAD`; it is the pushed end-of-day documentation commit.
+- Remote: `origin/development` must match after the push verification recorded in `END_OF_DAY_HANDOFF_REPORT.md`.
+- Expected worktree: clean; one worktree; no stash.
+- Schema: contiguous Flyway V1–V42. Today added V38–V42 only; V1–V37 were not edited.
+- No deployment was performed.
 
-- Authoritative branch: `development`.
-- Cleanup baseline: `da44091645036e59f16fc6414a86aa542b94788c`.
-- This handoff is part of the current reconciliation commit; resolve its exact
-  revision with `git rev-parse HEAD` rather than copying a stale embedded SHA.
-- The worktree was clean and synchronized with `origin/development` before the
-  reconciliation pass. Verify again before implementation.
-- The repository contains one worktree, no stash and no feature branches in
-  the fetched local/remote refs.
-- Deployed customer/VPS revision remains unknown; no Git document proves the
-  current live SHA.
+## Completed today
 
-## Authoritative documents
+### Repository/documentation reconciliation — DOCUMENTATION_ONLY
 
-Read, in order:
+- Reconciled canonical guidance, workstation setup, testing, module catalog, backlog and reports.
+- Owners: `docs/PROJECT_INDEX.md`, this handoff and `.agents/SAMI_PROJECT_CONTEXT.md`.
 
-1. `AGENTS.md`
-2. `.agents/SAMI_PROJECT_CONTEXT.md`
-3. `docs/21-ai-agent-guide.md`
-4. the relevant `.agents/skills/*/SKILL.md`
-5. `docs/05-module-catalog.md`
-6. `docs/IMPLEMENTATION_BACKLOG.md`
+### Customer Purchase / Trade-in — COMPLETE implementation, release infrastructure pending
 
-Use `docs/PROJECT_INDEX.md` to locate specialized architecture, testing,
-configuration and deployment owners. Root release reports are historical
-evidence for their recorded revisions, not current-state authorities.
+- Supports Supplier or CRM Customer sellers, inspection/valuation/settlement, linked-Sale integrity, CRM history, canonical Inventory receipt and IMEI validation.
+- Backend: `purchasing/**`, CRM/Sales/Inventory public boundaries. Frontend: `PurchaseFormDialog.vue`, models/localization.
+- Migration: V38. Existing Purchasing route/menu; existing permissions remain canonical.
+- Data Quality activation: V39, route `/data-quality`, permission `data-quality:view`.
+- Evidence: backend/frontend source gates, production build and responsive/font browser checks passed; fresh Flyway/containers remain pending.
 
-## Current capability summary
+### Legacy Asan Import & Comparison — COMPLETE for customer UI testing
 
-- Complete core: Authentication/RBAC/Users, Dashboard, CRM, Suppliers,
-  Products basic CRUD, Inventory, supplier Purchasing, Sales, Automation,
-  Licensing, background Scheduler, PWA/Settings.
-- Active priority: customer-origin Purchasing/trade-in recovery and completion.
-- Partial/disabled: Data Quality, Files/Media, Dynamic Forms/Metadata,
-  Appointments/Resources, Knowledge, Portal, Organization and Communication.
-  Some have real backend/client/view code, but V35 deliberately excludes them
-  from production navigation until completion and release validation.
-- Notifications: real staff in-app inbox and opt-in hourly demo messages exist;
-  closed-app Web Push does not.
-- Planned: Repairs, Warranty, Installments and canonical Accounting.
-- Reports: module reports exist; general reporting remains partial.
+- Secure RAR/Jet staging, normalization, conservative comparison, tenant isolation, idempotency and archive limits; never writes canonical business data.
+- Backend: `legacyimport/**`. Frontend: `/legacy-imports`, `LegacyImportsView.vue`, typed client and mock fixtures.
+- Migration: V40. Permissions: `legacy-import:view/upload/execute/compare/delete`.
+- Evidence: focused supplied-archive/parser/security tests and full local gates passed. Fresh Flyway/containers remain pending.
 
-The detailed evidence and boundaries are in `docs/05-module-catalog.md`.
+### HAMTA Activation Code Management — COMPLETE implementation, release infrastructure pending
 
-## Recent completed work and canonical owners
+- Inventory-owned one-code-per-eligible-serial custody, controlled correction, Sales invoice/delivery exposure, reporting and audit.
+- Backend: `hamta/**`, Purchasing/Inventory/Product/Sales integration. Frontend: `/hamta`, `HamtaView.vue`, Product/Purchase/Sales integration.
+- Migration: V41. Permissions: `hamta:view/manage/correct/invoice/deliver/report`.
+- Evidence: focused contract tests, frontend gates and Persian responsive fixture passed. Fresh Flyway/live bilingual/container smoke remains pending.
 
-- Sales namespace/lifecycle/inventory integration: `sales/**`,
-  `SalesView.vue`, migrations V31/V32/V36.
-- Inventory ledger and public integration: `inventory/**`,
-  `InventoryStockOperations`, `InventoryView.vue`, V32.
-- Settings/mobile navigation/inbox: `ProfileView.vue`, `DefaultLayout.vue`,
-  `usePwa.ts`, `StaffNotificationMenu.vue`, user-experience store/API,
-  backend `notification/**` and user preferences, V37.
-- Form/design system: `src/plugins/vuetify.ts`, `src/styles/global.css` and
-  `src/components/AppFormSection.vue`. Prefer these owners over page-local
-  spacing, typography and input overrides.
-- Deployment automation: `scripts/deploy.ps1`,
-  `scripts/verify-deployment.ps1` and `DEPLOYMENT_AUTOMATION_GUIDE.md`.
+### Market Sync & Auto Pricing — PARTIAL production capability
 
-## Customer-purchase recovery status
+- Implemented tenant sources, structured adapter boundary, normalization, deterministic pricing, Inventory/Sales sold-lock integration, rules, history, scheduler, health and admin UI.
+- Backend: `marketsync/**`, Product/Inventory/Sales/Scheduler boundaries. Frontend: `/market-sync`, `MarketSyncView.vue`, Product market status.
+- Migration: V42. Permissions: `market-sync:view/manage-sources/manage-pricing/manage-publication/execute/view-history/view-errors`.
+- Local backend/frontend/browser gates passed. Production remains partial because authorized Rond structured contracts and a real website publication connector are absent; publication fails closed.
 
-The previous handoff named branch `codex/feature-customer-purchases`, worktree
-`.worktrees/customer-purchases` and commit `744ca38`. After `git fetch --prune
-origin`, none is present in this clone; `git cat-file -t 744ca38` reports an
-unknown object, and no local/remote branch or stash contains it. Its changed
-files therefore cannot be inspected or safely recovered from this repository.
+### Typography/mobile validation — COMPLETE validation
 
-Recovery procedure:
+- Vazirmatn remains the centralized global font. Persian RTL and English LTR production/mobile paths were validated with available fixtures/build output.
+- No separate typography architecture was introduced.
 
-1. On the old workstation or backup, verify the worktree and run
-   `git show --stat 744ca38`.
-2. Export the branch with `git bundle create customer-purchases.bundle
-   codex/feature-customer-purchases` or push it to an approved remote branch.
-3. Transfer the bundle without overwriting this worktree, then fetch it into a
-   reviewed feature branch.
-4. Use the repository-reconciler and migration-guardian workflows before any
-   rebase/cherry-pick.
-5. The old proposed customer-purchase V37 conflicts with the applied Settings
-   V37. Never rename an already-applied migration; recovered unfinished work
-   must introduce the next available forward migration, currently V38.
+## Partial work
 
-Do not reconstruct the feature from the old narrative alone.
+- Market Sync external connectivity: contained on `development`; no separate partial branch. Obtain an authorized structured Rond contract, implement/configure the real website publication adapter, then run live idempotency and failure tests.
+- Web Push: NOT_STARTED. Browser/service-worker foundation exists, but backend subscriptions, VAPID secret ownership and delivery require architecture/security approval in `FULL_NEXT_PHASE_IMPLEMENTATION_REPORT.md`.
+- Files/Media and Appointments/Resources remain partial and intentionally unrouted. Repairs, Warranty, Installments and canonical Accounting remain planned.
+- Local feature branches `codex/feature-legacy-asan-import`, `codex/feature-hamta-activation-code` and `codex/feature-market-sync-auto-pricing` contain no commits missing from `development` and do not need pushing.
 
-## Font and PWA status
+## Environment-blocked gates
 
-- Implemented in source: bundled `@fontsource-variable/vazirmatn`, import in
-  `src/main.ts`, global `--app-font-family`, and Vuetify application inheritance.
-- Not proven: actual mobile font requests/glyph rendering, computed styles,
-  offline/service-worker font behavior, and physical iOS/Android results.
-- PWA install banner, permanent Settings install action, update handling and
-  mobile-navigation preferences are implemented.
-- Web Push subscription persistence, VAPID configuration and backend delivery
-  provider are absent. Frontend Push API types/composables are only a foundation.
+- Docker Desktop/CLI, Compose and Buildx are unavailable: linux/amd64 images, production Compose, nginx proxy and container healthchecks were not run.
+- OpenSSH Client is unavailable; no deployment or remote verification was attempted.
+- A PostgreSQL 17 Windows service is running, but no approved isolated database credentials/configuration were available. Fresh PostgreSQL 16 Flyway V1→V42, upgrade-path validation, schema validation and database-backed integration tests were not run.
+- Real mobile/iOS/Android installed-PWA checks remain pending.
 
-## Database and validation
+## Home workstation checklist
 
-- Flyway is contiguous and unique from V1 through
-  `V37__user_experience_preferences_and_notifications.sql`.
-- PostgreSQL 16 is expected; Hibernate uses schema validation and Flyway owns
-  schema changes.
-- Canonical commands are in `docs/15-testing-and-quality.md`.
-- This workstation has Git and Node/npm, but only Java 17; Maven, Docker,
-  Compose/Buildx and OpenSSH are unavailable. Backend, Flyway, Docker and
-  browser release gates are therefore `BLOCKED_BY_WORKSTATION_TOOLING`.
-- Setup instructions: `docs/NEW_WORKSTATION_SETUP.md`.
+First synchronize exactly:
 
-## Next five tasks
+```powershell
+git fetch origin
+git switch development
+git pull --ff-only origin development
+git status
+git log -1 --oneline
+```
 
-| Priority | Task | Read first | Main ownership |
-|---|---|---|---|
-| 1 | Recover and reconcile customer-origin Purchasing source | this handoff; `PURCHASING_RELEASE_REPORT.md`; repository-reconciler and migration-guardian skills | Purchasing, CRM, Inventory, Sales, migration V38+ |
-| 2 | Verify/fix mobile font rendering on real mobile/PWA surfaces | `SAMI_FRONTEND_EXPERIENCE_REPORT.md`; PWA reports; frontend/UI skills | `main.ts`, `global.css`, Vuetify, nginx/service worker |
-| 3 | Complete and release Data Quality, Files or Appointments one module at a time | module catalog; backlog; relevant migrations/controllers/views | existing disabled module slice; new forward lifecycle migration |
-| 4 | Implement real Web Push only after architecture approval | `PUSH_NOTIFICATION_FOUNDATION.md`; contract/migration/backend skills | Notification Center → Communication provider boundary |
-| 5 | Restore full workstation/release gates and verify a named revision | new-workstation setup; testing doc; deployment guide | Java/Maven/PostgreSQL/Docker/browser/deployment tooling |
+Then validate without deploying:
 
-Do not start Repairs, Warranty, Installments or Accounting before their
-ownership and persisted contracts are explicitly approved.
-# 2026-08-08 implementation handoff
+```powershell
+$sha = git rev-parse HEAD
+$short = $sha.Substring(0,12)
+$project = "sami-release-$short"
+$timestamp = (Get-Date).ToUniversalTime().ToString('o')
 
-Customer-origin Purchasing and Data Quality activation are implemented on `development`; see `FULL_NEXT_PHASE_IMPLEMENTATION_REPORT.md`. The latest migrations are V38 (customer-origin purchases) and V39 (Data Quality lifecycle activation). Do not implement Web Push until the ownership/secret contract in that report is approved. Docker/OpenSSH installation still requires Windows administrator elevation; no deployment was performed.
+java -version
+mvn -version
+docker version
+docker compose version
+docker buildx version
+ssh -V
+
+Set-Location sami-backend
+mvn clean verify
+Set-Location ..
+
+docker buildx build --platform linux/amd64 --load `
+  --build-arg BUILD_BRANCH=development --build-arg BUILD_COMMIT=$sha `
+  --build-arg APP_VERSION=0.1.0 -t sami-backend:eod ./sami-backend
+docker buildx build --platform linux/amd64 --load `
+  --build-arg VITE_API_BASE_URL=/api --build-arg VITE_BUILD_BRANCH=development `
+  --build-arg VITE_BUILD_COMMIT=$sha --build-arg VITE_BUILD_TIMESTAMP=$timestamp `
+  --build-arg VITE_APP_VERSION=0.1.0 -t sami-frontend:eod ./sami-frontend
+
+$env:POSTGRES_PASSWORD='<strong throwaway value>'
+$env:JWT_SECRET='<at least 32 random bytes>'
+$env:PORTAL_JWT_SECRET='<different at least 32 random bytes>'
+$env:BOOTSTRAP_ADMIN_PASSWORD='<strong throwaway value>'
+$env:BUILD_BRANCH='development'
+$env:BUILD_COMMIT=$sha
+$env:BUILD_TIMESTAMP=$timestamp
+$env:BACKEND_IMAGE='sami-backend:eod'
+$env:FRONTEND_IMAGE='sami-frontend:eod'
+
+docker compose -p $project -f sami-backend/docker-compose.prod.yml config
+docker compose -p $project -f sami-backend/docker-compose.prod.yml up -d
+docker compose -p $project -f sami-backend/docker-compose.prod.yml ps
+docker compose -p $project -f sami-backend/docker-compose.prod.yml logs --no-color backend
+docker image inspect sami-backend:eod --format '{{.Os}}/{{.Architecture}} {{index .Config.Labels "org.opencontainers.image.revision"}}'
+docker image inspect sami-frontend:eod --format '{{.Os}}/{{.Architecture}} {{index .Config.Labels "org.opencontainers.image.revision"}}'
+Invoke-WebRequest -UseBasicParsing http://localhost/health
+Invoke-WebRequest -UseBasicParsing http://localhost/api/v1/menu -SkipHttpErrorCheck
+& ./scripts/verify-deployment.ps1 -BaseUrl http://localhost -PassThru
+```
+
+Acceptance requires fresh-volume Flyway V1→V42, backend integration/schema validation, healthy PostgreSQL/backend/frontend, nginx `/api`, login, provenance equal to `$sha`, and browser/mobile RTL/LTR smoke for Customer Purchase, Data Quality, Legacy Asan, HAMTA, Market Sync and font rendering. Tear down the throwaway stack afterward; do not deploy.
