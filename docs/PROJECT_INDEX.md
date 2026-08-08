@@ -92,6 +92,7 @@ historical reports.
 - `PWA_IMPLEMENTATION_REPORT.md` and `SETTINGS_MOBILE_NAVIGATION_NOTIFICATION_REPORT.md` — PWA/Settings evidence.
 - `ASAN_LEGACY_IMPORT_IMPLEMENTATION_REPORT.md` and `docs/features/LEGACY_ASAN_IMPORT_AND_COMPARISON.md` — secure legacy staging, archive evidence, comparison policy and operational requirements.
 - `HAMTA_ACTIVATION_CODE_IMPLEMENTATION_REPORT.md` and `docs/features/HAMTA_ACTIVATION_CODE.md` — CR-001 purchase, inventory, sales, delivery, security and validation evidence.
+- `MARKET_SYNC_AUTO_PRICING_IMPLEMENTATION_REPORT.md` and `docs/features/MARKET_SYNC_AND_AUTO_PRICING.md` — market-source, pricing, inventory, publication and validation boundaries.
 
 ## Current Handoff
 

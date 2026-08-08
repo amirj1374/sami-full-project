@@ -164,3 +164,12 @@ test('HAMTA workflow is localized, permission-gated, IMEI-linked, and printable'
   assert.ok(persian.hamta.activationCode)
   assert.equal(Object.keys(english.hamta).sort().join(','), Object.keys(persian.hamta).sort().join(','))
 })
+
+test('Market Sync is localized, permission-gated, responsive, and backend-priced', () => {
+  const router = read('src/router/index.ts'); const view = read('src/views/MarketSyncView.vue');
+  const en = JSON.parse(read('src/locales/en.json')); const fa = JSON.parse(read('src/locales/fa.json'))
+  assert.match(router, /path:\s*'market-sync'[\s\S]*?permission:\s*'market-sync:view'/)
+  for (const permission of ['manage-sources','manage-pricing','manage-publication','execute']) assert.match(view, new RegExp(`market-sync:${permission}`))
+  assert.match(view, /marketSyncApi\.preview\(profile\)/); assert.match(view, /overflow-x:hidden/)
+  assert.equal(Object.keys(en.marketSync).sort().join(','), Object.keys(fa.marketSync).sort().join(','))
+})

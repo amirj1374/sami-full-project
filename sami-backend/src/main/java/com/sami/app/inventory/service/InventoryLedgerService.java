@@ -332,6 +332,10 @@ public class InventoryLedgerService {
                 entityId, detail == null ? Map.of() : detail, CurrentActor.id(), Instant.now()));
     }
 
+    public BigDecimal onHand(Long tenantId, Long warehouseId, Long locationId, Long productId) {
+        return lockBalance(tenantId, warehouseId, locationId, productId).onHand();
+    }
+
     private BalanceState lockBalance(Long tenantId, Long warehouseId, Long locationId, Long productId) {
         jdbc.update("""
                 insert into inventory_balances(tenant_id,warehouse_id,location_id,product_id)

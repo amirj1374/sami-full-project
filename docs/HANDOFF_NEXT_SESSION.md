@@ -2,10 +2,13 @@
 
 Updated: 2026-08-08 (Asia/Tehran)
 
-CR-001 HAMTA activation-code management is implemented through `V41`. Local
+CR-001 HAMTA activation-code management is implemented through `V41`. Market
+Sync and Auto Pricing is implemented through `V42`; its Rond source and website
+publication connectors remain intentionally disabled/fail-safe. Local
 backend/frontend source gates pass; PostgreSQL/Flyway, Docker/Compose/nginx and
 container health gates remain blocked by workstation tooling. See
 `HAMTA_ACTIVATION_CODE_IMPLEMENTATION_REPORT.md`.
+Market Sync evidence is in `MARKET_SYNC_AUTO_PRICING_IMPLEMENTATION_REPORT.md`.
 
 ## Current repository state
 

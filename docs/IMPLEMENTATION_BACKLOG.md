@@ -8,6 +8,11 @@ This is the canonical prioritized list of incomplete work. It complements the
 current status in `docs/05-module-catalog.md`; historical backlog and release
 reports remain evidence, not current scheduling authority.
 
+Market Sync and Auto Pricing is implemented in `V42`. Production readiness is
+blocked on an authorized structured Rond contract, a real website publication
+connector, fresh PostgreSQL/Flyway and container/live-stack validation; see
+`MARKET_SYNC_AUTO_PRICING_IMPLEMENTATION_REPORT.md`.
+
 ## P0 — release/user-blocking
 
 ### Recover customer-origin Purchasing source

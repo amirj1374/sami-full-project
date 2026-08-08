@@ -163,6 +163,23 @@ public class InventoryStockService implements InventoryStockOperations {
                 command.sourceId(), Map.of("warehouseId", warehouse.getId()));
     }
 
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void setMarketAvailability(MarketAvailabilityCommand command) {
+        Long tenantId = tenantContext.requireTenantId();
+        InventoryWarehouse warehouse = ledger.salesWarehouse(tenantId, null);
+        Long locationId = ledger.requireLocation(tenantId, warehouse.getId(), null);
+        BigDecimal onHand = ledger.onHand(tenantId, warehouse.getId(), locationId, command.productId());
+        BigDecimal target = command.available() ? BigDecimal.ONE : BigDecimal.ZERO;
+        int comparison = target.compareTo(onHand);
+        if (comparison > 0) ledger.increase(tenantId, command.productId(), warehouse.getId(), locationId,
+                target.subtract(onHand), command.unitCost(), "ADJUSTMENT_IN", "MARKET_SOURCE", command.sourceId(),
+                command.productId(), command.operationKey(), "Market source availability");
+        else if (comparison < 0) ledger.decrease(tenantId, command.productId(), warehouse.getId(), locationId,
+                onHand.subtract(target), "ADJUSTMENT_OUT", "MARKET_SOURCE", command.sourceId(), command.productId(),
+                command.operationKey(), "Market source unavailable");
+    }
+
     /** Product stock compatibility writes become real Inventory adjustments. */
     @EventListener
     @Transactional(propagation = Propagation.MANDATORY)

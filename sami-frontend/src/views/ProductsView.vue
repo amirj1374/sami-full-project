@@ -9,6 +9,7 @@ import { useFormat } from '@/composables/useFormat'
 import ProductFormDialog from '@/components/ProductFormDialog.vue'
 import AppPageHeader from '@/components/AppPageHeader.vue'
 import type { Product } from '@/types/models'
+import { marketSyncApi, type MarketRow } from '@/api/marketSync'
 
 const { t } = useI18n()
 const { formatNumber } = useFormat()
@@ -95,6 +96,14 @@ function onSaved() {
 // --- Delete confirmation --------------------------------------------------
 const deleteTarget = ref<Product | null>(null)
 const deleting = ref(false)
+const marketStatus = ref<MarketRow | null>(null)
+const marketStatusOpen = ref(false)
+
+async function showMarketStatus(product: Product) {
+  clearError()
+  try { marketStatus.value = await marketSyncApi.productStatus(product.id); marketStatusOpen.value = true }
+  catch (err) { setError(err) }
+}
 
 async function confirmDelete() {
   if (!deleteTarget.value) return
@@ -174,6 +183,7 @@ function formatPrice(value: number): string {
           </v-chip>
         </template>
         <template #[`item.actions`]="{ item }">
+          <v-btn v-if="can('market-sync:view') && item.sku.startsWith('SIM-')" icon="mdi-sync-circle" size="small" variant="text" :aria-label="t('marketSync.title')" @click="showMarketStatus(item)" />
           <v-btn
             v-if="can('products:edit')"
             icon="mdi-pencil"
@@ -209,6 +219,11 @@ function formatPrice(value: number): string {
           <v-btn color="error" :loading="deleting" @click="confirmDelete">{{ t('common.delete') }}</v-btn>
         </v-card-actions>
       </v-card>
+    </v-dialog>
+    <v-dialog v-model="marketStatusOpen" max-width="620">
+      <v-card rounded="xl"><v-card-title>{{ t('marketSync.title') }}</v-card-title><v-card-text v-if="marketStatus">
+        <v-list lines="two"><v-list-item :title="t('marketSync.source')" :subtitle="marketStatus.source_name"/><v-list-item title="Product Code" :subtitle="marketStatus.normalized_product_code"/><v-list-item :title="t('marketSync.previewSourcePrice')" :subtitle="String(marketStatus.source_price)"/><v-list-item :title="t('marketSync.finalPrice')" :subtitle="String(marketStatus.final_price)"/><v-list-item :title="t('marketSync.status')" :subtitle="`${marketStatus.availability_state} · ${marketStatus.publication_state} · ${marketStatus.publication_reason}`"/></v-list>
+      </v-card-text><v-card-actions><v-spacer/><v-btn @click="marketStatusOpen=false">{{t('common.close')}}</v-btn></v-card-actions></v-card>
     </v-dialog>
   </div>
 </template>

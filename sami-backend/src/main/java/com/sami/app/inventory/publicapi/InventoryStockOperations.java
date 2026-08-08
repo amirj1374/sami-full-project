@@ -21,6 +21,11 @@ public interface InventoryStockOperations {
 
     void customerReturn(CustomerReturnCommand command);
 
+    void setMarketAvailability(MarketAvailabilityCommand command);
+
+    record MarketAvailabilityCommand(Long productId, Long sourceId, boolean available,
+                                     BigDecimal unitCost, String operationKey) {}
+
     record SerialIdentity(String serialNumber, String imei, String hamtaActivationCode) {
     }
 

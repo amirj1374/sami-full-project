@@ -27,6 +27,7 @@ alone.
 | Purchasing | ACTIVE_DEVELOPMENT | `purchasing`; `PurchasesView.vue`; V33 | Supplier workflow is complete; customer-origin purchasing/trade-in is absent from current Git refs |
 | Sales | COMPLETE | `sales`; `SalesView.vue`; V31/V32/V36 | Inventory integration is canonical; no purchase-offset accounting contract |
 | HAMTA activation codes | ACTIVE_DEVELOPMENT | `hamta`; `HamtaView.vue`; Purchasing/Inventory/Sales integration; V41 | Source and fixture-backed UI gates pass; fresh PostgreSQL/Flyway, container stack and live bilingual smoke remain blocked |
+| Market Sync and Auto Pricing | ACTIVE_DEVELOPMENT | `marketsync`; `MarketSyncView.vue`; Product/Inventory/Sales/Scheduler integration; V42 | Local source/UI gates pass; live Rond contract, website connector, fresh PostgreSQL/Flyway and container validation remain blocked |
 | Automation | COMPLETE | `automation`; `AutomationsView.vue`; V29 | Events are process-local; timeout cancellation is cooperative |
 | Licensing | COMPLETE | `licensing`; `LicensingView.vue`; V30 | External signing/billing providers remain deployment-specific |
 | Background Scheduler | COMPLETE | `common.scheduler`; `SchedulerView.vue`; V24 | Timeout does not guarantee termination of a non-cooperative handler |
