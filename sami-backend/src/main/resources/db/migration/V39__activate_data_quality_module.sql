@@ -5,5 +5,5 @@ UPDATE modules SET
     frontend_status_id = (SELECT id FROM module_statuses WHERE code = 'ACTIVE' AND tenant_id IS NULL),
     progress_percentage = 100,
     is_production_ready = TRUE,
-    is_active = TRUE
+    enabled = TRUE
 WHERE code = 'data-quality';
