@@ -187,6 +187,27 @@ Explicitly determine whether a task affects:
 Never invent or propagate hardcoded tenant, company, branch, user, permission
 or environment defaults.
 
+## Disposable Docker validation cleanup
+
+Every task that creates Docker resources for backend, integration, Flyway,
+feature-smoke, disposable PostgreSQL, or temporary frontend/backend-stack
+validation must remove those resources when the task finishes. Use a unique,
+test-specific Compose project name and prefer:
+
+```text
+docker compose --project-name <test-project> down --remove-orphans
+```
+
+Use `--rm` for one-shot Maven or test containers where practical. Remove only
+containers, networks, and volumes that were created for the named disposable
+test project. Remove temporary volumes only when they are explicitly marked
+temporary; never delete production, development, or unrelated persistent
+volumes. Do not leave stopped test containers behind unless intentionally
+preserved for debugging, and record that exception and its owner.
+
+Every validation report must state the containers created and removed, networks
+removed, temporary volumes removed, and persistent volumes preserved.
+
 ## Domain-specific safety
 
 - Never edit an applied Flyway migration; create the next unique forward

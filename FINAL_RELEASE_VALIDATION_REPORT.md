@@ -21,3 +21,15 @@ NOT_READY_FOR_RELEASE
 ## Remaining release gates
 
 The scheduler remediation has not yet been followed by the complete final gate on the final SHA: full backend verify, fresh frontend image tagged with the final SHA, frontend regression commands, production Compose frontend/nginx checks, and authenticated browser/mobile smoke. These are required before release approval.
+
+## Disposable validation cleanup
+
+- Removed containers: `sami-release-b534ce4-{db,backend,frontend}-1` and
+  `sami-release-e497-{db,backend,frontend}-1` (six total).
+- Removed networks: `sami-release-b534ce4_default` and
+  `sami-release-e497_default`.
+- Removed explicitly temporary, project-prefixed volumes: the `db-data`,
+  `uploads`, `managed-files`, and `file-staging` volumes for each release test
+  project (eight total).
+- Preserved persistent volumes and all containers outside those two unique
+  disposable Compose projects.

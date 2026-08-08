@@ -28,6 +28,29 @@ undocumented workflow changes.
 - `AGENTS.md`
 - `docs/21-ai-agent-guide.md`
 - `docs/22-ai-development-history.md`
+
+## 2026-08-08 - Disposable Docker validation cleanup
+
+### Added
+
+- Mandatory cleanup of Docker resources created for backend, integration,
+  Flyway, smoke-test and temporary-stack validation
+- Unique test-specific Compose project names and `down --remove-orphans`
+  as the preferred cleanup path
+- Explicit protection for production, development and unrelated persistent
+  volumes
+- Required cleanup inventory in every validation report
+
+### Reason
+
+Prevent stale disposable databases, stopped containers, networks and temporary
+volumes from accumulating or being confused with long-lived environments.
+
+### Files affected
+
+- `docs/21-ai-agent-guide.md`
+- `.agents/skills/sami-release-gate/SKILL.md`
+- `docs/22-ai-development-history.md`
 - `PROJECT_SETUP_AND_DEPLOYMENT.md`
 
 The root operational guide was added in the same documentation change so future

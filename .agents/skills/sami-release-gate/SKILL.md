@@ -38,6 +38,14 @@ When present, verify:
 
 Validate API contracts, environment variables, proxy/CORS configuration (including port `7474` only when project/current requested configuration uses it), authentication, permissions and lifecycle metadata.
 
+For every disposable Docker validation environment, use a unique Compose project
+name and clean it after validation with `docker compose --project-name
+<test-project> down --remove-orphans`. Use `--rm` for one-shot test containers
+where practical. Remove only resources created for that test project, and only
+remove volumes explicitly marked temporary; preserve production, development,
+and unrelated persistent volumes. Record every intentionally preserved stopped
+container for debugging.
+
 Generate a reproducible module matrix. Never infer implementation from schema, menu, route, placeholder or metadata. Do not label `SCHEMA_ONLY` as `BACKEND_READY`; flag every falsely complete module.
 
 ## Verdict
@@ -58,3 +66,5 @@ Generate a reproducible module matrix. Never infer implementation from schema, m
 - blocking issues and non-blocking risks;
 - exact reproducible commands;
 - unavailable checks and why.
+- Docker cleanup inventory: containers created/removed, networks removed,
+  temporary volumes removed, and persistent volumes preserved.
