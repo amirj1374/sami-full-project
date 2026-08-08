@@ -1,60 +1,113 @@
 # SAMI ERP Project Index
 
-## Start here
+This is the documentation entry point. When documents disagree, current source
+and configuration win. Use the ownership table below before consulting
+historical reports.
 
-- Workspace rules: `AGENTS.md`
-- Current technical snapshot: `.agents/SAMI_PROJECT_CONTEXT.md`
-- AI workflow: `docs/21-ai-agent-guide.md`
-- Next-session state: `docs/HANDOFF_NEXT_SESSION.md`
-- Project overview and repository map: `docs/00-project-overview.md`, `docs/02-repository-map.md`
+## Document ownership
 
-## Architecture and engineering
+| Document | Canonical responsibility |
+|---|---|
+| `docs/PROJECT_INDEX.md` | Documentation map and trust hierarchy |
+| `.agents/SAMI_PROJECT_CONTEXT.md` | Concise reusable Codex technical context |
+| `docs/HANDOFF_NEXT_SESSION.md` | Current development handoff and immediate priorities |
+| `docs/05-module-catalog.md` | Current module capability/status catalog |
+| `docs/15-testing-and-quality.md` | Current validation commands and required gates |
+| `docs/16-configuration-and-environments.md` | Configuration groups, ports and environment topology |
+| `PROJECT_SETUP_AND_DEPLOYMENT.md` | Local startup and deployment topology |
+| `DEPLOYMENT_AUTOMATION_GUIDE.md` | Canonical automated release/deploy/rollback workflow |
+| `docs/IMPLEMENTATION_BACKLOG.md` | Prioritized incomplete and future work |
+| Feature/release reports | Historical evidence for the named revision only |
 
-- System/domain: `docs/03-system-architecture.md`, `docs/04-domain-model.md`
-- Backend/frontend: `docs/14-backend-architecture.md`, `docs/13-frontend-architecture.md`
-- Database/Flyway: `docs/07-database-and-migrations.md`
-- APIs/integrations: `docs/08-api-and-integrations.md`
-- Authentication/RBAC/security: `docs/09-authentication-and-authorization.md`, `docs/18-security.md`
-- Tenancy/organization: `docs/10-multi-tenancy-and-organization.md`
-- Events/automation/scheduler: `docs/11-events-automation-and-scheduling.md`
-- Files/communications: `docs/12-files-and-communications.md`
-- Testing/configuration/operations: `docs/15-testing-and-quality.md`, `docs/16-configuration-and-environments.md`, `docs/17-deployment-and-operations.md`, `docs/19-observability.md`
-- Risks/roadmap/history: `docs/23-known-risks-and-technical-debt.md`, `docs/24-roadmap-and-open-decisions.md`, `docs/22-ai-development-history.md`
+## Start Here
 
-## Module map
+- `AGENTS.md` — mandatory repository policy.
+- `.agents/SAMI_PROJECT_CONTEXT.md` — fast technical context.
+- `docs/HANDOFF_NEXT_SESSION.md` — current state and next actions.
+- `docs/21-ai-agent-guide.md` — mandatory AI development workflow.
+- `docs/00-project-overview.md` and `docs/02-repository-map.md` — product and monorepo orientation.
+- `docs/NEW_WORKSTATION_SETUP.md` — Windows prerequisites and verification.
 
-| Module | Backend package / frontend surface | Primary evidence |
-|---|---|---|
-| Automation | `com.sami.app.automation`, `AutomationsView.vue` | `AUTOMATION_RELEASE_REPORT.md` |
-| Licensing | `com.sami.app.licensing`, `LicensingView.vue` | `LICENSING_RELEASE_REPORT.md` |
-| Sales | `com.sami.app.sales`, `SalesView.vue` | `SALES_RELEASE_REPORT.md`, `SALES_DOMAIN_DESIGN.md` |
-| Inventory | `com.sami.app.inventory`, `InventoryView.vue` | `INVENTORY_RELEASE_REPORT.md` |
-| Purchasing | `com.sami.app.purchasing`, `PurchasesView.vue` | `PURCHASING_RELEASE_REPORT.md`; open customer work in handoff |
-| CRM/Customers | `com.sami.app.crm`, `CustomersView.vue` | module catalog and final implementation reports |
-| Suppliers | `com.sami.app.supplier`, `SuppliersView.vue` | module catalog |
-| Scheduler | `com.sami.app.common.scheduler`, `SchedulerView.vue` | events/scheduling architecture |
-| Notifications/PWA | `com.sami.app.notification`, Settings/shell/SW | `SETTINGS_MOBILE_NAVIGATION_NOTIFICATION_REPORT.md`, `PUSH_NOTIFICATION_FOUNDATION.md`, `PWA_IMPLEMENTATION_REPORT.md` |
-| Files/Knowledge/Data Quality/Metadata | corresponding backend packages and module views | `docs/05-module-catalog.md`, coverage report |
-| Repairs/Appointments/remaining domains | see module catalog and routes | `docs/05-module-catalog.md`, `FULL_STACK_COVERAGE_AND_TEST_REPORT.md` |
+## Architecture
 
-## Deployment and release
+- `docs/03-system-architecture.md` — system boundaries and dependency direction.
+- `docs/04-domain-model.md` — domain concepts and ownership.
+- `docs/08-api-and-integrations.md` — API conventions and integration seams.
+- `docs/09-authentication-and-authorization.md` and `docs/18-security.md` — authentication, RBAC and security.
+- `docs/10-multi-tenancy-and-organization.md` — tenant and organization scope.
+- `docs/11-events-automation-and-scheduling.md` — events, automation and schedulers.
+- `docs/12-files-and-communications.md` — shared file and communication foundations.
+- `docs/23-known-risks-and-technical-debt.md` and `docs/24-roadmap-and-open-decisions.md` — risks and unresolved architecture decisions.
 
-- Canonical automation guide: `DEPLOYMENT_AUTOMATION_GUIDE.md`
-- Commands and Linux guide: `DEPLOYMENT_COMMANDS.md`, `LINUX_SERVER_DOCKER_DEPLOYMENT_GUIDE.md`
-- Integration evidence: `DEVELOPMENT_INTEGRATION_REPORT.md`
-- Release/readiness evidence: `FINAL_IMPLEMENTATION_REPORT.md`, `FULL_STACK_COVERAGE_AND_TEST_REPORT.md`, `DEPLOYMENT_READINESS_REPORT.md`
-- Rollback/verification scripts: `scripts/deploy-sami.ps1`, `scripts/verify-deployment.ps1`
+## Backend
 
-## UX, localization, exports and PWA
+- `docs/14-backend-architecture.md` — Java/Spring layering and conventions.
+- `sami-backend/README.md` — backend-local startup and command reference.
+- `.agents/skills/sami-backend-builder/SKILL.md` — backend implementation workflow.
+- `.agents/skills/sami-contract-validator/SKILL.md` — API/client reconciliation workflow.
 
-- UI redesign: `SAMI_COMPLETE_UI_REDESIGN_REPORT.md`, `SAMI_FRONTEND_EXPERIENCE_REPORT.md`
-- Localization/RTL: `LOCALIZATION_COMPLETION_REPORT.md`
-- Excel/CSV encoding: `EXCEL_EXPORT_ENCODING_FIX_REPORT.md`
-- PWA/push: `PWA_IMPLEMENTATION_REPORT.md`, `PUSH_NOTIFICATION_FOUNDATION.md`
-- Settings/mobile navigation/in-app notifications: `SETTINGS_MOBILE_NAVIGATION_NOTIFICATION_REPORT.md`
+## Frontend/UI
 
-## Repository-scoped implementation guides
+- `docs/13-frontend-architecture.md` — Vue application structure.
+- `SAMI_FRONTEND_EXPERIENCE_REPORT.md` — historical UX foundation evidence.
+- `LOCALIZATION_COMPLETION_REPORT.md` — historical localization/RTL evidence.
+- `PWA_IMPLEMENTATION_REPORT.md` and `PUSH_NOTIFICATION_FOUNDATION.md` — PWA implementation and explicitly incomplete Web Push boundary.
+- `SETTINGS_MOBILE_NAVIGATION_NOTIFICATION_REPORT.md` — Settings, mobile navigation and inbox implementation evidence.
 
-- Skills live under `.agents/skills/`: project context, architecture audit, module/backend/frontend builders, contract validator, migration guardian, repository reconciler, UI/UX designer, reporter and release gate.
-- Contribution conventions: `docs/20-contribution-guide.md`.
-- Business workflows and glossary: `docs/06-business-workflows.md`, `docs/22-glossary.md`.
+## Modules
+
+- `docs/05-module-catalog.md` — canonical current status for every major module.
+- `docs/modules/README.md` — package entry points and extension guidance.
+- `docs/06-business-workflows.md` — implemented workflow map.
+- `docs/22-glossary.md` — shared business terminology.
+- `docs/IMPLEMENTATION_BACKLOG.md` — prioritized completion work.
+
+## Database/Migrations
+
+- `docs/07-database-and-migrations.md` — Flyway ownership and migration rules.
+- `.agents/skills/sami-migration-guardian/SKILL.md` — migration safety workflow.
+- Current migration directory: `sami-backend/src/main/resources/db/migration`.
+
+## Testing
+
+- `docs/15-testing-and-quality.md` — canonical commands and release gates.
+- `PROJECT_BACKLOG/DEFINITION_OF_DONE.md` — backlog completion criteria.
+- `.github/workflows/ci.yml` — automated CI configuration when present.
+
+## Deployment
+
+- `PROJECT_SETUP_AND_DEPLOYMENT.md` — setup, local execution and production topology.
+- `DEPLOYMENT_AUTOMATION_GUIDE.md` — canonical `scripts/deploy.ps1` workflow.
+- `DEPLOYMENT_COMMANDS.md` and `LINUX_SERVER_DOCKER_DEPLOYMENT_GUIDE.md` — operational command references.
+- `scripts/verify-deployment.ps1` — non-mutating deployment smoke checks.
+- The actual deployed customer revision is currently unverified; historical reports do not establish live state.
+
+## Feature Reports
+
+- `SALES_RELEASE_REPORT.md` and `SALES_DOMAIN_DESIGN.md` — Sales design/release evidence.
+- `INVENTORY_RELEASE_REPORT.md` — Inventory release evidence.
+- `PURCHASING_RELEASE_REPORT.md` — supplier Purchasing release evidence.
+- `AUTOMATION_RELEASE_REPORT.md` — Automation release evidence.
+- `LICENSING_RELEASE_REPORT.md` — Licensing release evidence.
+- `PWA_IMPLEMENTATION_REPORT.md` and `SETTINGS_MOBILE_NAVIGATION_NOTIFICATION_REPORT.md` — PWA/Settings evidence.
+
+## Current Handoff
+
+- `docs/HANDOFF_NEXT_SESSION.md` — current repository facts, tooling blockers and next five tasks.
+- `.agents/SAMI_PROJECT_CONTEXT.md` — compact context for future Codex work.
+- `REPOSITORY_RECONCILIATION_REPORT.md` — latest cleanup/reconciliation evidence.
+
+## Historical Reports
+
+Root-level files ending in `_REPORT.md` or `_AUDIT.md` preserve implementation,
+branch-consolidation and release evidence for their recorded SHA/date. Statements
+such as migration ranges, branch names, stashes, tool availability or “current”
+status inside them are historical unless a canonical document above confirms
+them. Preserve these reports; do not use them as the current handoff.
+
+## Repository-scoped workflows
+
+Specialized workflows live under `.agents/skills/`: project context,
+architecture audit, module/backend/frontend builders, contract validation,
+migration guardian, repository reconciliation, UI/UX, reporting and release
+gate. Contribution rules are in `docs/20-contribution-guide.md`.

@@ -1,31 +1,79 @@
 # Testing and quality
 
-## Current evidence
+This is the canonical owner of validation commands and gates. Historical
+reports record what passed at a named revision; they are not evidence that the
+current checkout has passed.
 
-Backend tests are concentrated in pure unit tests for authorization, JWT,
-dashboard KPIs, files, knowledge rules, profile validation, calendars and
-scheduling arithmetic. A deployment-configuration contract test is present in
-the current worktree. No Testcontainers/PostgreSQL integration suite was found.
+## Frontend
 
-The frontend defines `type-check` and `build`, but no lint, unit, component, or
-end-to-end test script.
+From `sami-frontend`:
 
-CI runs Maven verification and frontend install/type-check/build for pushes and
-pull requests targeting `development`.
+```powershell
+npm ci
+npm test
+npm run type-check
+npm run build
+npm run dev
+```
 
-## Required quality model
+- `npm test` runs Node-based release/source-contract tests, including exact
+  English/Persian key parity, route existence, permission seeding and partial
+  module routing boundaries.
+- `npm run type-check` runs `vue-tsc --noEmit`.
+- `npm run build` repeats type-checking and creates the Vite production bundle.
+- No lint, component-test or browser-E2E script is configured. Do not document
+  or claim those gates until the repository actually provides them.
 
-- Pure domain/unit tests for rules and transitions.
-- Spring slice tests for validation, security and serialization.
-- PostgreSQL Testcontainers tests for Flyway, constraints and repositories.
-- API contract tests aligned with TypeScript clients.
-- Vue component tests for forms/tables/permissions.
-- Browser E2E tests for login, refresh and critical workflows.
-- Property-based tests for date, money, scheduling and pricing algorithms when added.
+## Backend
+
+From `sami-backend` using Java 21 and Maven 3.9+:
+
+```powershell
+mvn test
+mvn clean package
+mvn clean verify
+mvn spring-boot:run
+```
+
+There is no Maven wrapper. The test tree contains focused unit/service/security
+contract tests, but no current Testcontainers PostgreSQL/Flyway integration
+suite. A complete release gate therefore also requires an isolated PostgreSQL
+16 startup with Flyway and Hibernate schema validation.
+
+## Documentation and backlog contracts
+
+From the repository root:
+
+```powershell
+node scripts/validate-documentation.mjs
+node --test scripts/validate-documentation.test.mjs
+```
+
+## Infrastructure and release gates
+
+From `sami-backend`:
+
+```powershell
+docker compose config
+docker compose up --build
+docker compose -f docker-compose.prod.yml config
+docker compose -f docker-compose.prod.yml build
+```
+
+From the repository root, deployment verification is owned by:
+
+```powershell
+.\scripts\deploy.ps1 -Mode Full -DryRun
+.\scripts\verify-deployment.ps1 -BaseUrl <approved-base-url>
+```
+
+Production readiness additionally requires fresh/upgrade Flyway validation,
+Docker health, authenticated API/browser smoke tests, responsive desktop/mobile
+checks, English/Persian RTL/LTR checks and browser console/network inspection.
 
 ## Definition of Done
 
-A change is not done until relevant permissions, tenant isolation, migrations,
-backend tests, TypeScript contracts, localization, RTL/LTR, documentation and
-operational behavior are verified. Report any command not run; never translate
-static inspection into a passing-test claim.
+A change is not done until its applicable permissions, tenant isolation,
+migrations, backend tests, TypeScript contracts, localization, RTL/LTR,
+documentation and operational behavior are verified. Every unavailable or
+skipped gate must be reported as unavailable—not converted into a pass.
