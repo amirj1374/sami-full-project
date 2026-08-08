@@ -33,3 +33,100 @@ The scheduler remediation has not yet been followed by the complete final gate o
   project (eight total).
 - Preserved persistent volumes and all containers outside those two unique
   disposable Compose projects.
+
+## Live RC continuation evidence — 85c990152d065b0f7ea5eaae15747ca96b255b2d
+
+### Subject and environment
+
+- Application release subject: `development` at
+  `85c990152d065b0f7ea5eaae15747ca96b255b2d`; the worktree was clean before
+  this continuation.
+- Preserved linux/amd64 images: backend
+  `sha256:c05941d34f9e3613ee1eaf97887ca20f029219565c4fad7f4472b07029059ff7`
+  and frontend
+  `sha256:d71daeadb70b79122dabf2c8826df5973849c4624dd036fbd01755e18b94c576`.
+  Both carry the OCI revision label for the application release subject.
+- Fresh disposable Compose project: `sami-rc-browser-85c9901`. PostgreSQL 16,
+  backend and frontend were healthy. Backend logs record successful validation
+  and application of Flyway V1 through V42.
+
+### Executed live gates
+
+| Gate | Status | Evidence |
+| --- | --- | --- |
+| Authenticated navigation / permission menu | PASS | The browser session logged in as the disposable bootstrap administrator and loaded Dashboard, Purchasing, HAMTA, Legacy Asan, Data Quality, Market Sync and Sales routes. |
+| Customer-origin purchase draft | PASS | A disposable customer and HAMTA-eligible product were created through the UI. Purchase `PUR-2026-000001` persisted after refresh with seller `RC Trade-in Customer`, used condition, valuation `8,000,000`, settlement reference and serial/IMEI requirements. |
+| Draft submission and approval | PASS | The same persisted purchase transitioned Draft -> Pending Approval -> Approved through normal UI controls. |
+| Purchase receiving / serialized-unit persistence | FAIL | Receiving one required-IMEI item failed when the frontend requested receipt history; see blocker RCB-01. This prevents reliable completion, inventory receipt verification and serialized-unit/HAMTA linkage validation. |
+| HAMTA report/UI | FAIL | The live HAMTA report request fails in PostgreSQL when optional filters are null; see blocker RCB-02. The no-code and valid-code completion gates cannot be completed reliably. |
+| Downstream Sales, CRM history and delivery evidence | FAIL | Dependent on the failed receipt/serialized-unit workflow. No completion claim was made. |
+| Legacy Asan persisted smoke | BLOCKED_BY_TEST_DATA | No real or sanitized RAR archive fixture is tracked in the repository; no customer archive was used. Route and staging-only UI were verified earlier in this RC session. |
+| Remaining browser, locale, viewport, PWA-cache and screenshot gates | BLOCKED_BY_TOOLING | The live validation was deliberately stopped after the two reproducible production runtime failures above, as required by the continuation instruction. No pass is claimed for these remaining gates. |
+
+### Release blockers
+
+#### RCB-01 — CRITICAL: receipt-history query crashes after a receiving attempt
+
+- Failed gate: Customer Purchase receiving / serialized IMEI flow.
+- Exact runtime error: `org.hibernate.loader.MultipleBagFetchException: cannot
+  simultaneously fetch multiple bags: [PurchaseReceiptItem.identifiers,
+  PurchaseReceipt.items]`.
+- Affected path: `PurchaseReceivingService.history` (line 66) calling
+  `PurchaseReceiptRepository.findByPurchaseIdAndTenantIdOrderByCreatedAtDesc`,
+  surfaced by `PurchaseController.receipts` (line 121).
+- Classification: source-code defect, reproduced against fresh PostgreSQL 16
+  in the final linux/amd64 RC image.
+- Smallest safe remediation: change the receipt-history fetch strategy so it
+  does not join-fetch both bag collections in one Hibernate query; add a
+  PostgreSQL integration regression test which opens a receipt history after a
+  serialized receiving attempt.
+
+#### RCB-02 — HIGH: HAMTA report query fails with nullable filters
+
+- Failed gate: live HAMTA report / activation-code verification.
+- Exact runtime error: `org.postgresql.util.PSQLException: ERROR: could not
+  determine data type of parameter $2` from the `HamtaService.report` JDBC
+  query when its optional `delivered` filter is null.
+- Affected path: `HamtaService.report` (line 146), surfaced by
+  `HamtaController.report` (line 51).
+- Classification: source-code defect, reproduced against fresh PostgreSQL 16
+  in the final linux/amd64 RC image.
+- Smallest safe remediation: build the optional predicates dynamically or use
+  explicitly typed JDBC parameters; add integration coverage for absent,
+  false, and true report filters.
+
+### Continuation cleanup
+
+- Removed containers: `sami-rc-browser-85c9901-{db,backend,frontend}-1`
+  (three).
+- Removed network: `sami-rc-browser-85c9901_default` (one).
+- Removed explicitly temporary volumes:
+  `sami-rc-browser-85c9901_{db-data,uploads,managed-files,file-staging}`
+  (four).
+- Preserved all images, including both RC images above, and all Docker
+  resources outside the unique disposable project.
+
+## Current decision
+
+NOT_READY_FOR_RELEASE. The two failures above are reproducible application
+runtime defects in a fresh PostgreSQL 16 production-like RC stack. No source
+code was modified during this validation continuation.
+
+## RC a766b10 authentication and browser-tooling classification
+
+- Application release SHA: `a766b10b13efc7093d5751e5ed1bed3458cdaa20`.
+- **AUTHENTICATION PRODUCT GATE: PASS.** A fresh disposable PostgreSQL 16
+  stack seeded `admin@sami.local` through `DataInitializer`; its BCrypt hash,
+  active status, login-enabled flag and Super Administrator role were verified
+  through the real database. Proxied `POST /api/v1/auth/login` returned HTTP
+  200 and protected API routing returned the expected authenticated result.
+- **BROWSER AUTOMATION LOGIN: BLOCKED_BY_TOOLING.** The available browser
+  sandbox submitted the same valid credentials as HTTP 403 and does not expose
+  `localStorage` to its evaluation surface. The frontend's supported mechanism
+  stores the legitimate access/refresh tokens as `sami.accessToken` and
+  `sami.refreshToken`; API-issued tokens could not be injected because the
+  sandbox reports `localStorage` as undefined. This is not an application or
+  authentication defect.
+- Authenticated UI/RTL/responsive business workflows therefore require the
+  human checklist at `docs/release/MANUAL_RC_BROWSER_CHECKLIST.md`; each is
+  **MANUAL_BROWSER_FOLLOW_UP**, not `NOT_RUN`.
