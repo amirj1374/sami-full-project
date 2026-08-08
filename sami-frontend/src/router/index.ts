@@ -108,6 +108,12 @@ const routes: RouteRecordRaw[] = [
         meta: { requiresAuth: true, permission: 'data-quality:view' },
       },
       {
+        path: 'legacy-imports',
+        name: 'legacy-imports',
+        component: () => import('@/views/LegacyImportsView.vue'),
+        meta: { requiresAuth: true, permission: 'legacy-import:view' },
+      },
+      {
         path: 'licensing',
         name: 'licensing',
         component: () => import('@/views/LicensingView.vue'),

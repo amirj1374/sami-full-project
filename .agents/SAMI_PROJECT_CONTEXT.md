@@ -16,7 +16,9 @@ repository skill and `docs/HANDOFF_NEXT_SESSION.md`.
 ## Stack and runtime
 
 - Backend: Java 21, Spring Boot 3.5.3, Spring Security/JPA/Validation/Actuator,
-  PostgreSQL 16, Flyway, Maven 3.9+, JWT/JJWT 0.12.6, springdoc 2.8.9.
+  PostgreSQL 16, Flyway, Maven 3.9+, JWT/JJWT 0.12.6, springdoc 2.8.9,
+  Jackcess 4.0.10 and Junrar 7.6.0. RAR5 legacy imports additionally require
+  an UnRAR executable configured by `app.legacy-import.unrar-executable`.
 - Frontend: npm lockfile v3; Node 22 production image; Vue 3.5.40,
   TypeScript 5.7.3, Vite 8.1.5, Vuetify 3.12.10, Pinia 3.0.4,
   Vue Router 4.6.4, Axios 1.18.1, VeeValidate/Zod and Vue I18n.
@@ -34,8 +36,8 @@ repository skill and `docs/HANDOFF_NEXT_SESSION.md`.
   route/button checks are presentation only.
 - Tenant scope comes from authenticated `TenantContext` and fails closed. Do
   not propagate transitional `TenantDefaults`.
-- Flyway owns schema; migrations are immutable. Current unique range is V1–V37;
-  the next new migration is V38.
+- Flyway owns schema; migrations are immutable. Current unique range is V1–V40;
+  the next new migration is V41.
 - Inventory owns warehouse/location balances, append-only movements,
   reservations and serial/IMEI state. Purchasing/Sales integrate through
   `InventoryStockOperations`.
