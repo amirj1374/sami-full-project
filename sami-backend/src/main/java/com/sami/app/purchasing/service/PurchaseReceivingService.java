@@ -5,6 +5,7 @@ import com.sami.app.common.exception.ErrorCode;
 import com.sami.app.common.exception.ResourceNotFoundException;
 import com.sami.app.common.tenancy.TenantContext;
 import com.sami.app.inventory.publicapi.InventoryStockOperations;
+import com.sami.app.hamta.HamtaService;
 import com.sami.app.inventory.publicapi.InventoryStockOperations.PurchaseReceiptCommand;
 import com.sami.app.inventory.publicapi.InventoryStockOperations.ReceiptLine;
 import com.sami.app.inventory.publicapi.InventoryStockOperations.SerialIdentity;
@@ -57,6 +58,7 @@ public class PurchaseReceivingService {
     private final PurchaseLogService logs;
     private final InventoryStockOperations inventory;
     private final CustomerEventService customerEvents;
+    private final HamtaService hamtaService;
 
     @Transactional(readOnly = true)
     public List<ReceiptResponse> history(Long purchaseId) {
@@ -124,7 +126,9 @@ public class PurchaseReceivingService {
                                 item.getPurchaseItem().getProduct().getId(),
                                 item.getQuantity(),
                                 item.getPurchaseItem().getUnitPrice(),
-                                serials(item)))
+                                serials(item, request.lines().stream()
+                                        .filter(line -> line.purchaseItemId().equals(item.getPurchaseItem().getId()))
+                                        .findFirst().orElseThrow())))
                         .toList()));
 
         boolean fullyReceived = purchase.getItems().stream()
@@ -158,6 +162,13 @@ public class PurchaseReceivingService {
         List<ReceiveRequest.UnitIdentifiers> units =
                 line.units() == null ? List.of() : line.units();
         boolean serialized = item.isRequiresSerial() || item.isRequiresImei();
+        boolean hamtaRequired = hamtaService.required(item.getProduct().getId(),
+                item.getPurchase().getItemCondition());
+
+        if (hamtaRequired && !item.isRequiresImei()) {
+            throw new ApiException(ErrorCode.OPERATION_NOT_ALLOWED,
+                    "HAMTA-eligible used phones must require an IMEI");
+        }
 
         if (serialized) {
             if (line.quantity().stripTrailingZeros().scale() > 0) {
@@ -174,6 +185,12 @@ public class PurchaseReceivingService {
         int unitIndex = 0;
         for (ReceiveRequest.UnitIdentifiers unit : units) {
             unitIndex++;
+            if (hamtaRequired && (unit.hamtaActivationCode() == null
+                    || unit.hamtaActivationCode().isBlank())) {
+                throw new ApiException(ErrorCode.VALIDATION_FAILED,
+                        "Unit %d of '%s' requires a HAMTA activation code"
+                                .formatted(unitIndex, item.getProduct().getName()));
+            }
             boolean hasSerial = false;
             boolean hasImei = false;
             for (ReceiveRequest.IdentifierValue value
@@ -213,7 +230,7 @@ public class PurchaseReceivingService {
         }
     }
 
-    private List<SerialIdentity> serials(PurchaseReceiptItem item) {
+    private List<SerialIdentity> serials(PurchaseReceiptItem item, ReceiveRequest.ReceiveLine line) {
         Map<Integer, String> serials = new LinkedHashMap<>();
         Map<Integer, String> imeis = new LinkedHashMap<>();
         item.getIdentifiers().forEach(identifier -> {
@@ -228,7 +245,11 @@ public class PurchaseReceivingService {
         indexes.addAll(serials.keySet());
         indexes.addAll(imeis.keySet());
         List<SerialIdentity> result = new ArrayList<>();
-        indexes.forEach(index -> result.add(new SerialIdentity(serials.get(index), imeis.get(index))));
+        indexes.forEach(index -> {
+            String code = line.units() != null && line.units().size() >= index
+                    ? line.units().get(index - 1).hamtaActivationCode() : null;
+            result.add(new SerialIdentity(serials.get(index), imeis.get(index), code));
+        });
         return result;
     }
 

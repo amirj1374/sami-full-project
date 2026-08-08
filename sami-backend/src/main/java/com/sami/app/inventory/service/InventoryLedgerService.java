@@ -258,21 +258,22 @@ public class InventoryLedgerService {
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
-    public void createSerial(Long tenantId, Long productId, Long warehouseId, Long locationId,
+    public Long createSerial(Long tenantId, Long productId, Long warehouseId, Long locationId,
                              String serialNumber, String imei, String sourceType,
                              Long sourceId, Long sourceLineId) {
         String serial = blank(serialNumber);
         String normalizedImei = blank(imei);
         if (serial == null && normalizedImei == null) {
-            return;
+            return null;
         }
         try {
-            jdbc.update("""
+            return jdbc.queryForObject("""
                     insert into inventory_serial_units(
                         tenant_id,product_id,warehouse_id,location_id,serial_number,imei,
                         status,source_type,source_id,source_line_id)
                     values(?,?,?,?,?,?,'AVAILABLE',?,?,?)
-                    """, tenantId, productId, warehouseId, locationId, serial, normalizedImei,
+                    returning id
+                    """, Long.class, tenantId, productId, warehouseId, locationId, serial, normalizedImei,
                     normalize(sourceType), sourceId, sourceLineId);
         } catch (org.springframework.dao.DataIntegrityViolationException ex) {
             throw new ApiException(ErrorCode.RESOURCE_CONFLICT,

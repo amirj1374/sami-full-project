@@ -1380,7 +1380,7 @@ export interface PurchaseFilterQuery {
 export interface ReceiveLinePayload {
   purchaseItemId: number
   quantity: number
-  units?: { identifiers: { identifierTypeId: number; value: string }[] }[]
+  units?: { identifiers: { identifierTypeId: number; value: string }[]; hamtaActivationCode?: string }[]
 }
 
 export interface ReceivePayload {
@@ -1483,6 +1483,7 @@ export interface Product {
   price: number
   stockQuantity: number
   active: boolean
+  hamtaEligible: boolean
   createdAt: string
   updatedAt: string
 }
@@ -1501,6 +1502,7 @@ export interface CreateProductPayload {
   price: number
   stockQuantity: number
   active: boolean
+  hamtaEligible: boolean
 }
 
 export type UpdateProductPayload = Omit<CreateProductPayload, 'sku'>

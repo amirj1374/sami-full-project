@@ -37,6 +37,7 @@ const headers = computed(() => [
   { title: t('products.colPrice'), key: 'price', align: 'end' as const },
   { title: t('products.colStock'), key: 'stockQuantity', align: 'end' as const },
   { title: t('products.colActive'), key: 'active' },
+  { title: t('hamta.eligible'), key: 'hamtaEligible' },
   { title: '', key: 'actions', sortable: false, align: 'end' as const },
 ])
 
@@ -165,6 +166,11 @@ function formatPrice(value: number): string {
         <template #[`item.active`]="{ item }">
           <v-chip :color="item.active ? 'success' : 'default'" size="small" variant="tonal">
             {{ item.active ? t('products.active') : t('products.inactive') }}
+          </v-chip>
+        </template>
+        <template #[`item.hamtaEligible`]="{ item }">
+          <v-chip :color="item.hamtaEligible ? 'primary' : 'default'" size="small" variant="tonal">
+            {{ item.hamtaEligible ? t('common.yes') : t('common.no') }}
           </v-chip>
         </template>
         <template #[`item.actions`]="{ item }">

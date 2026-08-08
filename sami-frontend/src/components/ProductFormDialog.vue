@@ -29,7 +29,7 @@ const nameField = ref<{ focus?: () => void } | null>(null)
 
 const { handleSubmit, defineField, errors, resetForm, meta } = useForm({
   validationSchema: toTypedSchema(productSchema(t)),
-  initialValues: { name: '', sku: '', description: '', price: 0, stockQuantity: 0, active: true },
+  initialValues: { name: '', sku: '', description: '', price: 0, stockQuantity: 0, active: true, hamtaEligible: false },
 })
 
 const [name, nameProps] = defineField('name')
@@ -38,6 +38,7 @@ const [description, descriptionProps] = defineField('description')
 const [price, priceProps] = defineField('price')
 const [stockQuantity, stockProps] = defineField('stockQuantity')
 const [active, activeProps] = defineField('active')
+const [hamtaEligible, hamtaEligibleProps] = defineField('hamtaEligible')
 
 const isEdit = computed(() => !!props.product)
 
@@ -57,8 +58,9 @@ watch(
             price: p.price,
             stockQuantity: p.stockQuantity,
             active: p.active,
+            hamtaEligible: p.hamtaEligible,
           }
-        : { name: '', sku: '', description: '', price: 0, stockQuantity: 0, active: true },
+        : { name: '', sku: '', description: '', price: 0, stockQuantity: 0, active: true, hamtaEligible: false },
     })
     await nextTick()
     nameField.value?.focus?.()
@@ -89,6 +91,7 @@ const onSubmit = handleSubmit(async (values) => {
         price: values.price,
         stockQuantity: values.stockQuantity,
         active: values.active,
+        hamtaEligible: values.hamtaEligible,
       })
     } else {
       await productsApi.create({
@@ -98,6 +101,7 @@ const onSubmit = handleSubmit(async (values) => {
         price: values.price,
         stockQuantity: values.stockQuantity,
         active: values.active,
+        hamtaEligible: values.hamtaEligible,
       })
     }
     emit('saved')
@@ -166,6 +170,17 @@ const onSubmit = handleSubmit(async (values) => {
                 >
                   <template #label>{{ t('products.fieldSku') }} <span class="app-req">*</span></template>
                 </v-text-field>
+              </v-col>
+              <v-col cols="12">
+                <v-switch
+                  v-model="hamtaEligible"
+                  v-bind="hamtaEligibleProps"
+                  :label="t('hamta.productEligible')"
+                  color="primary"
+                  inset
+                  hide-details
+                />
+                <div class="text-caption text-medium-emphasis">{{ t('hamta.productEligibleHint') }}</div>
               </v-col>
               <v-col cols="12">
                 <v-textarea

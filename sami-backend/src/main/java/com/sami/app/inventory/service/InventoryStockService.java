@@ -5,6 +5,7 @@ import com.sami.app.common.exception.ErrorCode;
 import com.sami.app.common.tenancy.TenantContext;
 import com.sami.app.inventory.domain.InventoryWarehouse;
 import com.sami.app.inventory.publicapi.InventoryStockOperations;
+import com.sami.app.hamta.HamtaService;
 import com.sami.app.product.event.ProductStockChangedEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
@@ -24,6 +25,7 @@ public class InventoryStockService implements InventoryStockOperations {
 
     private final TenantContext tenantContext;
     private final InventoryLedgerService ledger;
+    private final HamtaService hamtaService;
 
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
@@ -43,9 +45,13 @@ public class InventoryStockService implements InventoryStockOperations {
                     "Purchase receipt " + command.receiptId());
             if (posted && line.serials() != null) {
                 for (SerialIdentity serial : line.serials()) {
-                    ledger.createSerial(tenantId, line.productId(), warehouse.getId(), locationId,
+                    Long serialUnitId = ledger.createSerial(tenantId, line.productId(), warehouse.getId(), locationId,
                             serial.serialNumber(), serial.imei(), "PURCHASE", command.purchaseId(),
                             line.sourceLineId());
+                    if (serialUnitId != null && serial.hamtaActivationCode() != null
+                            && !serial.hamtaActivationCode().isBlank()) {
+                        hamtaService.register(serialUnitId, serial.hamtaActivationCode());
+                    }
                 }
             }
         }

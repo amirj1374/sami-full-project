@@ -118,7 +118,7 @@ interface ReceiveLineForm {
   item: PurchaseItemRow
   quantity: number
   /** Per-unit identifier values, keyed by identifier type id. */
-  units: Record<number, string>[]
+  units: { identifiers: Record<number, string>; hamtaActivationCode: string }[]
 }
 
 const receiveOpen = ref(false)
@@ -150,7 +150,7 @@ function openReceive() {
 function syncUnits(line: ReceiveLineForm) {
   if (!serialized(line.item)) return
   const count = Math.max(0, Math.floor(line.quantity))
-  while (line.units.length < count) line.units.push({})
+  while (line.units.length < count) line.units.push({ identifiers: {}, hamtaActivationCode: '' })
   line.units.length = count
 }
 
@@ -163,12 +163,13 @@ function confirmReceive() {
       quantity: l.quantity,
       units: serialized(l.item)
         ? l.units.map((unit) => ({
-            identifiers: Object.entries(unit)
+            identifiers: Object.entries(unit.identifiers)
               .filter(([, value]) => value && value.trim())
               .map(([typeId, value]) => ({
                 identifierTypeId: Number(typeId),
                 value: value.trim(),
               })),
+            hamtaActivationCode: unit.hamtaActivationCode.trim() || undefined,
           }))
         : undefined,
     }))
@@ -540,11 +541,20 @@ const status = computed(() => detail.value?.purchase.status)
                 <v-text-field
                   v-for="idType in typesFor(line.item)"
                   :key="idType.id"
-                  v-model="unit[idType.id]"
+                  v-model="unit.identifiers[idType.id]"
                   :label="idType.name"
                   density="compact"
                   hide-details
                   style="max-width: 200px"
+                />
+                <v-text-field
+                  v-if="line.item.requiresImei && detail?.itemCondition === 'USED'"
+                  v-model="unit.hamtaActivationCode"
+                  :label="t('hamta.activationCode')"
+                  :hint="t('hamta.purchaseHint')"
+                  persistent-hint
+                  maxlength="128"
+                  autocomplete="off"
                 />
               </div>
             </template>
