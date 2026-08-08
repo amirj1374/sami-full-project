@@ -15,11 +15,14 @@ import com.sami.app.purchasing.domain.PurchaseItem;
 import com.sami.app.purchasing.domain.PurchaseReceipt;
 import com.sami.app.purchasing.domain.PurchaseReceiptItem;
 import com.sami.app.purchasing.domain.PurchaseUnitIdentifier;
+import com.sami.app.purchasing.domain.PurchaseSellerType;
+import com.sami.app.purchasing.domain.PurchaseSettlementStatus;
 import com.sami.app.purchasing.dto.PurchaseDtos.ReceiveRequest;
 import com.sami.app.purchasing.dto.PurchaseDtos.ReceiptResponse;
 import com.sami.app.purchasing.repository.PurchaseReceiptRepository;
 import com.sami.app.purchasing.repository.PurchaseUnitIdentifierRepository;
 import com.sami.app.security.CurrentActor;
+import com.sami.app.crm.service.CustomerEventService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -53,6 +56,7 @@ public class PurchaseReceivingService {
     private final TenantContext tenantContext;
     private final PurchaseLogService logs;
     private final InventoryStockOperations inventory;
+    private final CustomerEventService customerEvents;
 
     @Transactional(readOnly = true)
     public List<ReceiptResponse> history(Long purchaseId) {
@@ -70,6 +74,11 @@ public class PurchaseReceivingService {
             throw new ApiException(ErrorCode.OPERATION_NOT_ALLOWED,
                     "This purchase is not receivable in status '"
                             + purchase.getStatus().getName() + "'");
+        }
+        if (purchase.getSellerType() == PurchaseSellerType.CUSTOMER
+                && purchase.getSettlementStatus() == PurchaseSettlementStatus.PENDING) {
+            throw new ApiException(ErrorCode.OPERATION_NOT_ALLOWED,
+                    "Customer-origin purchases must be settled or explicitly waived before receipt");
         }
 
         PurchaseReceipt receipt = PurchaseReceipt.builder()
@@ -129,6 +138,12 @@ public class PurchaseReceivingService {
         if (fullyReceived) {
             logs.record(purchase, PurchaseLogService.COMPLETED, "Purchase completed", null);
         }
+        if (purchase.getSellerCustomer() != null) {
+            customerEvents.record(purchase.getSellerCustomer().getId(), "CUSTOMER_PURCHASE_RECEIVED",
+                    "Customer purchase received",
+                    Map.of("purchaseId", purchase.getId(), "receiptId", receipt.getId(), "complete", fullyReceived),
+                    "purchasing");
+        }
         return ReceiptResponse.from(receipt);
     }
 
@@ -166,6 +181,10 @@ public class PurchaseReceivingService {
                     : unit.identifiers()) {
                 PurIdentifierType type = config.requireIdentifierType(value.identifierTypeId());
                 String trimmed = value.value().trim();
+                if (type.isSatisfiesImei() && !isValidImei(trimmed)) {
+                    throw new ApiException(ErrorCode.VALIDATION_FAILED,
+                            "IMEI must contain 15 digits and pass the Luhn checksum");
+                }
                 if (identifierRepository.existsByTenantIdAndIdentifierTypeIdAndValue(
                         tenantContext.requireTenantId(), type.getId(), trimmed)) {
                     throw new ApiException(ErrorCode.RESOURCE_CONFLICT,
@@ -211,5 +230,19 @@ public class PurchaseReceivingService {
         List<SerialIdentity> result = new ArrayList<>();
         indexes.forEach(index -> result.add(new SerialIdentity(serials.get(index), imeis.get(index))));
         return result;
+    }
+
+    public static boolean isValidImei(String value) {
+        if (value == null || !value.matches("\\d{15}")) return false;
+        int sum = 0;
+        for (int i = 0; i < value.length(); i++) {
+            int digit = value.charAt(i) - '0';
+            if (i % 2 == 1) {
+                digit *= 2;
+                digit = digit / 10 + digit % 10;
+            }
+            sum += digit;
+        }
+        return sum % 10 == 0;
     }
 }

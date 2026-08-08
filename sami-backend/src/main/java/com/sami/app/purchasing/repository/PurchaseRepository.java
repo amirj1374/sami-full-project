@@ -21,22 +21,22 @@ import java.util.Optional;
 public interface PurchaseRepository
         extends JpaRepository<Purchase, Long>, JpaSpecificationExecutor<Purchase> {
 
-    @EntityGraph(attributePaths = {"type", "status", "supplier", "warehouse",
+    @EntityGraph(attributePaths = {"type", "status", "supplier", "sellerCustomer", "warehouse",
             "items", "items.product", "cancelReason"})
     Optional<Purchase> findWithDetailsByIdAndTenantId(Long id, Long tenantId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @EntityGraph(attributePaths = {"type", "status", "supplier", "warehouse",
+    @EntityGraph(attributePaths = {"type", "status", "supplier", "sellerCustomer", "warehouse",
             "items", "items.product", "cancelReason"})
     @Query("select p from Purchase p where p.id = :id and p.tenantId = :tenantId")
     Optional<Purchase> findForUpdate(@Param("id") Long id, @Param("tenantId") Long tenantId);
 
     @Override
-    @EntityGraph(attributePaths = {"type", "status", "supplier", "warehouse"})
+    @EntityGraph(attributePaths = {"type", "status", "supplier", "sellerCustomer", "warehouse"})
     Page<Purchase> findAll(Specification<Purchase> spec, Pageable pageable);
 
     @Override
-    @EntityGraph(attributePaths = {"type", "status", "supplier", "warehouse"})
+    @EntityGraph(attributePaths = {"type", "status", "supplier", "sellerCustomer", "warehouse"})
     List<Purchase> findAll(Specification<Purchase> spec, Sort sort);
 
     long countByTenantIdAndStatusId(Long tenantId, Long statusId);

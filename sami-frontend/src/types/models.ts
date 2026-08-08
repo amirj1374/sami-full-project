@@ -1270,9 +1270,17 @@ export interface PurchaseRow {
   purchaseNumber: string
   type: PurType
   status: PurStatus
+  sellerType: 'SUPPLIER' | 'CUSTOMER'
+  sellerId: number
+  sellerCode: string
+  sellerName: string
+  /** Compatibility aliases used by existing purchasing/report widgets. */
   supplierId: number
   supplierCode: string
   supplierName: string
+  companyId: number
+  branchId: number
+  linkedSaleId: number | null
   warehouse: PurWarehouse | null
   totalAmount: number
   createdByEmail: string | null
@@ -1303,6 +1311,16 @@ export interface PurchaseItemRow {
 export interface PurchaseDetail {
   purchase: PurchaseRow
   notes: string | null
+  itemCondition: 'USED' | 'NEW_SEALED' | 'OTHER'
+  inspectionNotes: string | null
+  ownershipDeclared: boolean
+  declarationNotes: string | null
+  valuationAmount: number | null
+  settlementStatus: 'PENDING' | 'SETTLED' | 'WAIVED'
+  settlementMethod: string | null
+  settlementReference: string | null
+  settledAmount: number | null
+  settledAt: string | null
   items: PurchaseItemRow[]
   submittedAt: string | null
   approvedAt: string | null
@@ -1326,7 +1344,21 @@ export interface PurchaseItemPayload {
 
 export interface PurchasePayload {
   typeId: number
-  supplierId: number
+  sellerType: 'SUPPLIER' | 'CUSTOMER'
+  supplierId?: number
+  sellerCustomerId?: number
+  companyId?: number
+  branchId?: number
+  linkedSaleId?: number
+  itemCondition: 'USED' | 'NEW_SEALED' | 'OTHER'
+  inspectionNotes?: string
+  ownershipDeclared: boolean
+  declarationNotes?: string
+  valuationAmount?: number
+  settlementStatus: 'PENDING' | 'SETTLED' | 'WAIVED'
+  settlementMethod?: string
+  settlementReference?: string
+  settledAmount?: number
   warehouseId?: number
   notes?: string
   items: PurchaseItemPayload[]

@@ -82,3 +82,10 @@ Canonical detail: `docs/05-module-catalog.md`; priorities:
 - Do not infer the deployed customer revision from local history or release reports.
 - Never implement speculative Repairs/Warranty/Installments/Accounting or fake
   Web Push/provider behavior.
+# Current context refresh — 2026-08-08
+
+- Required local runtime remains Java 21. This workstation uses Microsoft OpenJDK 21.0.12 and Maven 3.9.16 under `%LOCALAPPDATA%\SamiDevTools`.
+- Latest migration is V39. V38 adds customer-origin Purchase seller identity, organization scope, inspection/valuation/settlement and linked-Sale integrity. V39 activates the completed Data Quality UI lifecycle.
+- Purchasing's seller invariant is exactly one of Supplier or CRM Customer. Customer-origin inventory receipt requires settlement `SETTLED` or explicitly `WAIVED`; linked Sales must match tenant/customer/company/branch.
+- Data Quality is now statically routed at `/data-quality` with `data-quality:view`.
+- Real Web Push is not a current backend capability. Do not add VAPID keys or subscriptions without approval of the contract in `FULL_NEXT_PHASE_IMPLEMENTATION_REPORT.md`.

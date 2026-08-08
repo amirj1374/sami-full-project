@@ -121,3 +121,6 @@ Do not reconstruct the feature from the old narrative alone.
 
 Do not start Repairs, Warranty, Installments or Accounting before their
 ownership and persisted contracts are explicitly approved.
+# 2026-08-08 implementation handoff
+
+Customer-origin Purchasing and Data Quality activation are implemented on `development`; see `FULL_NEXT_PHASE_IMPLEMENTATION_REPORT.md`. The latest migrations are V38 (customer-origin purchases) and V39 (Data Quality lifecycle activation). Do not implement Web Push until the ownership/secret contract in that report is approved. Docker/OpenSSH installation still requires Windows administrator elevation; no deployment was performed.

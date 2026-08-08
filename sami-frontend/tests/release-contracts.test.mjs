@@ -83,12 +83,21 @@ test('every backend authorization permission is seeded by Flyway', () => {
   }
 })
 
-test('partial modules are not directly routed in the production bundle', () => {
+test('remaining partial modules are not directly routed in the production bundle', () => {
   const router = read('src/router/index.ts')
 
-  for (const path of ['data-quality', 'files', 'appointments']) {
+  for (const path of ['files', 'appointments']) {
     assert.doesNotMatch(router, new RegExp(`path:\\s*'${path}'`))
   }
+})
+
+test('Data Quality is routed through its seeded permission and activated lifecycle', () => {
+  const router = read('src/router/index.ts')
+  const migration = read('../sami-backend/src/main/resources/db/migration/V39__activate_data_quality_module.sql')
+  assert.match(router, /path:\s*'data-quality'/)
+  assert.match(router, /permission:\s*'data-quality:view'/)
+  assert.match(migration, /WHERE code = 'data-quality'/)
+  assert.match(migration, /is_production_ready = TRUE/)
 })
 
 test('frontend source does not hardcode company, branch, or tenant identity 1', () => {

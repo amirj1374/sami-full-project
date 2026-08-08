@@ -54,21 +54,21 @@ public class PurchaseReportingService {
         return new ReportResponse(
                 group(purchases, p -> p.getStatus().getCode(), p -> p.getStatus().getName()),
                 group(purchases, p -> p.getType().getCode(), p -> p.getType().getName()),
-                group(purchases, p -> p.getSupplier().getSupplierCode(),
-                        p -> p.getSupplier().getDisplayName()),
+                group(purchases, this::sellerCode, this::sellerName),
                 overdue(purchases));
     }
 
     @Transactional(readOnly = true)
     public byte[] exportCsv(PurchaseFilter filter) {
         StringBuilder csv = new StringBuilder();
-        csv.append("Purchase Number,Type,Status,Supplier Code,Supplier,Warehouse,Total Amount,Created By,Created At\r\n");
+        csv.append("Purchase Number,Type,Status,Seller Type,Seller Code,Seller,Warehouse,Total Amount,Created By,Created At\r\n");
         for (Purchase purchase : purchases(filter)) {
             csv.append(cell(purchase.getPurchaseNumber())).append(',')
                     .append(cell(purchase.getType().getName())).append(',')
                     .append(cell(purchase.getStatus().getName())).append(',')
-                    .append(cell(purchase.getSupplier().getSupplierCode())).append(',')
-                    .append(cell(purchase.getSupplier().getDisplayName())).append(',')
+                    .append(cell(purchase.getSellerType())).append(',')
+                    .append(cell(sellerCode(purchase))).append(',')
+                    .append(cell(sellerName(purchase))).append(',')
                     .append(cell(purchase.getWarehouse() == null ? ""
                             : purchase.getWarehouse().getName())).append(',')
                     .append(purchase.getTotalAmount()).append(',')
@@ -125,7 +125,7 @@ public class PurchaseReportingService {
                                 && item.remainingQuantity().compareTo(BigDecimal.ZERO) > 0)
                         .forEach(item -> result.add(new OverdueLineResponse(
                                 purchase.getId(), purchase.getPurchaseNumber(),
-                                purchase.getSupplier().getDisplayName(), item.getId(),
+                                sellerName(purchase), item.getId(),
                                 item.getProduct().getName(), item.getExpectedDelivery(),
                                 item.getQuantity(), item.remainingQuantity()))));
         return result;
@@ -134,6 +134,16 @@ public class PurchaseReportingService {
     private String cell(Object value) {
         String text = value == null ? "" : value.toString();
         return '"' + text.replace("\"", "\"\"") + '"';
+    }
+
+    private String sellerCode(Purchase purchase) {
+        return purchase.getSupplier() != null ? purchase.getSupplier().getSupplierCode()
+                : purchase.getSellerCustomer().getCustomerCode();
+    }
+
+    private String sellerName(Purchase purchase) {
+        return purchase.getSupplier() != null ? purchase.getSupplier().getDisplayName()
+                : purchase.getSellerCustomer().getDisplayName();
     }
 
     private static final class MutableGroup {

@@ -111,3 +111,9 @@ Specialized workflows live under `.agents/skills/`: project context,
 architecture audit, module/backend/frontend builders, contract validation,
 migration guardian, repository reconciliation, UI/UX, reporting and release
 gate. Contribution rules are in `docs/20-contribution-guide.md`.
+# Current implementation update — 2026-08-08
+
+- Customer Purchase / Trade-in: Purchasing now supports Supplier or CRM Customer sellers with valuation, inspection, settlement, linked Sale, CRM timeline, inventory and IMEI integrity (`V38`).
+- Data Quality: production route and lifecycle are active (`V39`).
+- Font system: Vazirmatn Variable is globally bundled and browser-verified.
+- Full phase evidence and Web Push approval proposal: [`FULL_NEXT_PHASE_IMPLEMENTATION_REPORT.md`](../FULL_NEXT_PHASE_IMPLEMENTATION_REPORT.md).

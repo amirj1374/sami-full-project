@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { purchasesApi } from '@/api/purchases'
 import { productsApi } from '@/api/products'
 import { suppliersApi } from '@/api/suppliers'
+import { customersApi } from '@/api/customers'
 import { useApiError } from '@/composables/useApiError'
 import { useNotifications } from '@/composables/useNotifications'
 import type {
@@ -14,6 +15,7 @@ import type {
   PurchaseDetail,
   PurchaseItemPayload,
   SupplierRow,
+  Customer,
 } from '@/types/models'
 
 /**
@@ -50,7 +52,20 @@ const form = reactive<{
   typeId: number | null
   warehouseId: number | null
   notes: string
-}>({ typeId: null, warehouseId: null, notes: '' })
+  sellerType: 'SUPPLIER' | 'CUSTOMER'
+  itemCondition: 'USED' | 'NEW_SEALED' | 'OTHER'
+  linkedSaleId: number | null
+  inspectionNotes: string
+  ownershipDeclared: boolean
+  declarationNotes: string
+  valuationAmount: number | null
+  settlementStatus: 'PENDING' | 'SETTLED' | 'WAIVED'
+  settlementMethod: string
+  settlementReference: string
+  settledAmount: number | null
+}>({ typeId: null, warehouseId: null, notes: '', sellerType: 'SUPPLIER', itemCondition: 'OTHER', linkedSaleId: null,
+  inspectionNotes: '', ownershipDeclared: false, declarationNotes: '', valuationAmount: null,
+  settlementStatus: 'PENDING', settlementMethod: '', settlementReference: '', settledAmount: null })
 
 const items = ref<ItemLine[]>([])
 
@@ -59,6 +74,11 @@ const supplier = ref<SupplierRow | null>(null)
 const supplierSearch = ref('')
 const supplierCandidates = ref<SupplierRow[]>([])
 let supplierTimer: ReturnType<typeof setTimeout> | undefined
+
+const customer = ref<Customer | null>(null)
+const customerSearch = ref('')
+const customerCandidates = ref<Customer[]>([])
+let customerTimer: ReturnType<typeof setTimeout> | undefined
 
 watch(supplierSearch, () => {
   clearTimeout(supplierTimer)
@@ -70,6 +90,16 @@ watch(supplierSearch, () => {
     } catch (err) {
       setFormError(err)
     }
+  }, 300)
+})
+
+watch(customerSearch, () => {
+  clearTimeout(customerTimer)
+  customerTimer = setTimeout(async () => {
+    if (!customerSearch.value || customerSearch.value.length < 2) return
+    try {
+      customerCandidates.value = (await customersApi.list({ search: customerSearch.value, size: 8 })).content
+    } catch (err) { setFormError(err) }
   }, 300)
 })
 
@@ -93,12 +123,26 @@ watch(open, async (isOpen) => {
   form.typeId = d?.purchase.type.id ?? props.types.find((t) => t.isDefault)?.id ?? null
   form.warehouseId = d?.purchase.warehouse?.id ?? null
   form.notes = d?.notes ?? ''
-  supplier.value = d
+  form.sellerType = d?.purchase.sellerType ?? 'SUPPLIER'
+  form.itemCondition = d?.itemCondition ?? 'OTHER'
+  form.linkedSaleId = d?.purchase.linkedSaleId ?? null
+  form.inspectionNotes = d?.inspectionNotes ?? ''
+  form.ownershipDeclared = d?.ownershipDeclared ?? false
+  form.declarationNotes = d?.declarationNotes ?? ''
+  form.valuationAmount = d?.valuationAmount ?? null
+  form.settlementStatus = d?.settlementStatus ?? 'PENDING'
+  form.settlementMethod = d?.settlementMethod ?? ''
+  form.settlementReference = d?.settlementReference ?? ''
+  form.settledAmount = d?.settledAmount ?? null
+  supplier.value = d && d.purchase.sellerType === 'SUPPLIER'
     ? ({
         id: d.purchase.supplierId,
         supplierCode: d.purchase.supplierCode,
         displayName: d.purchase.supplierName,
       } as SupplierRow)
+    : null
+  customer.value = d && d.purchase.sellerType === 'CUSTOMER'
+    ? ({ id: d.purchase.sellerId, customerCode: d.purchase.sellerCode, displayName: d.purchase.sellerName } as Customer)
     : null
   supplierCandidates.value = []
   supplierSearch.value = ''
@@ -137,7 +181,8 @@ const total = computed(() =>
 )
 
 async function submit() {
-  if (!form.typeId || !supplier.value) {
+  const hasSeller = form.sellerType === 'SUPPLIER' ? !!supplier.value : !!customer.value
+  if (!form.typeId || !hasSeller) {
     setFormError({ code: 'VALIDATION', message: t('purchases.validation.typeSupplierRequired') })
     return
   }
@@ -150,7 +195,19 @@ async function submit() {
   clearFormError()
   const payload = {
     typeId: form.typeId,
-    supplierId: supplier.value.id,
+    sellerType: form.sellerType,
+    supplierId: form.sellerType === 'SUPPLIER' ? supplier.value?.id : undefined,
+    sellerCustomerId: form.sellerType === 'CUSTOMER' ? customer.value?.id : undefined,
+    itemCondition: form.itemCondition,
+    linkedSaleId: form.linkedSaleId ?? undefined,
+    inspectionNotes: form.inspectionNotes.trim() || undefined,
+    ownershipDeclared: form.ownershipDeclared,
+    declarationNotes: form.declarationNotes.trim() || undefined,
+    valuationAmount: form.valuationAmount ?? undefined,
+    settlementStatus: form.settlementStatus,
+    settlementMethod: form.settlementMethod.trim() || undefined,
+    settlementReference: form.settlementReference.trim() || undefined,
+    settledAmount: form.settledAmount ?? undefined,
     warehouseId: form.warehouseId ?? undefined,
     notes: form.notes.trim() || undefined,
     items: validItems.map(({ productName: _n, ...rest }) => ({
@@ -191,6 +248,12 @@ async function submit() {
         </v-alert>
 
         <v-row dense>
+          <v-col cols="12">
+            <v-btn-toggle v-model="form.sellerType" mandatory color="primary" variant="outlined">
+              <v-btn value="SUPPLIER">{{ t('purchases.form.sellerSupplier') }}</v-btn>
+              <v-btn value="CUSTOMER">{{ t('purchases.form.sellerCustomer') }}</v-btn>
+            </v-btn-toggle>
+          </v-col>
           <v-col cols="12" sm="3">
             <v-select
               v-model="form.typeId"
@@ -200,7 +263,7 @@ async function submit() {
               item-value="id"
             />
           </v-col>
-          <v-col cols="12" sm="5">
+          <v-col v-if="form.sellerType === 'SUPPLIER'" cols="12" sm="5">
             <v-autocomplete
               v-model="supplier"
               v-model:search="supplierSearch"
@@ -216,6 +279,14 @@ async function submit() {
               </template>
             </v-autocomplete>
           </v-col>
+          <v-col v-else cols="12" sm="5">
+            <v-autocomplete v-model="customer" v-model:search="customerSearch"
+              :items="customer && !customerCandidates.length ? [customer] : customerCandidates"
+              item-title="displayName" return-object :label="t('purchases.form.customerRequired')"
+              no-filter clearable>
+              <template #item="{ props: itemProps, item }"><v-list-item v-bind="itemProps" :subtitle="item.raw.customerCode" /></template>
+            </v-autocomplete>
+          </v-col>
           <v-col cols="12" sm="4">
             <v-select
               v-model="form.warehouseId"
@@ -229,6 +300,20 @@ async function submit() {
           <v-col cols="12">
             <v-text-field v-model="form.notes" :label="t('purchases.form.notes')" maxlength="2000" />
           </v-col>
+          <template v-if="form.sellerType === 'CUSTOMER'">
+            <v-col cols="12" sm="4"><v-select v-model="form.itemCondition" :label="t('purchases.form.condition')"
+              :items="[{ title: t('purchases.form.used'), value: 'USED' }, { title: t('purchases.form.newSealed'), value: 'NEW_SEALED' }, { title: t('purchases.form.other'), value: 'OTHER' }]" /></v-col>
+            <v-col cols="12" sm="4"><v-text-field v-model.number="form.valuationAmount" type="number" min="0" :label="t('purchases.form.valuation')" /></v-col>
+            <v-col cols="12" sm="4"><v-text-field v-model.number="form.linkedSaleId" type="number" min="1" :label="t('purchases.form.linkedSale')" /></v-col>
+            <v-col cols="12"><v-textarea v-model="form.inspectionNotes" rows="2" :label="t('purchases.form.inspection')" /></v-col>
+            <v-col cols="12"><v-checkbox v-model="form.ownershipDeclared" :label="t('purchases.form.ownership')" /></v-col>
+            <v-col cols="12"><v-text-field v-model="form.declarationNotes" :label="t('purchases.form.declaration')" /></v-col>
+            <v-col cols="12" sm="4"><v-select v-model="form.settlementStatus" :label="t('purchases.form.settlement')"
+              :items="['PENDING','SETTLED','WAIVED']" /></v-col>
+            <v-col cols="12" sm="4"><v-text-field v-model="form.settlementMethod" :label="t('purchases.form.settlementMethod')" /></v-col>
+            <v-col cols="12" sm="4"><v-text-field v-model.number="form.settledAmount" type="number" min="0" :label="t('purchases.form.settledAmount')" /></v-col>
+            <v-col cols="12"><v-text-field v-model="form.settlementReference" :label="t('purchases.form.settlementReference')" /></v-col>
+          </template>
         </v-row>
 
         <div class="d-flex align-center mt-2 mb-2">

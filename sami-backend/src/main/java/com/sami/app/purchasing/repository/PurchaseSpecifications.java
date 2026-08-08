@@ -20,7 +20,7 @@ public final class PurchaseSpecifications {
         return (root, query, cb) -> cb.equal(root.get("tenantId"), tenantId);
     }
 
-    /** Global search: purchase number, supplier name/code, or notes. */
+    /** Global search: purchase number, seller name/code, or notes. */
     public static Specification<Purchase> globalSearch(String search) {
         if (search == null || search.isBlank()) {
             return null;
@@ -30,6 +30,8 @@ public final class PurchaseSpecifications {
                 cb.like(cb.lower(root.get("purchaseNumber")), pattern),
                 cb.like(cb.lower(root.get("supplier").get("displayName")), pattern),
                 cb.like(cb.lower(root.get("supplier").get("supplierCode")), pattern),
+                cb.like(cb.lower(root.get("sellerCustomer").get("displayName")), pattern),
+                cb.like(cb.lower(root.get("sellerCustomer").get("customerCode")), pattern),
                 cb.like(cb.lower(cb.coalesce(root.get("notes"), "")), pattern));
     }
 

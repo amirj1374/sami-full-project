@@ -6,6 +6,9 @@ import com.sami.app.purchasing.domain.PurchaseItem;
 import com.sami.app.purchasing.domain.PurchaseLog;
 import com.sami.app.purchasing.domain.PurchaseReceipt;
 import com.sami.app.purchasing.domain.PurchaseReturn;
+import com.sami.app.purchasing.domain.PurchaseSellerType;
+import com.sami.app.purchasing.domain.PurchaseSettlementStatus;
+import com.sami.app.purchasing.domain.PurchaseItemCondition;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
@@ -32,7 +35,10 @@ public final class PurchaseDtos {
             Long id, String purchaseNumber,
             PurLookupDtos.TypeResponse type,
             PurLookupDtos.StatusResponse status,
+            PurchaseSellerType sellerType,
+            Long sellerId, String sellerCode, String sellerName,
             Long supplierId, String supplierCode, String supplierName,
+            Long companyId, Long branchId, Long linkedSaleId,
             PurLookupDtos.WarehouseResponse warehouse,
             BigDecimal totalAmount,
             String createdByEmail,
@@ -43,9 +49,14 @@ public final class PurchaseDtos {
                     p.getId(), p.getPurchaseNumber(),
                     PurLookupDtos.TypeResponse.from(p.getType()),
                     PurLookupDtos.StatusResponse.from(p.getStatus()),
-                    p.getSupplier().getId(),
-                    p.getSupplier().getSupplierCode(),
-                    p.getSupplier().getDisplayName(),
+                    p.getSellerType(),
+                    p.getSupplier() != null ? p.getSupplier().getId() : p.getSellerCustomer().getId(),
+                    p.getSupplier() != null ? p.getSupplier().getSupplierCode() : p.getSellerCustomer().getCustomerCode(),
+                    p.getSupplier() != null ? p.getSupplier().getDisplayName() : p.getSellerCustomer().getDisplayName(),
+                    p.getSupplier() != null ? p.getSupplier().getId() : p.getSellerCustomer().getId(),
+                    p.getSupplier() != null ? p.getSupplier().getSupplierCode() : p.getSellerCustomer().getCustomerCode(),
+                    p.getSupplier() != null ? p.getSupplier().getDisplayName() : p.getSellerCustomer().getDisplayName(),
+                    p.getCompanyId(), p.getBranchId(), p.getLinkedSaleId(),
                     p.getWarehouse() != null
                             ? PurLookupDtos.WarehouseResponse.from(p.getWarehouse()) : null,
                     p.getTotalAmount(),
@@ -74,6 +85,10 @@ public final class PurchaseDtos {
     public record PurchaseDetailResponse(
             PurchaseRowResponse purchase,
             String notes,
+            PurchaseItemCondition itemCondition, String inspectionNotes,
+            boolean ownershipDeclared, String declarationNotes, BigDecimal valuationAmount,
+            PurchaseSettlementStatus settlementStatus, String settlementMethod,
+            String settlementReference, BigDecimal settledAmount, Instant settledAt,
             List<ItemResponse> items,
             Instant submittedAt, Instant approvedAt, Long approvedBy,
             Instant cancelledAt, String cancelReason, String cancelNote
@@ -82,6 +97,9 @@ public final class PurchaseDtos {
             return new PurchaseDetailResponse(
                     PurchaseRowResponse.from(p),
                     p.getNotes(),
+                    p.getItemCondition(), p.getInspectionNotes(), p.isOwnershipDeclared(),
+                    p.getDeclarationNotes(), p.getValuationAmount(), p.getSettlementStatus(),
+                    p.getSettlementMethod(), p.getSettlementReference(), p.getSettledAmount(), p.getSettledAt(),
                     p.getItems().stream().map(ItemResponse::from).toList(),
                     p.getSubmittedAt(), p.getApprovedAt(), p.getApprovedBy(),
                     p.getCancelledAt(),
@@ -196,7 +214,21 @@ public final class PurchaseDtos {
     /** Create/update payload; items are a full replacement (drafts only). */
     public record PurchaseRequest(
             @NotNull(message = "Purchase type is required") Long typeId,
-            @NotNull(message = "Supplier is required") Long supplierId,
+            PurchaseSellerType sellerType,
+            Long supplierId,
+            Long sellerCustomerId,
+            Long companyId,
+            Long branchId,
+            Long linkedSaleId,
+            PurchaseItemCondition itemCondition,
+            @Size(max = 2000) String inspectionNotes,
+            boolean ownershipDeclared,
+            @Size(max = 1000) String declarationNotes,
+            @DecimalMin(value = "0.00") BigDecimal valuationAmount,
+            PurchaseSettlementStatus settlementStatus,
+            @Size(max = 40) String settlementMethod,
+            @Size(max = 160) String settlementReference,
+            @DecimalMin(value = "0.00") BigDecimal settledAmount,
             Long warehouseId,
             @Size(max = 2000) String notes,
             @NotEmpty(message = "At least one item is required") @Valid List<ItemRequest> items,

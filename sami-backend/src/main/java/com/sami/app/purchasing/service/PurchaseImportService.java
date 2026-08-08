@@ -136,7 +136,13 @@ public class PurchaseImportService {
             items.add(new ItemRequest(product.getId(), null, quantity, unit, price,
                     discount, expected, false, false));
         }
-        return new PurchaseRequest(type.getId(), supplier.getId(),
+        return new PurchaseRequest(type.getId(),
+                com.sami.app.purchasing.domain.PurchaseSellerType.SUPPLIER,
+                supplier.getId(), null, null, null, null,
+                com.sami.app.purchasing.domain.PurchaseItemCondition.OTHER,
+                null, false, null, null,
+                com.sami.app.purchasing.domain.PurchaseSettlementStatus.PENDING,
+                null, null, null,
                 warehouse == null ? null : warehouse.getId(), notes, items, null);
     }
 

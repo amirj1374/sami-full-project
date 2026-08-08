@@ -9,11 +9,19 @@ import com.sami.app.product.repository.ProductRepository;
 import com.sami.app.supplier.domain.Supplier;
 import com.sami.app.supplier.repository.SupplierRepository;
 import com.sami.app.supplier.service.SupLogService;
+import com.sami.app.crm.domain.Customer;
+import com.sami.app.crm.repository.CustomerRepository;
+import com.sami.app.crm.service.CustomerEventService;
+import com.sami.app.sales.domain.Sale;
+import com.sami.app.sales.domain.SaleStatus;
+import com.sami.app.sales.repository.SaleRepository;
 import com.sami.app.purchasing.domain.PurCancelReason;
 import com.sami.app.purchasing.domain.PurStatus;
 import com.sami.app.purchasing.domain.PurType;
 import com.sami.app.purchasing.domain.Purchase;
 import com.sami.app.purchasing.domain.PurchaseItem;
+import com.sami.app.purchasing.domain.PurchaseSellerType;
+import com.sami.app.purchasing.domain.PurchaseSettlementStatus;
 import com.sami.app.purchasing.dto.PurchaseDtos.CancelRequest;
 import com.sami.app.purchasing.dto.PurchaseDtos.ItemRequest;
 import com.sami.app.purchasing.dto.PurchaseDtos.PurchaseDetailResponse;
@@ -29,6 +37,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -57,6 +66,10 @@ public class PurchaseService {
     private final PurchaseNumberGenerator numberGenerator;
     private final PurchaseLogService logs;
     private final SupLogService supplierLogs;
+    private final CustomerRepository customerRepository;
+    private final CustomerEventService customerEvents;
+    private final SaleRepository saleRepository;
+    private final JdbcTemplate jdbc;
 
     // ----------------------------------------------------------------- reads
 
@@ -104,7 +117,6 @@ public class PurchaseService {
                 .importKey(importKey)
                 .type(type)
                 .status(draft)
-                .supplier(findSupplierOrThrow(request.supplierId()))
                 .createdBy(CurrentActor.id())
                 .createdByEmail(CurrentActor.email())
                 .build();
@@ -113,6 +125,7 @@ public class PurchaseService {
 
         logs.record(purchase, PurchaseLogService.CREATED, "Purchase created (draft)",
                 Map.of("number", purchase.getPurchaseNumber()));
+        recordCustomerEvent(purchase, "CUSTOMER_PURCHASE_CREATED", "Customer purchase created");
         return PurchaseDetailResponse.from(purchase);
     }
 
@@ -130,7 +143,6 @@ public class PurchaseService {
                     "The purchase was modified by someone else; reload and retry");
         }
         purchase.setType(config.requireType(request.typeId()));
-        purchase.setSupplier(findSupplierOrThrow(request.supplierId()));
         applyHeaderAndItems(purchase, request);
 
         logs.record(purchase, PurchaseLogService.UPDATED, "Draft updated", null);
@@ -162,7 +174,7 @@ public class PurchaseService {
                     "Only drafts can be submitted");
         }
         Supplier supplier = purchase.getSupplier();
-        if (supplier.getStatus().isBlocking()) {
+        if (supplier != null && supplier.getStatus().isBlocking()) {
             throw new ApiException(ErrorCode.OPERATION_NOT_ALLOWED,
                     "Supplier %s is blocked (%s); purchasing from this supplier is not allowed"
                             .formatted(supplier.getDisplayName(), supplier.getStatus().getName()));
@@ -178,6 +190,7 @@ public class PurchaseService {
         } else {
             approveInternal(purchase, "Auto-approved (below approval threshold)");
         }
+        recordCustomerEvent(purchase, "CUSTOMER_PURCHASE_SUBMITTED", "Customer purchase submitted");
         return PurchaseDetailResponse.from(purchase);
     }
 
@@ -223,6 +236,7 @@ public class PurchaseService {
 
         logs.record(purchase, PurchaseLogService.CANCELLED, "Purchase cancelled",
                 Map.of("reason", reason.getName()));
+        recordCustomerEvent(purchase, "CUSTOMER_PURCHASE_CANCELLED", "Customer purchase cancelled");
         return PurchaseDetailResponse.from(purchase);
     }
 
@@ -235,13 +249,35 @@ public class PurchaseService {
         logs.record(purchase, PurchaseLogService.APPROVED, title,
                 Map.of("total", purchase.getTotalAmount()));
         // Supplier history: the order appears in the supplier's log/timeline.
-        supplierLogs.record(purchase.getSupplier(), "PURCHASE_ORDER",
-                "Purchase order " + purchase.getPurchaseNumber() + " approved",
-                Map.of("purchaseId", purchase.getId(), "number", purchase.getPurchaseNumber(),
-                        "total", purchase.getTotalAmount()));
+        if (purchase.getSupplier() != null) {
+            supplierLogs.record(purchase.getSupplier(), "PURCHASE_ORDER",
+                    "Purchase order " + purchase.getPurchaseNumber() + " approved",
+                    Map.of("purchaseId", purchase.getId(), "number", purchase.getPurchaseNumber(),
+                            "total", purchase.getTotalAmount()));
+        } else {
+            recordCustomerEvent(purchase, "CUSTOMER_PURCHASE_APPROVED", "Customer purchase approved");
+        }
     }
 
     private void applyHeaderAndItems(Purchase purchase, PurchaseRequest request) {
+        applyCounterparty(purchase, request);
+        Long tenantId = tenantContext.requireTenantId();
+        purchase.setCompanyId(resolveCompanyId(request.companyId(), tenantId));
+        purchase.setBranchId(resolveBranchId(request.branchId(), purchase.getCompanyId(), tenantId));
+        purchase.setLinkedSaleId(validateLinkedSale(request.linkedSaleId(), purchase));
+        purchase.setItemCondition(request.itemCondition() == null
+                ? com.sami.app.purchasing.domain.PurchaseItemCondition.OTHER : request.itemCondition());
+        purchase.setInspectionNotes(request.inspectionNotes());
+        purchase.setOwnershipDeclared(request.ownershipDeclared());
+        purchase.setDeclarationNotes(request.declarationNotes());
+        purchase.setValuationAmount(request.valuationAmount());
+        purchase.setSettlementStatus(request.settlementStatus() == null
+                ? PurchaseSettlementStatus.PENDING : request.settlementStatus());
+        purchase.setSettlementMethod(request.settlementMethod());
+        purchase.setSettlementReference(request.settlementReference());
+        purchase.setSettledAmount(request.settledAmount());
+        purchase.setSettledAt(purchase.getSettlementStatus() == PurchaseSettlementStatus.SETTLED
+                ? (purchase.getSettledAt() == null ? Instant.now() : purchase.getSettledAt()) : null);
         purchase.setWarehouse(request.warehouseId() == null ? null
                 : warehouseRepository.findByIdAndTenantId(request.warehouseId(),
                                 tenantContext.requireTenantId())
@@ -280,6 +316,74 @@ public class PurchaseService {
     private Supplier findSupplierOrThrow(Long supplierId) {
         return supplierRepository.findByIdAndTenantId(supplierId, tenantContext.requireTenantId())
                 .orElseThrow(() -> ResourceNotFoundException.of("Supplier", supplierId));
+    }
+
+    private void applyCounterparty(Purchase purchase, PurchaseRequest request) {
+        PurchaseSellerType sellerType = request.sellerType() == null
+                ? PurchaseSellerType.SUPPLIER : request.sellerType();
+        purchase.setSellerType(sellerType);
+        if (sellerType == PurchaseSellerType.SUPPLIER) {
+            if (request.supplierId() == null) throw new ApiException(ErrorCode.VALIDATION_FAILED, "Supplier is required");
+            purchase.setSupplier(findSupplierOrThrow(request.supplierId()));
+            purchase.setSellerCustomer(null);
+        } else {
+            if (request.sellerCustomerId() == null) throw new ApiException(ErrorCode.VALIDATION_FAILED, "Customer seller is required");
+            Customer customer = customerRepository.findByIdAndTenantId(request.sellerCustomerId(), tenantContext.requireTenantId())
+                    .filter(c -> c.getDeletedAt() == null && c.getMergedInto() == null)
+                    .orElseThrow(() -> ResourceNotFoundException.of("Customer", request.sellerCustomerId()));
+            purchase.setSupplier(null);
+            purchase.setSellerCustomer(customer);
+        }
+    }
+
+    private Long resolveCompanyId(Long requestedId, Long tenantId) {
+        if (requestedId != null) {
+            Integer count = jdbc.queryForObject("select count(*) from companies where id=? and tenant_id=?", Integer.class, requestedId, tenantId);
+            if (count != null && count == 1) return requestedId;
+            throw ResourceNotFoundException.of("Company", requestedId);
+        }
+        Long id = jdbc.query("select id from companies where tenant_id=? order by id limit 1",
+                rs -> rs.next() ? rs.getLong(1) : null, tenantId);
+        if (id == null) throw new ApiException(ErrorCode.OPERATION_NOT_ALLOWED, "Configure a company before creating purchases");
+        return id;
+    }
+
+    private Long resolveBranchId(Long requestedId, Long companyId, Long tenantId) {
+        if (requestedId != null) {
+            Integer count = jdbc.queryForObject(
+                    "select count(*) from branches where id=? and company_id=? and tenant_id=?",
+                    Integer.class, requestedId, companyId, tenantId);
+            if (count != null && count == 1) return requestedId;
+            throw ResourceNotFoundException.of("Branch", requestedId);
+        }
+        Long id = jdbc.query("select id from branches where company_id=? and tenant_id=? order by id limit 1",
+                rs -> rs.next() ? rs.getLong(1) : null, companyId, tenantId);
+        if (id == null) throw new ApiException(ErrorCode.OPERATION_NOT_ALLOWED, "Configure a branch before creating purchases");
+        return id;
+    }
+
+    private Long validateLinkedSale(Long saleId, Purchase purchase) {
+        if (saleId == null) return null;
+        if (purchase.getSellerType() != PurchaseSellerType.CUSTOMER) {
+            throw new ApiException(ErrorCode.VALIDATION_FAILED, "Only customer-origin purchases can link a sale");
+        }
+        Sale sale = saleRepository.findByIdAndTenantId(saleId, tenantContext.requireTenantId())
+                .orElseThrow(() -> ResourceNotFoundException.of("Sale", saleId));
+        if (!sale.getCustomerId().equals(purchase.getSellerCustomer().getId()) || sale.getStatus() == SaleStatus.CANCELLED) {
+            throw new ApiException(ErrorCode.VALIDATION_FAILED, "Linked sale must belong to the same customer and must not be cancelled");
+        }
+        if (!sale.getCompanyId().equals(purchase.getCompanyId()) || !sale.getBranchId().equals(purchase.getBranchId())) {
+            throw new ApiException(ErrorCode.VALIDATION_FAILED, "Linked sale must use the same company and branch");
+        }
+        return saleId;
+    }
+
+    private void recordCustomerEvent(Purchase purchase, String type, String title) {
+        if (purchase.getSellerCustomer() != null) {
+            customerEvents.record(purchase.getSellerCustomer().getId(), type, title,
+                    Map.of("purchaseId", purchase.getId(), "number", purchase.getPurchaseNumber()),
+                    "purchasing");
+        }
     }
 
     Purchase findWithDetailsOrThrow(Long id) {

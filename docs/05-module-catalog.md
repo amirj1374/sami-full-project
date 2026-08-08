@@ -53,3 +53,9 @@ forward migration and full release validation.
 
 See [module notes](modules/README.md) for package entry points and
 [IMPLEMENTATION_BACKLOG.md](IMPLEMENTATION_BACKLOG.md) for prioritized work.
+# Current lifecycle update — 2026-08-08
+
+- **Purchasing:** active; supports both supplier-origin and customer-origin purchases/trade-ins. Customer-origin records remain CRM customers and include inspection, valuation, settlement, optional Sale linkage, inventory receipt and serial/IMEI integrity.
+- **Data Quality:** active and production-ready in both backend and frontend as of V39.
+- **Files/Media and Appointments/Resources:** remain partial and intentionally not directly routed.
+- **Web Push:** browser foundation only; backend VAPID/subscription delivery awaits architecture/security approval.

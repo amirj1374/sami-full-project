@@ -2,10 +2,13 @@ package com.sami.app.purchasing.domain;
 
 import com.sami.app.common.domain.BaseEntity;
 import com.sami.app.inventory.domain.InventoryWarehouse;
+import com.sami.app.crm.domain.Customer;
 import com.sami.app.supplier.domain.Supplier;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -55,9 +58,61 @@ public class Purchase extends BaseEntity {
     @JoinColumn(name = "status_id", nullable = false)
     private PurStatus status;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "supplier_id", nullable = false)
+    @Enumerated(EnumType.STRING)
+    @Column(name = "seller_type", nullable = false, length = 16)
+    @Builder.Default
+    private PurchaseSellerType sellerType = PurchaseSellerType.SUPPLIER;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "supplier_id")
     private Supplier supplier;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "seller_customer_id")
+    private Customer sellerCustomer;
+
+    @Column(name = "company_id", nullable = false)
+    private Long companyId;
+
+    @Column(name = "branch_id", nullable = false)
+    private Long branchId;
+
+    @Column(name = "linked_sale_id")
+    private Long linkedSaleId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "item_condition", nullable = false, length = 20)
+    @Builder.Default
+    private PurchaseItemCondition itemCondition = PurchaseItemCondition.OTHER;
+
+    @Column(name = "inspection_notes", length = 2000)
+    private String inspectionNotes;
+
+    @Column(name = "ownership_declared", nullable = false)
+    private boolean ownershipDeclared;
+
+    @Column(name = "declaration_notes", length = 1000)
+    private String declarationNotes;
+
+    @Column(name = "valuation_amount", precision = 14, scale = 2)
+    private BigDecimal valuationAmount;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "settlement_status", nullable = false, length = 16)
+    @Builder.Default
+    private PurchaseSettlementStatus settlementStatus = PurchaseSettlementStatus.PENDING;
+
+    @Column(name = "settlement_method", length = 40)
+    private String settlementMethod;
+
+    @Column(name = "settlement_reference", length = 160)
+    private String settlementReference;
+
+    @Column(name = "settled_amount", precision = 14, scale = 2)
+    private BigDecimal settledAmount;
+
+    @Column(name = "settled_at")
+    private Instant settledAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "warehouse_id")

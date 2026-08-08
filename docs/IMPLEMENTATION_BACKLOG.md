@@ -154,3 +154,10 @@ reports remain evidence, not current scheduling authority.
 - **Recommended branch:** architecture task first; implementation branch only after approval.
 - **Read first:** roadmap/open decisions, Sales/Purchasing design and architecture-auditor workflow.
 - **Validation required:** data-integrity/concurrency/audit/migration/full financial release gate.
+# Current priority update — 2026-08-08
+
+- Completed: Customer Purchase / Trade-in purchasing model, CRM history, inventory receipt guard, settlement snapshot, linked-sale validation, and IMEI checksum validation (V38).
+- Completed: Data Quality end-to-end route/lifecycle activation (V39).
+- Validated: centralized Vazirmatn production/mobile font pipeline; no font change required.
+- Approval required: real Web Push canonical owner, persistence, VAPID secret and retry contract (proposal in `FULL_NEXT_PHASE_IMPLEMENTATION_REPORT.md`).
+- Environment blocker: install Docker Desktop and Windows OpenSSH Client with administrator elevation, then run fresh PostgreSQL/Flyway and Linux image/Compose gates.
