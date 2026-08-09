@@ -555,13 +555,11 @@ onMounted(load);
             v-model="typeFilter"
             :items="typeItems"
             clearable
-            :label="t('licensing.type')" /><v-text-field
+          :label="t('licensing.type')" /><AppPersianDatePicker
             v-model="activationFrom"
-            type="date"
             clearable
-            :label="t('licensing.activationFrom')" /><v-text-field
+            :label="t('licensing.activationFrom')" /><AppPersianDatePicker
             v-model="expirationBefore"
-            type="date"
             clearable
             :label="t('licensing.expirationBefore')" /><v-select
             v-model="sort"

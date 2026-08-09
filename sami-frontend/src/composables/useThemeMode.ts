@@ -16,7 +16,7 @@ let systemListenerBound = false
 
 function readStored(): ThemeMode {
   const v = typeof localStorage !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null
-  return v === 'light' || v === 'dark' || v === 'system' ? v : 'light'
+  return v === 'light' || v === 'dark' || v === 'system' ? v : 'dark'
 }
 
 function resolve(m: ThemeMode): 'light' | 'dark' {

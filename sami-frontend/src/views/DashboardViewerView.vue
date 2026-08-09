@@ -237,8 +237,8 @@ onBeforeUnmount(() => {
       </div>
       <v-spacer />
 
-      <v-text-field v-model="fromFilter" :label="t('dash.from')" type="date" density="compact" hide-details clearable style="max-width: 155px" />
-      <v-text-field v-model="toFilter" :label="t('dash.to')" type="date" density="compact" hide-details clearable style="max-width: 155px" />
+      <AppPersianDatePicker v-model="fromFilter" :label="t('dash.from')" density="compact" hide-details clearable style="max-width: 155px" />
+      <AppPersianDatePicker v-model="toFilter" :label="t('dash.to')" density="compact" hide-details clearable style="max-width: 155px" />
 
       <v-menu :close-on-content-click="false">
         <template #activator="{ props: menuProps }">

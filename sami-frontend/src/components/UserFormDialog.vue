@@ -330,10 +330,9 @@ const genderItems = computed(() => [
                   <v-text-field v-model="profile.phoneNumber" :label="t('users.phoneNumber')" maxlength="32" />
                 </v-col>
                 <v-col cols="12" sm="6">
-                  <v-text-field
+                  <AppPersianDatePicker
                     v-model="profile.birthDate"
                     :label="t('users.birthDate')"
-                    type="date"
                     clearable
                   />
                 </v-col>
@@ -370,11 +369,17 @@ const genderItems = computed(() => [
                       color="primary"
                       inset
                     />
+                    <AppPersianDatePicker
+                      v-else-if="def.fieldType === 'DATE'"
+                      v-model="customValues[def.fieldKey] as string | undefined"
+                      :label="def.label + (def.required ? ' *' : '')"
+                      clearable
+                    />
                     <v-text-field
                       v-else
                       v-model="customValues[def.fieldKey] as string | undefined"
                       :label="def.label + (def.required ? ' *' : '')"
-                      :type="def.fieldType === 'NUMBER' ? 'number' : def.fieldType === 'DATE' ? 'date' : 'text'"
+                      :type="def.fieldType === 'NUMBER' ? 'number' : 'text'"
                     />
                   </v-col>
                 </v-row>

@@ -265,8 +265,8 @@ onMounted(async () => {
             <v-col cols="6" md="2"><v-select v-model="statusFilter" :label="t('purchases.headers.status')" :items="statusItems" hide-details /></v-col>
             <v-col cols="6" md="2"><v-select v-model="typeFilter" :label="t('purchases.headers.type')" :items="typeItems" hide-details /></v-col>
             <v-col cols="12" sm="6" md="2"><v-select v-model="warehouseFilter" :label="t('purchases.filters.warehouse')" :items="warehouseItems" hide-details /></v-col>
-            <v-col cols="6" sm="3" md="1"><v-text-field v-model="fromFilter" :label="t('purchases.filters.from')" type="date" hide-details clearable /></v-col>
-            <v-col cols="6" sm="3" md="1"><v-text-field v-model="toFilter" :label="t('purchases.filters.to')" type="date" hide-details clearable /></v-col>
+            <v-col cols="6" sm="3" md="1"><AppPersianDatePicker v-model="fromFilter" :label="t('purchases.filters.from')" hide-details clearable /></v-col>
+            <v-col cols="6" sm="3" md="1"><AppPersianDatePicker v-model="toFilter" :label="t('purchases.filters.to')" hide-details clearable /></v-col>
           </v-row>
         </v-card-text>
       </v-card>

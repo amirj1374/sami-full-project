@@ -50,7 +50,12 @@
     "inactive": "غیرفعال",
     "type": "نوع",
     "yes": "بله",
-    "currency": "تومان"
+    "currency": "تومان",
+    "persianDate": {
+      "previousMonth": "ماه قبل",
+      "nextMonth": "ماه بعد",
+      "today": "امروز"
+    }
   },
   "shell": {
     "tagline": "سامانه مدیریت فروشگاه",

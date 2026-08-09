@@ -18,6 +18,7 @@ import {
   PUSH_SUBSCRIPTION_CHANGED_MESSAGE,
 } from './types/pushNotifications'
 import { exposeBuildInfo } from './buildInfo'
+import AppPersianDatePicker from './components/AppPersianDatePicker.vue'
 
 // Apply the persisted (or default Persian) locale, setting <html lang/dir> before mount.
 setLocale(getStoredLocale())
@@ -25,6 +26,7 @@ setLocale(getStoredLocale())
 const app = createApp(App)
 const pinia = createPinia()
 
+app.component('AppPersianDatePicker', AppPersianDatePicker)
 app.use(pinia)
 app.use(i18n)
 app.use(router)

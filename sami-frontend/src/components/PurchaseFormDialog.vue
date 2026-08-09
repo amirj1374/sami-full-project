@@ -371,10 +371,9 @@ async function submit() {
               />
             </v-col>
             <v-col cols="4" sm="2">
-              <v-text-field
+              <AppPersianDatePicker
                 v-model="item.expectedDelivery"
                 :label="t('purchases.form.expected')"
-                type="date"
                 density="compact"
                 hide-details
               />

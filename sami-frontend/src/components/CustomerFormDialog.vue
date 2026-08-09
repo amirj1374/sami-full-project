@@ -333,7 +333,7 @@ async function submit(ignoreDuplicates = false) {
                 <v-text-field v-model="form.passportNumber" :label="t('customers.form.fields.passportNumber')" maxlength="32" />
               </v-col>
               <v-col cols="12" sm="6">
-                <v-text-field v-model="form.birthDate" :label="t('customers.form.fields.birthDate')" type="date" clearable />
+                <AppPersianDatePicker v-model="form.birthDate" :label="t('customers.form.fields.birthDate')" clearable />
               </v-col>
               <v-col cols="12" sm="6">
                 <v-select v-model="form.gender" :label="t('customers.form.fields.gender')" :items="genderItems" clearable />

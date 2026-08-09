@@ -30,7 +30,7 @@ export const vuetify = createVuetify({
     },
   },
   theme: {
-    defaultTheme: 'light',
+    defaultTheme: 'dark',
     themes: {
       // Palette extracted from the showroom: navy authority, clean white
       // surfaces, cool-gray neutrals and a restrained brass accent.
@@ -72,8 +72,7 @@ export const vuetify = createVuetify({
           'shadow-key-ambient-opacity': 0.032,
         },
       },
-      // Dark counterpart (same navy identity, lightened for contrast). Not the
-      // default; available if a theme toggle is added later.
+      // Dark counterpart (same navy identity, lightened for contrast).
       dark: {
         dark: true,
         colors: {

@@ -63,10 +63,10 @@ onMounted(load)
     <v-card rounded="xl" class="app-data-surface pa-4 mb-4">
       <v-row dense align="center">
         <v-col cols="6" md="3">
-          <v-text-field v-model="filters.createdFrom" type="date" :label="t('purchases.filters.from')" hide-details />
+          <AppPersianDatePicker v-model="filters.createdFrom" :label="t('purchases.filters.from')" hide-details />
         </v-col>
         <v-col cols="6" md="3">
-          <v-text-field v-model="filters.createdTo" type="date" :label="t('purchases.filters.to')" hide-details />
+          <AppPersianDatePicker v-model="filters.createdTo" :label="t('purchases.filters.to')" hide-details />
         </v-col>
         <v-col cols="12" md="3">
           <v-btn block color="primary" :loading="loading" @click="load">{{ t('common.apply') }}</v-btn>

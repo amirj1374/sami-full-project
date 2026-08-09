@@ -24,7 +24,7 @@ export const SUPPORTED_LOCALES: { code: AppLocale; name: string }[] = [
 
 export const i18n = createI18n({
   legacy: false,
-  locale: 'en',
+  locale: 'fa',
   fallbackLocale: 'en',
   missingWarn: false,
   fallbackWarn: false,
@@ -43,7 +43,7 @@ export function isRtl(locale: AppLocale): boolean {
 
 export function getStoredLocale(): AppLocale {
   const stored = localStorage.getItem(STORAGE_KEY)
-  return stored === 'fa' || stored === 'en' ? stored : 'en'
+  return stored === 'fa' || stored === 'en' ? stored : 'fa'
 }
 
 /** Applies a locale everywhere: i18n, storage, and the document direction. */

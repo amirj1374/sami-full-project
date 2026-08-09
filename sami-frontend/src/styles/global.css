@@ -40,7 +40,7 @@
   --app-form-control-height: 44px;
   --app-form-label-gap: 7px;
   --app-form-message-gap: 4px;
-  --app-form-field-gap: 16px;
+  --app-form-field-gap: 20px;
   --app-form-section-gap: 24px;
   --app-form-dialog-padding: 24px;
   --app-form-footer-padding: 16px;
@@ -217,6 +217,14 @@ html:lang(fa) .v-application .text-subtitle-1 { letter-spacing: 0 !important; }
 }
 .v-application .v-input--error .v-messages {
   margin-bottom: 0;
+}
+
+/* Stacked fields outside a grid need their own breathing room. Grid-based
+   forms continue to use --app-form-field-gap on the owning row. */
+.v-application form > .v-input + .v-input,
+.v-application .v-form > .v-input + .v-input,
+.v-application .v-dialog .v-window-item > .v-input + .v-input {
+  margin-top: var(--app-space-3);
 }
 .v-application .v-field-label--floating {
   opacity: 1;
@@ -444,7 +452,7 @@ html:lang(fa) .v-application .text-subtitle-1 { letter-spacing: 0 !important; }
     --app-space-6: 26px;
     --app-space-8: 36px;
     --app-form-control-height: 48px;
-    --app-form-field-gap: 14px;
+    --app-form-field-gap: 18px;
     --app-form-section-gap: 20px;
     --app-form-dialog-padding: 16px;
   }

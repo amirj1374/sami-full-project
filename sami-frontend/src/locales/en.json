@@ -50,7 +50,12 @@
     "inactive": "Inactive",
     "type": "Type",
     "yes": "Yes",
-    "currency": "Toman"
+    "currency": "Toman",
+    "persianDate": {
+      "previousMonth": "Previous Persian month",
+      "nextMonth": "Next Persian month",
+      "today": "Today"
+    }
   },
   "shell": {
     "tagline": "Retail ERP",

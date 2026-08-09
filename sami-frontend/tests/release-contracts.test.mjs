@@ -213,3 +213,23 @@ test('Market Sync is localized, permission-gated, responsive, and backend-priced
   assert.match(view, /marketSyncApi\.preview\(profile\)/); assert.match(view, /overflow-x:hidden/)
   assert.equal(Object.keys(en.marketSync).sort().join(','), Object.keys(fa.marketSync).sort().join(','))
 })
+
+test('Persian date, locale, dark theme, and form rhythm are centralized', () => {
+  const i18n = read('src/i18n.ts')
+  const vuetify = read('src/plugins/vuetify.ts')
+  const themeMode = read('src/composables/useThemeMode.ts')
+  const styles = read('src/styles/global.css')
+  const picker = read('src/components/AppPersianDatePicker.vue')
+  const frontendSource = filesBelow(sourceRoot)
+    .filter((file) => file.endsWith('.vue'))
+    .map((file) => readFileSync(file, 'utf8'))
+    .join('\n')
+
+  assert.match(i18n, /locale: 'fa'/)
+  assert.match(i18n, /stored : 'fa'/)
+  assert.match(vuetify, /defaultTheme: 'dark'/)
+  assert.match(themeMode, /\? v : 'dark'/)
+  assert.match(styles, /--app-form-field-gap: 20px/)
+  assert.match(picker, /u-ca-persian/)
+  assert.doesNotMatch(frontendSource, /type=["']date["']/)
+})
