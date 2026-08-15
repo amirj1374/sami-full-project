@@ -59,7 +59,7 @@ class AsanLegacyImportAdapterTest {
         boolean windows = System.getProperty("os.name").toLowerCase().contains("win");
         Path executable = temp.resolve(windows ? "fake-unrar.cmd" : "fake-unrar");
         String script = windows
-                ? "@echo off\r\nif \"%1\"==\"lb\" (echo ASAN6/report.fr3&echo ASAN6/blob.bin&exit /b 0)\r\nif \"%1\"==\"p\" (if \"%5\"==\"ASAN6/report.fr3\" (echo TfrxReport FieldName=\"CustomerCode\") else (echo BINARY)&exit /b 0)\r\nexit /b 1\r\n"
+                ? "@echo off\r\nif \"%1\"==\"lb\" (\r\n  echo ASAN6/report.fr3\r\n  echo ASAN6/blob.bin\r\n  exit /b 0\r\n)\r\nif \"%1\"==\"p\" (\r\n  if \"%5\"==\"ASAN6/report.fr3\" (echo TfrxReport FieldName=\"CustomerCode\") else (echo BINARY)\r\n  exit /b 0\r\n)\r\nexit /b 1\r\n"
                 : "#!/bin/sh\nif [ \"$1\" = \"lb\" ]; then printf '%s\\n' ASAN6/report.fr3 ASAN6/blob.bin; exit 0; fi\nif [ \"$1\" = \"p\" ]; then for entry do last=$entry; done; if [ \"$last\" = \"ASAN6/report.fr3\" ]; then printf '%s' 'TfrxReport FieldName=\"CustomerCode\"'; else printf '%s' BINARY; fi; exit 0; fi\nexit 1\n";
         Files.writeString(executable, script);
         if (!windows) Files.setPosixFilePermissions(executable, Set.of(

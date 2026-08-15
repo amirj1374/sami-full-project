@@ -233,3 +233,88 @@ test('Persian date, locale, dark theme, and form rhythm are centralized', () => 
   assert.match(picker, /u-ca-persian/)
   assert.doesNotMatch(frontendSource, /type=["']date["']/)
 })
+
+test('Licensing mock responses preserve the production API shapes', () => {
+  const handlers = read('src/mocks/handlers.ts')
+
+  assert.match(handlers, /licensing\/catalog'[\s\S]*licenseStatuses:\s*\[\]/)
+  assert.match(handlers, /licensing\/reports\/summary'[\s\S]*byStatus:\s*\{\}/)
+  assert.match(handlers, /licensing\/reports\/expiring'[\s\S]*ok\(\[\]\)/)
+})
+
+test('creatable reference fields provide permission-gated inline creation and selection', () => {
+  const targets = [
+    ['src/views/SalesView.vue', ['customers:create', 'products:create']],
+    ['src/components/PurchaseFormDialog.vue', ['suppliers:create', 'customers:create', 'products:create']],
+    ['src/components/LostSalesPanel.vue', ['customers:create', 'products:create']],
+    ['src/views/AppointmentsView.vue', ['customers:create']],
+    ['src/components/inventory/InventoryTransfersPanel.vue', ['products:create']],
+    ['src/components/inventory/InventoryBalancesPanel.vue', ['products:create']],
+  ]
+
+  for (const [file, permissions] of targets) {
+    const source = read(file)
+    assert.match(source, /AppQuickCreateButton/, `${file} has no inline create affordance`)
+    assert.match(source, /@created=/, `${file} does not handle the created entity`)
+    for (const permission of permissions) {
+      assert.match(source, new RegExp(`can\\('${permission}'\\)`), `${file} does not gate ${permission}`)
+    }
+  }
+
+  for (const entity of ['Customer', 'Supplier', 'Product']) {
+    const wrapper = read(`src/components/Quick${entity}CreateDialog.vue`)
+    assert.match(wrapper, /emit\('created', \w+\)/)
+  }
+})
+
+test('workflow status enums have Persian labels and raw status views use the shared translator', () => {
+  const english = JSON.parse(read('src/locales/en.json'))
+  const persian = JSON.parse(read('src/locales/fa.json'))
+  const requiredStatuses = [
+    'ACTIVE', 'INACTIVE', 'DRAFT', 'PENDING', 'APPROVED', 'REJECTED', 'CONFIRMED',
+    'COMPLETED', 'CANCELLED', 'PARTIALLY_RETURNED', 'RETURNED', 'OPEN', 'RESOLVED',
+    'IGNORED', 'RUNNING', 'SUCCEEDED', 'FAILED', 'SKIPPED', 'TIMED_OUT', 'READY',
+    'UPLOADED', 'ANALYZING', 'IMPORTING', 'COMPLETED_WITH_WARNINGS', 'SETTLED',
+    'WAIVED', 'POSTED', 'RECEIVING', 'RECEIVED', 'SHIPPED', 'AVAILABLE', 'RESERVED',
+    'IN_TRANSIT', 'ISSUED', 'QUARANTINED', 'RETURNED_TO_SUPPLIER', 'RELEASED',
+    'FULFILLED', 'COUNTED', 'CALCULATED', 'DEGRADED', 'FAILING', 'DISABLED', 'EXPIRED',
+  ]
+
+  for (const status of requiredStatuses) {
+    assert.ok(english.server.enum[status], `Missing English enum label for ${status}`)
+    assert.ok(persian.server.enum[status], `Missing Persian enum label for ${status}`)
+    assert.notEqual(persian.server.enum[status], status, `Persian enum label is still raw for ${status}`)
+  }
+
+  for (const file of ['src/views/LegacyImportsView.vue', 'src/views/MarketSyncView.vue', 'src/components/SaleActionPanel.vue']) {
+    assert.match(read(file), /enumLabel/, `${file} bypasses the shared enum translator`)
+  }
+})
+
+test('business enum fields and audit values use Persian labels instead of raw codes', () => {
+  const english = JSON.parse(read('src/locales/en.json'))
+  const persian = JSON.parse(read('src/locales/fa.json'))
+  const requiredEnums = [
+    'AMOUNT', 'PERCENT', 'VIP', 'CAMPAIGN', 'COUPON', 'CASH', 'CARD', 'TRANSFER',
+    'CHEQUE', 'WALLET', 'INSTALLMENT', 'BLACKLIST', 'WHITELIST', 'PRODUCT_CODE',
+    'PREFIX', 'SUPPLIER', 'CUSTOMER', 'PURCHASE', 'SALE', 'RESERVATION', 'RETURN',
+    'NEW_SEALED', 'USED', 'OTHER', 'CREATED', 'UPDATED', 'DELETED', 'RESTORED',
+    'STATUS_CHANGED', 'PAYMENT_STATUS_CHANGED', 'DISCOUNT_APPROVED', 'PAYMENT_ADDED',
+    'STOCK_ADJUSTED', 'UPLOAD', 'ANALYZE', 'IMPORT', 'COMPARE', 'TEXT', 'NUMBER',
+    'NUMERIC', 'MEMO', 'UNKNOWN', 'REFERENCE_GEOGRAPHY', 'IMEI', 'SERIAL',
+    'PURCHASE_RECEIPT', 'PURCHASE_RETURN', 'CUSTOMER_RETURN',
+  ]
+
+  for (const value of requiredEnums) {
+    assert.ok(english.server.enum[value], `Missing English enum label for ${value}`)
+    assert.ok(persian.server.enum[value], `Missing Persian enum label for ${value}`)
+    assert.notEqual(persian.server.enum[value], value, `Persian enum label is still raw for ${value}`)
+  }
+
+  for (const file of [
+    'src/components/SaleActionPanel.vue', 'src/components/PurchaseDetailDialog.vue',
+    'src/components/SupplierDetailDialog.vue', 'src/components/UserAuditDialog.vue',
+    'src/components/inventory/InventoryMonitoringPanel.vue', 'src/views/DashboardReportsView.vue',
+    'src/views/LegacyImportsView.vue', 'src/views/MarketSyncView.vue',
+  ]) assert.match(read(file), /enumLabel/, `${file} bypasses the shared enum translator`)
+})

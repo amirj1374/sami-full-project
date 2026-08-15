@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { dashboardsApi, kpisApi } from '@/api/dashboards'
 import { useApiError } from '@/composables/useApiError'
 import { useFormat } from '@/composables/useFormat'
+import { useServerLabel } from '@/composables/useServerLabel'
 import type { DashboardAuditEntry, DashboardRow, Kpi, KpiValueEntry } from '@/types/models'
 
 /**
@@ -13,6 +14,7 @@ import type { DashboardAuditEntry, DashboardRow, Kpi, KpiValueEntry } from '@/ty
  */
 const { t } = useI18n()
 const { formatNumber, formatDateTime } = useFormat()
+const { enumLabel } = useServerLabel()
 const { message: errorMessage, set: setError, clear: clearError } = useApiError()
 
 const tab = ref<'summary' | 'trends' | 'usage'>('summary')
@@ -193,7 +195,7 @@ watch(usageDashboardId, async (id) => {
               <tbody>
                 <tr v-for="entry in usageEntries" :key="entry.id">
                   <td>
-                    <v-chip size="x-small" variant="tonal">{{ entry.action }}</v-chip>
+                    <v-chip size="x-small" variant="tonal">{{ enumLabel(entry.action) }}</v-chip>
                     <span v-if="entry.newValues" class="text-medium-emphasis ms-1">
                       {{ JSON.stringify(entry.newValues) }}
                     </span>

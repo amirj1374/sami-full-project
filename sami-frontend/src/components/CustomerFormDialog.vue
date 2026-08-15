@@ -33,7 +33,7 @@ const props = defineProps<{
   preferenceDefs: PreferenceDefinition[]
 }>()
 
-const emit = defineEmits<{ 'update:modelValue': [boolean]; saved: [] }>()
+const emit = defineEmits<{ 'update:modelValue': [boolean]; saved: [customer: CustomerDetail] }>()
 
 const { t } = useI18n()
 const { smAndDown } = useDisplay()
@@ -230,7 +230,7 @@ async function submit(ignoreDuplicates = false) {
       await customersApi.updatePreferences(saved.customer.id, preferences.value)
     }
     open.value = false
-    emit('saved')
+    emit('saved', saved)
   } catch (err) {
     setFormError(err)
   } finally {

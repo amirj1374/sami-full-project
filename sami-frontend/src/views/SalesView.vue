@@ -6,6 +6,9 @@ import AppPageHeader from "@/components/AppPageHeader.vue";
 import SaleActionPanel from "@/components/SaleActionPanel.vue";
 import SalesReportsPanel from "@/components/SalesReportsPanel.vue";
 import LostSalesPanel from "@/components/LostSalesPanel.vue";
+import AppQuickCreateButton from "@/components/AppQuickCreateButton.vue";
+import QuickCustomerCreateDialog from "@/components/QuickCustomerCreateDialog.vue";
+import QuickProductCreateDialog from "@/components/QuickProductCreateDialog.vue";
 import { salesApi } from "@/api/sales";
 import { hamtaApi } from "@/api/hamta";
 import { customersApi } from "@/api/customers";
@@ -55,6 +58,26 @@ type DraftService = {
   cost: number;
   employeeId: number | null;
 };
+const quickCustomerOpen = ref(false);
+const quickProductOpen = ref(false);
+const quickProductLine = ref<DraftLine | null>(null);
+function selectCreatedCustomer(detail: import("@/types/models").CustomerDetail) {
+  const customer = detail.customer;
+  if (!customers.value.some((item) => item.id === customer.id)) customers.value.push(customer);
+  form.customerId = customer.id;
+}
+function openQuickProduct(line: DraftLine) {
+  quickProductLine.value = line;
+  quickProductOpen.value = true;
+}
+function selectCreatedProduct(product: Product) {
+  if (!products.value.some((item) => item.id === product.id)) products.value.push(product);
+  if (quickProductLine.value) {
+    quickProductLine.value.productId = product.id;
+    chooseProduct(quickProductLine.value);
+  }
+  quickProductLine.value = null;
+}
 const workspace = ref<"sales" | "reports" | "lost">("sales"),
   editingId = ref<number | null>(null),
   form = reactive({
@@ -469,7 +492,8 @@ onMounted(load);
                 :items="customers"
                 item-title="displayName"
                 item-value="id"
-                :label="t('sales.customer')" /></v-col
+                :label="t('sales.customer')"
+              ><template v-if="can('customers:create')" #append-inner><AppQuickCreateButton :label="t('common.createNew', { entity: t('sales.customer') })" @click="quickCustomerOpen = true" /></template></v-autocomplete></v-col
             ><v-col cols="12" md="6"
               ><v-select
                 v-model="form.saleType"
@@ -515,7 +539,8 @@ onMounted(load);
                   item-title="name"
                   item-value="id"
                   :label="t('sales.product')"
-                  @update:model-value="chooseProduct(line)" /></v-col
+                  @update:model-value="chooseProduct(line)"
+                ><template v-if="can('products:create')" #append-inner><AppQuickCreateButton :label="t('common.createNew', { entity: t('sales.product') })" @click="openQuickProduct(line)" /></template></v-autocomplete></v-col
               ><v-col cols="6" md="2"
                 ><v-text-field
                   v-model.number="line.quantity"
@@ -754,6 +779,8 @@ onMounted(load);
       "
       @failed="error.set"
     />
+    <QuickCustomerCreateDialog v-if="can('customers:create')" v-model="quickCustomerOpen" @created="selectCreatedCustomer" />
+    <QuickProductCreateDialog v-if="can('products:create')" v-model="quickProductOpen" @created="selectCreatedProduct" />
     <v-snackbar
       :model-value="!!notice"
       color="success"

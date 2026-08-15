@@ -8,6 +8,12 @@ import { suppliersApi } from '@/api/suppliers'
 import { customersApi } from '@/api/customers'
 import { useApiError } from '@/composables/useApiError'
 import { useNotifications } from '@/composables/useNotifications'
+import { usePermission } from '@/composables/usePermission'
+import { useServerLabel } from '@/composables/useServerLabel'
+import AppQuickCreateButton from '@/components/AppQuickCreateButton.vue'
+import QuickCustomerCreateDialog from '@/components/QuickCustomerCreateDialog.vue'
+import QuickProductCreateDialog from '@/components/QuickProductCreateDialog.vue'
+import QuickSupplierCreateDialog from '@/components/QuickSupplierCreateDialog.vue'
 import type {
   Product,
   PurType,
@@ -16,6 +22,8 @@ import type {
   PurchaseItemPayload,
   SupplierRow,
   Customer,
+  CustomerDetail,
+  SupplierDetail,
 } from '@/types/models'
 
 /**
@@ -35,6 +43,30 @@ const emit = defineEmits<{ 'update:modelValue': [boolean]; saved: [] }>()
 const { t } = useI18n()
 const { smAndDown } = useDisplay()
 const notifications = useNotifications()
+const { can } = usePermission()
+const { enumLabel } = useServerLabel()
+const quickSupplierOpen = ref(false)
+const quickCustomerOpen = ref(false)
+const quickProductOpen = ref(false)
+const quickProductItem = ref<PurchaseItemPayload | null>(null)
+
+function selectCreatedSupplier(detail: SupplierDetail) {
+  supplier.value = detail.supplier
+  supplierCandidates.value = [detail.supplier]
+}
+function selectCreatedCustomer(detail: CustomerDetail) {
+  customer.value = detail.customer
+  customerCandidates.value = [detail.customer]
+}
+function openQuickProduct(item: PurchaseItemPayload) {
+  quickProductItem.value = item
+  quickProductOpen.value = true
+}
+function selectCreatedProduct(product: Product) {
+  if (!products.value.some((entry) => entry.id === product.id)) products.value.push(product)
+  if (quickProductItem.value) quickProductItem.value.productId = product.id
+  quickProductItem.value = null
+}
 
 const open = computed({
   get: () => props.modelValue,
@@ -277,6 +309,7 @@ async function submit() {
               <template #item="{ props: itemProps, item }">
                 <v-list-item v-bind="itemProps" :subtitle="item.raw.supplierCode" />
               </template>
+              <template v-if="can('suppliers:create')" #append-inner><AppQuickCreateButton :label="t('common.createNew', { entity: t('purchases.form.sellerSupplier') })" @click="quickSupplierOpen = true" /></template>
             </v-autocomplete>
           </v-col>
           <v-col v-else cols="12" sm="5">
@@ -285,6 +318,7 @@ async function submit() {
               item-title="displayName" return-object :label="t('purchases.form.customerRequired')"
               no-filter clearable>
               <template #item="{ props: itemProps, item }"><v-list-item v-bind="itemProps" :subtitle="item.raw.customerCode" /></template>
+              <template v-if="can('customers:create')" #append-inner><AppQuickCreateButton :label="t('common.createNew', { entity: t('purchases.form.sellerCustomer') })" @click="quickCustomerOpen = true" /></template>
             </v-autocomplete>
           </v-col>
           <v-col cols="12" sm="4">
@@ -309,7 +343,7 @@ async function submit() {
             <v-col cols="12"><v-checkbox v-model="form.ownershipDeclared" :label="t('purchases.form.ownership')" /></v-col>
             <v-col cols="12"><v-text-field v-model="form.declarationNotes" :label="t('purchases.form.declaration')" /></v-col>
             <v-col cols="12" sm="4"><v-select v-model="form.settlementStatus" :label="t('purchases.form.settlement')"
-              :items="['PENDING','SETTLED','WAIVED']" /></v-col>
+              :items="['PENDING','SETTLED','WAIVED']" :item-title="enumLabel" /></v-col>
             <v-col cols="12" sm="4"><v-text-field v-model="form.settlementMethod" :label="t('purchases.form.settlementMethod')" /></v-col>
             <v-col cols="12" sm="4"><v-text-field v-model.number="form.settledAmount" type="number" min="0" :label="t('purchases.form.settledAmount')" /></v-col>
             <v-col cols="12"><v-text-field v-model="form.settlementReference" :label="t('purchases.form.settlementReference')" /></v-col>
@@ -335,7 +369,11 @@ async function submit() {
                 item-value="id"
                 density="compact"
                 hide-details
-              />
+              >
+                <template v-if="can('products:create')" #append-inner>
+                  <AppQuickCreateButton :label="t('common.createNew', { entity: t('sales.product') })" @click="openQuickProduct(item)" />
+                </template>
+              </v-autocomplete>
             </v-col>
             <v-col cols="4" sm="1">
               <v-text-field
@@ -410,6 +448,9 @@ async function submit() {
       </v-card-actions>
     </v-card>
   </v-dialog>
+  <QuickSupplierCreateDialog v-if="can('suppliers:create')" v-model="quickSupplierOpen" @created="selectCreatedSupplier" />
+  <QuickCustomerCreateDialog v-if="can('customers:create')" v-model="quickCustomerOpen" @created="selectCreatedCustomer" />
+  <QuickProductCreateDialog v-if="can('products:create')" v-model="quickProductOpen" @created="selectCreatedProduct" />
 </template>
 
 <style scoped>

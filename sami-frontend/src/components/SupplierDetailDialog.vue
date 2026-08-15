@@ -39,7 +39,7 @@ const open = computed({
 const { t } = useI18n()
 const { can } = usePermission()
 const { formatDateTime, formatNumber } = useFormat()
-const { text: srvLabel } = useServerLabel()
+const { text: srvLabel, enumLabel } = useServerLabel()
 const { message: errorMessage, set: setError, clear: clearError } = useApiError()
 
 const detail = ref<SupplierDetail | null>(null)
@@ -295,7 +295,7 @@ const row = computed<SupplierRow | null>(() => detail.value?.supplier ?? null)
             <v-timeline density="compact" side="end" truncate-line="both">
               <v-timeline-item v-for="log in logs" :key="log.id" size="x-small">
                 <div class="d-flex align-center flex-wrap">
-                  <v-chip size="x-small" variant="tonal" class="me-2">{{ log.action }}</v-chip>
+                  <v-chip size="x-small" variant="tonal" class="me-2">{{ enumLabel(log.action) }}</v-chip>
                   <span class="text-caption text-medium-emphasis">
                     {{ formatDateTime(log.occurredAt) }}
                     <template v-if="log.actorEmail"> · {{ log.actorEmail }}</template>

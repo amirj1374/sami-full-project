@@ -10,6 +10,8 @@ import { useFormat } from '@/composables/useFormat'
 import { useNotifications } from '@/composables/useNotifications'
 import { usePermission } from '@/composables/usePermission'
 import AppEmptyState from '@/components/AppEmptyState.vue'
+import AppQuickCreateButton from '@/components/AppQuickCreateButton.vue'
+import QuickProductCreateDialog from '@/components/QuickProductCreateDialog.vue'
 import type { Product } from '@/types/models'
 import type { InventoryBalance, InventoryLocation, Warehouse } from '@/types/inventory'
 
@@ -29,6 +31,10 @@ const filters = reactive({ search: '', warehouseId: null as number | null, lowSt
 const adjustmentOpen = ref(false)
 const saving = ref(false)
 const products = ref<Product[]>([])
+const quickProductOpen = ref(false)
+const quickProductLine = ref<{ productId: number | null } | null>(null)
+function openQuickProduct(line: { productId: number | null }) { quickProductLine.value = line; quickProductOpen.value = true }
+function selectCreatedProduct(product: Product) { if (!products.value.some((item) => item.id === product.id)) products.value.push(product); if (quickProductLine.value) quickProductLine.value.productId = product.id; quickProductLine.value = null }
 const locations = ref<InventoryLocation[]>([])
 const importInput = ref<HTMLInputElement | null>(null)
 const form = reactive({ warehouseId: null as number | null, locationId: null as number | null, reason: '', lines: [] as Array<{ productId: number | null; quantity: number; unitCost: number }> })
@@ -181,11 +187,12 @@ onMounted(load)
         <v-card-text>
           <v-row><v-col cols="12" md="6"><v-select v-model="form.warehouseId" :items="warehouses.filter((item) => item.active)" item-title="name" item-value="id" :label="t('inventory.warehouse')" /></v-col><v-col cols="12" md="6"><v-select v-model="form.locationId" :items="locations" item-title="name" item-value="id" :label="t('inventory.location')" /></v-col><v-col cols="12"><v-textarea v-model="form.reason" :label="t('inventory.reason')" rows="2" counter="500" /></v-col></v-row>
           <div class="d-flex align-center mb-3"><h3 class="text-subtitle-1">{{ t('inventory.lines') }}</h3><v-spacer /><v-btn variant="tonal" prepend-icon="mdi-plus" @click="addLine">{{ t('inventory.addLine') }}</v-btn></div>
-          <v-card v-for="(line, index) in form.lines" :key="index" variant="outlined" class="pa-3 mb-3"><v-row dense><v-col cols="12" md="5"><v-autocomplete v-model="line.productId" :items="products" item-title="name" item-value="id" :label="t('inventory.product')" /></v-col><v-col cols="6" md="3"><v-text-field v-model.number="line.quantity" type="number" step="0.001" :label="t('inventory.quantitySigned')" /></v-col><v-col cols="5" md="3"><v-text-field v-model.number="line.unitCost" type="number" min="0" :label="t('inventory.unitCost')" /></v-col><v-col cols="1"><v-btn icon="mdi-delete-outline" color="error" variant="text" :disabled="form.lines.length === 1" @click="form.lines.splice(index, 1)" /></v-col></v-row></v-card>
+          <v-card v-for="(line, index) in form.lines" :key="index" variant="outlined" class="pa-3 mb-3"><v-row dense><v-col cols="12" md="5"><v-autocomplete v-model="line.productId" :items="products" item-title="name" item-value="id" :label="t('inventory.product')"><template v-if="can('products:create')" #append-inner><AppQuickCreateButton :label="t('common.createNew', { entity: t('inventory.product') })" @click="openQuickProduct(line)" /></template></v-autocomplete></v-col><v-col cols="6" md="3"><v-text-field v-model.number="line.quantity" type="number" step="0.001" :label="t('inventory.quantitySigned')" /></v-col><v-col cols="5" md="3"><v-text-field v-model.number="line.unitCost" type="number" min="0" :label="t('inventory.unitCost')" /></v-col><v-col cols="1"><v-btn icon="mdi-delete-outline" color="error" variant="text" :disabled="form.lines.length === 1" @click="form.lines.splice(index, 1)" /></v-col></v-row></v-card>
         </v-card-text>
         <v-card-actions class="pa-4"><v-spacer /><v-btn variant="text" @click="adjustmentOpen = false">{{ t('common.cancel') }}</v-btn><v-btn color="primary" :loading="saving" :disabled="!form.warehouseId || !form.reason || form.lines.some((line) => !line.productId || line.quantity === 0)" @click="saveAdjustment">{{ t('inventory.postAdjustment') }}</v-btn></v-card-actions>
       </v-card>
     </v-dialog>
+    <QuickProductCreateDialog v-model="quickProductOpen" @created="selectCreatedProduct" />
   </section>
 </template>
 

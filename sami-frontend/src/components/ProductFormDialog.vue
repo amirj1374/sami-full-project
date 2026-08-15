@@ -19,7 +19,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:modelValue': [value: boolean]
-  saved: []
+  saved: [product: Product]
 }>()
 
 const { message: errorMessage, set: setError, clear: clearError } = useApiError()
@@ -84,8 +84,8 @@ const onSubmit = handleSubmit(async (values) => {
   loading.value = true
   clearError()
   try {
-    if (props.product) {
-      await productsApi.update(props.product.id, {
+    const saved = props.product
+      ? await productsApi.update(props.product.id, {
         name: values.name,
         description: values.description || undefined,
         price: values.price,
@@ -93,8 +93,7 @@ const onSubmit = handleSubmit(async (values) => {
         active: values.active,
         hamtaEligible: values.hamtaEligible,
       })
-    } else {
-      await productsApi.create({
+      : await productsApi.create({
         name: values.name,
         sku: values.sku,
         description: values.description || undefined,
@@ -103,8 +102,7 @@ const onSubmit = handleSubmit(async (values) => {
         active: values.active,
         hamtaEligible: values.hamtaEligible,
       })
-    }
-    emit('saved')
+    emit('saved', saved)
     close()
   } catch (err) {
     setError(err)

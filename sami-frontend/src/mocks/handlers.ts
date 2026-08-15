@@ -112,6 +112,24 @@ export const handlers = [
   ),
   http.get('*/api/v1/quality/issues/summary', () => ok({})),
   http.get('*/api/v1/quality/issues', () => emptyPage()),
+
+  // Licensing endpoints have distinct non-page response contracts. Keep them
+  // explicit so the generic list fallback cannot replace arrays or summaries
+  // with a PageResponse and crash computed state in the licensing screen.
+  http.get('*/api/v1/licensing/licenses', () => ok([])),
+  http.get('*/api/v1/licensing/plans', () => ok([])),
+  http.get('*/api/v1/licensing/features', () => ok([])),
+  http.get('*/api/v1/licensing/tenants', () => ok([])),
+  http.get('*/api/v1/licensing/catalog', () => ok({
+    licenseStatuses: [], tenantStatuses: [], licenseTypes: [], expiryBehaviors: [],
+    limitTypes: [], paymentStatuses: [], billingCycles: [], featureStates: [],
+    activationModes: [], meteredLimitTypes: [], expiryHandlers: [],
+  })),
+  http.get('*/api/v1/licensing/reports/summary', () => ok({
+    total: 0, byStatus: {}, byPlan: {}, byActivationMode: {}, autoRenew: 0,
+  })),
+  http.get('*/api/v1/licensing/reports/expiring', () => ok([])),
+
   // Generic fallbacks so unhandled list/detail calls don't error the UI.
   http.get('*/api/v1/*', () => emptyPage()),
 ]

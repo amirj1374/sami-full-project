@@ -6,6 +6,7 @@ import { dashboardsApi, kpisApi } from '@/api/dashboards'
 import { usePermission } from '@/composables/usePermission'
 import { useApiError } from '@/composables/useApiError'
 import { useFormat } from '@/composables/useFormat'
+import { useServerLabel } from '@/composables/useServerLabel'
 import type {
   DashboardDataSource,
   DashboardKpiStatus,
@@ -23,6 +24,7 @@ import type {
 const { t } = useI18n()
 const { can } = usePermission()
 const { formatNumber, formatDateTime } = useFormat()
+const { statusLabel } = useServerLabel()
 const { message: errorMessage, set: setError, clear: clearError } = useApiError()
 
 const CALC_METHODS = ['PROVIDER', 'FORMULA', 'MANUAL']
@@ -335,7 +337,7 @@ const historyMax = computed(() =>
           </v-chip>
         </template>
         <template #[`item.status`]="{ item }">
-          <v-chip size="small" variant="tonal">{{ item.statusName }}</v-chip>
+          <v-chip size="small" variant="tonal">{{ statusLabel(item.statusName) }}</v-chip>
         </template>
         <template #[`item.actions`]="{ item }">
           <v-btn
@@ -426,7 +428,7 @@ const historyMax = computed(() =>
             <v-col cols="6" sm="4"><v-text-field v-model.number="targetValue" type="number" :label="t('dash.target')" /></v-col>
             <v-col cols="6" sm="4"><v-text-field v-model="unit" :label="t('dash.unit')" /></v-col>
             <v-col cols="12" sm="4">
-              <v-select v-model="statusId" :items="kpiStatuses" item-title="name" item-value="id" :label="t('common.status')" />
+              <v-select v-model="statusId" :items="kpiStatuses" :item-title="(item) => statusLabel(item.name)" item-value="id" :label="t('common.status')" />
             </v-col>
           </v-row>
 

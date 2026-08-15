@@ -45,7 +45,7 @@ const { can } = usePermission()
 const notifications = useNotifications()
 const { message: errorMessage, set: setError, clear: clearError } = useApiError()
 const { formatDateTime } = useFormat()
-const { lookupLabel } = useServerLabel()
+const { lookupLabel, enumLabel } = useServerLabel()
 
 const detail = ref<PurchaseDetail | null>(null)
 const loading = ref(false)
@@ -405,7 +405,7 @@ const status = computed(() => detail.value?.purchase.status)
               <div v-for="(line, li) in receipt.lines" :key="li" class="text-body-2">
                 {{ t('purchases.detail.itemLine', { id: line.purchaseItemId, quantity: line.quantity }) }}
                 <span v-if="line.identifiers.length" class="text-caption text-medium-emphasis">
-                  ({{ line.identifiers.map((x) => x.type + ' ' + x.value).join(', ') }})
+                  ({{ line.identifiers.map((x) => enumLabel(x.type) + ' ' + x.value).join(', ') }})
                 </span>
               </div>
             </v-card>
@@ -424,7 +424,7 @@ const status = computed(() => detail.value?.purchase.status)
             <v-timeline density="compact" side="end" truncate-line="both">
               <v-timeline-item v-for="log in logs" :key="log.id" size="x-small">
                 <div class="d-flex align-center flex-wrap">
-                  <v-chip size="x-small" variant="tonal" class="me-2">{{ log.action }}</v-chip>
+                  <v-chip size="x-small" variant="tonal" class="me-2">{{ enumLabel(log.action) }}</v-chip>
                   <span class="text-caption text-medium-emphasis">
                     {{ formatDateTime(log.occurredAt) }}
                     <template v-if="log.actorEmail"> · {{ log.actorEmail }}</template>

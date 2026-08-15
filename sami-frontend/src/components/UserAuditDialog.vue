@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { usersApi } from '@/api/users'
 import { useApiError } from '@/composables/useApiError'
 import { useFormat } from '@/composables/useFormat'
+import { useServerLabel } from '@/composables/useServerLabel'
 import type { AdminUser, UserAuditEntry } from '@/types/models'
 
 /** Read-only audit trail of one user: who did what, when, old → new values. */
@@ -16,6 +17,7 @@ const emit = defineEmits<{ 'update:modelValue': [boolean] }>()
 
 const { t } = useI18n()
 const { formatDateTime } = useFormat()
+const { enumLabel } = useServerLabel()
 
 const open = computed({
   get: () => props.modelValue,
@@ -102,7 +104,7 @@ function changes(entry: UserAuditEntry): { key: string; from: unknown; to: unkno
           >
             <div class="d-flex align-center flex-wrap mb-1">
               <v-chip size="x-small" variant="tonal" :color="ACTION_COLORS[entry.action]" class="me-2">
-                {{ entry.action }}
+                {{ enumLabel(entry.action) }}
               </v-chip>
               <span class="text-caption text-medium-emphasis">
                 {{ formatDateTime(entry.createdAt) }}

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useServerLabel } from '@/composables/useServerLabel'
 import { suppliersApi } from '@/api/suppliers'
 import { useApiError } from '@/composables/useApiError'
 import type {
@@ -32,9 +33,10 @@ const props = defineProps<{
   paymentTerms: SupPaymentTerm[]
 }>()
 
-const emit = defineEmits<{ 'update:modelValue': [boolean]; saved: [] }>()
+const emit = defineEmits<{ 'update:modelValue': [boolean]; saved: [supplier: SupplierDetail] }>()
 
 const { t } = useI18n()
+const { enumLabel } = useServerLabel()
 
 const open = computed({
   get: () => props.modelValue,
@@ -207,13 +209,11 @@ async function submit(ignoreDuplicates = false) {
     expectedVersion: props.supplier?.supplier.version,
   }
   try {
-    if (props.supplier) {
-      await suppliersApi.update(props.supplier.supplier.id, payload)
-    } else {
-      await suppliersApi.create(payload)
-    }
+    const saved = props.supplier
+      ? await suppliersApi.update(props.supplier.supplier.id, payload)
+      : await suppliersApi.create(payload)
     open.value = false
-    emit('saved')
+    emit('saved', saved)
   } catch (err: unknown) {
     const apiErr = err as { code?: string; message?: string }
     if (!ignoreDuplicates && apiErr.code === 'RESOURCE_CONFLICT'
@@ -335,7 +335,7 @@ async function submit(ignoreDuplicates = false) {
                 <v-col cols="6" sm="3"><v-text-field v-model="contact.mobile" :label="t('suppliers.contacts.mobile')" density="compact" hide-details /></v-col>
                 <v-col cols="6" sm="3"><v-text-field v-model="contact.email" :label="t('suppliers.contacts.email')" density="compact" hide-details /></v-col>
                 <v-col cols="6" sm="3">
-                  <v-select v-model="contact.preferredMethod" :label="t('suppliers.contacts.preferredMethod')" :items="['phone', 'mobile', 'email', 'whatsapp', 'telegram']" density="compact" hide-details clearable />
+                  <v-select v-model="contact.preferredMethod" :label="t('suppliers.contacts.preferredMethod')" :items="['phone', 'mobile', 'email', 'whatsapp', 'telegram']" :item-title="enumLabel" density="compact" hide-details clearable />
                 </v-col>
                 <v-col cols="12" sm="9"><v-text-field v-model="contact.notes" :label="t('suppliers.contacts.notes')" density="compact" hide-details /></v-col>
                 <v-col cols="12" sm="3" class="d-flex align-center justify-end ga-1">

@@ -7,6 +7,7 @@ import { dashboardsApi, type DashboardListParams } from '@/api/dashboards'
 import { usePermission } from '@/composables/usePermission'
 import { useApiError } from '@/composables/useApiError'
 import { useFormat } from '@/composables/useFormat'
+import { useServerLabel } from '@/composables/useServerLabel'
 import DashboardFormDialog from '@/components/DashboardFormDialog.vue'
 import DashboardShareDialog from '@/components/DashboardShareDialog.vue'
 import type { DashboardRow, DashboardStatus, DashboardVisibility } from '@/types/models'
@@ -16,6 +17,7 @@ const { t } = useI18n()
 const router = useRouter()
 const { can } = usePermission()
 const { formatDate } = useFormat()
+const { statusLabel } = useServerLabel()
 const { message: errorMessage, set: setError, clear: clearError } = useApiError()
 
 const statuses = ref<DashboardStatus[]>([])
@@ -253,7 +255,7 @@ function statusColor(row: DashboardRow): string {
           <v-chip v-if="item.isDefault" size="x-small" variant="tonal" class="ms-1">{{ t('dash.default') }}</v-chip>
         </template>
         <template #[`item.status`]="{ item }">
-          <v-chip :color="statusColor(item)" size="small" variant="tonal">{{ item.statusName }}</v-chip>
+          <v-chip :color="statusColor(item)" size="small" variant="tonal">{{ statusLabel(item.statusName) }}</v-chip>
         </template>
         <template #[`item.visibility`]="{ item }">
           <v-chip size="small" variant="tonal">{{ item.visibilityName }}</v-chip>
