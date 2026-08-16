@@ -17,6 +17,7 @@ Last repository inspection: 2026-08-16. Source/configuration is authoritative; c
 - Frontend typed clients live in `src/api`; shared types in `src/types`; route permissions plus backend menu own reachability; English/Persian and RTL/LTR move together.
 - Design system: `src/plugins/vuetify.ts`, `src/styles/global.css`, `AppFormSection.vue`; PWA: `usePwa`, service worker and Settings.
 - Authenticated-page keyboard operation is owned globally by `AppKeyboardShortcuts.vue` and `DefaultLayout.vue`: buttons, links, menu actions and tabs receive direct shortcuts, route transitions restore main-content focus, and a skip control bypasses navigation. Per-user enablement and badge visibility are persisted through `UserExperiencePreference` and the Profile settings UI.
+- Real browser business-journey validation is owned by the repository-scoped `sami-ui-workflow-tester` skill; it covers isolated test data, persisted cross-module flows, RBAC login, keyboard operation, RTL/LTR, responsive widths, network/console evidence and cleanup reporting.
 
 ## Current capability state
 

@@ -1,0 +1,4 @@
+interface:
+  display_name: "SAMI UI Workflow Tester"
+  short_description: "Run real browser-based SAMI business journeys"
+  default_prompt: "Use $sami-ui-workflow-tester to validate SAMI end to end through the browser and report evidence."

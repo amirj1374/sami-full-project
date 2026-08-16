@@ -71,6 +71,16 @@ Production readiness additionally requires fresh/upgrade Flyway validation,
 Docker health, authenticated API/browser smoke tests, responsive desktop/mobile
 checks, English/Persian RTL/LTR checks and browser console/network inspection.
 
+## Browser workflow agent
+
+Use the repository skill
+`.agents/skills/sami-ui-workflow-tester/SKILL.md` for realistic browser journeys
+such as creating a customer, purchase, receipt, sale and user, then signing in
+as that user to verify RBAC. The skill owns test-data isolation, desktop/mobile
+and RTL/LTR passes, keyboard-only checks, network/console evidence, defect
+classification and cleanup reporting. Mock mode can support visual inspection,
+but it is not evidence that a persisted transactional journey passed.
+
 ## Definition of Done
 
 A change is not done until its applicable permissions, tenant isolation,
