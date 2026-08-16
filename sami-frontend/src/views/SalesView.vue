@@ -152,8 +152,8 @@ async function load() {
 }
 async function loadLookups() {
   const [c, p] = await Promise.all([
-    customersApi.list({ size: 100 }),
-    productsApi.list({ size: 100 }),
+    customersApi.list({ size: 100, sort: "createdAt,desc" }),
+    productsApi.list({ size: 100, sort: "createdAt,desc" }),
   ]);
   customers.value = c.content;
   products.value = p.content;

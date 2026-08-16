@@ -49,7 +49,7 @@ const { enumLabel } = useServerLabel()
 const quickSupplierOpen = ref(false)
 const quickCustomerOpen = ref(false)
 const quickProductOpen = ref(false)
-const quickProductItem = ref<PurchaseItemPayload | null>(null)
+const quickProductItem = ref<ItemLine | null>(null)
 
 function selectCreatedSupplier(detail: SupplierDetail) {
   supplier.value = detail.supplier
@@ -59,7 +59,7 @@ function selectCreatedCustomer(detail: CustomerDetail) {
   customer.value = detail.customer
   customerCandidates.value = [detail.customer]
 }
-function openQuickProduct(item: PurchaseItemPayload) {
+function openQuickProduct(item: ItemLine) {
   quickProductItem.value = item
   quickProductOpen.value = true
 }
@@ -77,7 +77,8 @@ const isEdit = computed(() => props.purchase !== null)
 const saving = ref(false)
 const { message: formError, set: setFormError, clear: clearFormError } = useApiError()
 
-interface ItemLine extends PurchaseItemPayload {
+interface ItemLine extends Omit<PurchaseItemPayload, 'productId'> {
+  productId: number | null
   productName?: string
 }
 
@@ -138,20 +139,30 @@ watch(customerSearch, () => {
 
 // --- Product options ---------------------------------------------------------
 const products = ref<Product[]>([])
+const productSearch = ref('')
+let productTimer: ReturnType<typeof setTimeout> | undefined
 
-async function loadProducts() {
-  if (products.value.length) return
-  try {
-    products.value = (await productsApi.list({ size: 200 })).content
-  } catch (err) {
-    setFormError(err)
+function addProductOptions(options: Product[]) {
+  for (const option of options) {
+    if (!products.value.some((product) => product.id === option.id)) products.value.push(option)
   }
 }
+
+watch(productSearch, () => {
+  clearTimeout(productTimer)
+  productTimer = setTimeout(async () => {
+    if (!productSearch.value || productSearch.value.length < 2) return
+    try {
+      addProductOptions((await productsApi.list({ name: productSearch.value, active: true, size: 20 })).content)
+    } catch (err) {
+      setFormError(err)
+    }
+  }, 300)
+})
 
 watch(open, async (isOpen) => {
   if (!isOpen) return
   clearFormError()
-  await loadProducts()
   const d = props.purchase
   form.typeId = d?.purchase.type.id ?? props.types.find((t) => t.isDefault)?.id ?? null
   form.warehouseId = d?.purchase.warehouse?.id ?? null
@@ -179,6 +190,8 @@ watch(open, async (isOpen) => {
     : null
   supplierCandidates.value = []
   supplierSearch.value = ''
+  productSearch.value = ''
+  products.value = []
   items.value = (d?.items ?? []).map((i) => ({
     productId: i.productId,
     productName: i.productName,
@@ -191,12 +204,20 @@ watch(open, async (isOpen) => {
     requiresSerial: i.requiresSerial,
     requiresImei: i.requiresImei,
   }))
+  const existingProductIds = [...new Set(items.value.map((item) => item.productId).filter((id): id is number => id !== null && id > 0))]
+  if (existingProductIds.length) {
+    try {
+      addProductOptions(await Promise.all(existingProductIds.map((id) => productsApi.get(id))))
+    } catch (err) {
+      setFormError(err)
+    }
+  }
   if (items.value.length === 0) addItem()
 })
 
 function addItem() {
   items.value.push({
-    productId: 0,
+    productId: null,
     quantity: 1,
     unit: 'piece',
     unitPrice: 0,
@@ -219,7 +240,9 @@ async function submit() {
     setFormError({ code: 'VALIDATION', message: t('purchases.validation.typeSupplierRequired') })
     return
   }
-  const validItems = items.value.filter((i) => i.productId > 0 && Number(i.quantity) > 0)
+  const validItems = items.value.filter((i): i is ItemLine & { productId: number } =>
+    i.productId !== null && i.productId > 0 && Number(i.quantity) > 0,
+  )
   if (validItems.length === 0) {
     setFormError({ code: 'VALIDATION', message: t('purchases.validation.itemRequired') })
     return
@@ -364,6 +387,7 @@ async function submit() {
             <v-col cols="12" sm="4">
               <v-autocomplete
                 v-model="item.productId"
+                v-model:search="productSearch"
                 :label="t('purchases.form.productRequired')"
                 :items="products"
                 item-title="name"
