@@ -4,6 +4,14 @@ import { mockMenu } from './data/menu'
 import { mockLifecycleStatuses } from './data/lifecycle'
 import { mockModules } from './data/modules'
 
+let mockUserExperiencePreferences = {
+  mobileNavigationCodes: [] as string[],
+  demoNotificationsEnabled: false,
+  keyboardShortcutsEnabled: true,
+  mobileNavigationConfigured: false,
+  version: 0,
+}
+
 /** Standard API envelope used by the backend. */
 function ok<T>(data: T) {
   return HttpResponse.json({ success: true, data, error: null, timestamp: new Date().toISOString() })
@@ -21,6 +29,21 @@ function emptyPage() {
 export const handlers = [
   http.get('/api/v1/users/me', () => ok(mockUser)),
   http.get('/api/v1/menu', () => ok(mockMenu)),
+  http.get('*/api/v1/users/me/preferences', () => ok(mockUserExperiencePreferences)),
+  http.put('*/api/v1/users/me/preferences', async ({ request }) => {
+    const payload = await request.json() as {
+      mobileNavigationCodes: string[]
+      demoNotificationsEnabled: boolean
+      keyboardShortcutsEnabled: boolean
+    }
+    mockUserExperiencePreferences = {
+      ...mockUserExperiencePreferences,
+      ...payload,
+      mobileNavigationConfigured: true,
+      version: mockUserExperiencePreferences.version + 1,
+    }
+    return ok(mockUserExperiencePreferences)
+  }),
 
   // Legacy import evidence fixtures support responsive/RTL UI validation without a database.
   http.get('*/api/v1/legacy-imports', () => ok([{

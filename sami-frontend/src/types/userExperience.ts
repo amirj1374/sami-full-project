@@ -1,6 +1,7 @@
 export interface UserExperiencePreferences {
   mobileNavigationCodes: string[]
   demoNotificationsEnabled: boolean
+  keyboardShortcutsEnabled: boolean
   mobileNavigationConfigured: boolean
   version: number
 }
@@ -8,6 +9,7 @@ export interface UserExperiencePreferences {
 export interface UserExperiencePreferencePayload {
   mobileNavigationCodes: string[]
   demoNotificationsEnabled: boolean
+  keyboardShortcutsEnabled: boolean
 }
 
 export interface StaffNotification {

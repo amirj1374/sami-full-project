@@ -1,11 +1,11 @@
 # SAMI ERP — reusable development context
 
-Last repository inspection: 2026-08-08. Source/configuration is authoritative; current operational state is in `docs/HANDOFF_NEXT_SESSION.md`.
+Last repository inspection: 2026-08-16. Source/configuration is authoritative; current operational state is in `docs/HANDOFF_NEXT_SESSION.md`.
 
 ## Repository and stack
 
 - Monorepo; `sami-backend` and `sami-frontend` are tracked directories. Integration branch: `development`.
-- Backend: Java 21, Spring Boot 3.5.3, PostgreSQL 16 target, Flyway, Maven 3.9+. Schema is contiguous through V42.
+- Backend: Java 21, Spring Boot 3.5.3, PostgreSQL 16 target, Flyway, Maven 3.9+. Schema is contiguous through V44.
 - Frontend: Node 22 image, Vue 3.5, TypeScript 5.7, Vite 8, Vuetify 3, Pinia, Vue Router, Axios and Vue I18n.
 - Containers: PostgreSQL 16, JDK/JRE 21 backend, Node 22/nginx frontend; production Compose is under `sami-backend`.
 
@@ -16,6 +16,7 @@ Last repository inspection: 2026-08-08. Source/configuration is authoritative; c
 - Flyway owns schema. Inventory owns balances/movements/reservations/serials; integrations use `InventoryStockOperations`.
 - Frontend typed clients live in `src/api`; shared types in `src/types`; route permissions plus backend menu own reachability; English/Persian and RTL/LTR move together.
 - Design system: `src/plugins/vuetify.ts`, `src/styles/global.css`, `AppFormSection.vue`; PWA: `usePwa`, service worker and Settings.
+- Authenticated-page keyboard operation is owned globally by `AppKeyboardShortcuts.vue` and `DefaultLayout.vue`: buttons, links, menu actions and tabs receive direct shortcuts, route transitions restore main-content focus, and a skip control bypasses navigation. Per-user enablement and badge visibility are persisted through `UserExperiencePreference` and the Profile settings UI.
 
 ## Current capability state
 
@@ -25,6 +26,8 @@ Last repository inspection: 2026-08-08. Source/configuration is authoritative; c
 - Legacy Asan: V40 secure staging/comparison, archive/parser controls, tenant isolation and idempotency; customer-UI ready, infrastructure validation pending.
 - HAMTA: V41 Inventory-owned activation-code custody with Purchasing/Sales/reporting/audit; implementation complete, infrastructure/live bilingual validation pending.
 - Market Sync: V42 source/pricing/inventory/sale/rules/history/health UI implemented. Production remains partial until authorized Rond structured contracts and a real website publication connector exist; publication fails closed.
+- Employees & Attendance: V43 introduces the canonical tenant-scoped employee identity, optional user linkage, company/branch assignment, manual clock-in/out, correction/report contracts, audit trail, permissions, bilingual UI and mobile record cards. Payroll, leave workflows and biometric/device ingestion are not part of this phase; fresh PostgreSQL runtime and live-browser validation remain pending.
+- Keyboard-only operation: V44 persists a default-on per-user shortcut preference; authenticated actions receive scoped two-character shortcuts, including active-dialog isolation, Persian/English physical-key support, semantic Enter/Space activation and fast command-palette navigation.
 - Partial/unrouted: Files/Media, Metadata, Appointments/Resources, Knowledge, Portal, Organization and Communication. Reports remain partial.
 - Web Push: browser foundation/in-app inbox only. Backend subscriptions, VAPID secret and provider delivery are not implemented; approval proposal is in `FULL_NEXT_PHASE_IMPLEMENTATION_REPORT.md`.
 - Planned: Repairs, Warranty, Installments and canonical Accounting.
@@ -32,7 +35,7 @@ Last repository inspection: 2026-08-08. Source/configuration is authoritative; c
 ## Validation and priorities
 
 - Local Java 21/Maven full backend gates and frontend tests/type-check/build pass for the end-of-day revision; exact evidence is in `END_OF_DAY_HANDOFF_REPORT.md`.
-- Docker/Compose/Buildx and OpenSSH are unavailable here. A local PostgreSQL 17 service exists, but no approved isolated database was used. Fresh PostgreSQL 16 Flyway V1→V42, database integration, linux/amd64 images, Compose/nginx/health and live browser/PWA gates remain pending.
+- Docker/Compose/Buildx and OpenSSH are unavailable here. A local PostgreSQL 17 service exists, but no approved isolated database was used. Fresh PostgreSQL 16 Flyway V1→V43, database integration, linux/amd64 images, Compose/nginx/health and live browser/PWA gates remain pending.
 - Next priority: run the named revision through the home release checklist. Then obtain Market Sync external contracts. Do not start Web Push or speculative business modules without the required approval.
 
 ## Commands

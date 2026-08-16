@@ -6,6 +6,7 @@ import { purchasingConfigApi } from '@/api/purchases'
 import AppEmptyState from '@/components/AppEmptyState.vue'
 import AppErrorState from '@/components/AppErrorState.vue'
 import AppLoadingState from '@/components/AppLoadingState.vue'
+import AppMoneyField from '@/components/AppMoneyField.vue'
 import { useApiError } from '@/composables/useApiError'
 import { useNotifications } from '@/composables/useNotifications'
 import type {
@@ -262,7 +263,7 @@ onMounted(load)
               <v-text-field v-model.number="form.displayOrder" type="number" :label="t('purchases.config.displayOrder')" />
             </v-col>
             <v-col v-if="tab === 'rules'" cols="12" sm="6">
-              <v-text-field v-model.number="form.minAmount" type="number" min="0" :label="t('purchases.config.threshold')" />
+              <AppMoneyField v-model="form.minAmount" min="0" :label="t('purchases.config.threshold')" />
             </v-col>
             <v-col v-if="tab === 'identifiers'" cols="12">
               <v-checkbox v-model="form.satisfiesSerial" :label="t('purchases.config.satisfiesSerial')" hide-details />

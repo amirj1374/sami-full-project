@@ -33,6 +33,8 @@
     "createNew": "ایجاد {entity} جدید",
     "delete": "حذف",
     "description": "توضیحات",
+    "showDetails": "نمایش جزئیات",
+    "hideDetails": "بستن جزئیات",
     "edit": "ویرایش",
     "export": "خروجی گرفتن",
     "goHome": "بازگشت به خانه",
@@ -65,6 +67,7 @@
     "favorites": "برگزیده‌ها",
     "recent": "اخیر",
     "navigation": "منو",
+    "skipToContent": "پرش به محتوای اصلی",
     "noNavResults": "صفحه‌ای یافت نشد",
     "pinToFavorites": "افزودن به برگزیده‌ها",
     "collapse": "جمع کردن",
@@ -900,6 +903,7 @@
       "approve": "تأیید",
       "reject": "رد",
       "receive": "دریافت کالا",
+      "recordSettlement": "ثبت تسویه",
       "returnToSupplier": "مرجوع به تأمین‌کننده",
       "cancelPurchase": "لغو خرید"
     },
@@ -945,6 +949,7 @@
     },
     "detail": {
       "supplier": "تأمین‌کننده",
+      "customer": "مشتری",
       "system": "سیستم",
       "cancelled": "لغوشده",
       "itemLine": "{name} — {qty} {unit}",
@@ -989,6 +994,12 @@
       "remaining": "باقی‌مانده",
       "unit": "واحد",
       "noteOptional": "یادداشت (اختیاری)"
+    },
+    "settlement": {
+      "title": "تسویه خرید از مشتری",
+      "hint": "پیش از دریافت کالا، پرداخت را ثبت کنید یا انصراف از تسویه را صراحتاً تأیید کنید.",
+      "receiveBlocked": "دریافت کالا منتظر تعیین تکلیف تسویه است. برای ادامه، پرداخت یا انصراف از تسویه را ثبت کنید.",
+      "confirm": "تأیید تسویه"
     },
     "returns": {
       "returnQty": "تعداد مرجوعی",
@@ -1151,7 +1162,8 @@
       "inventory": "مدیریت موجودی",
       "legacy-import": "ورود و مقایسه داده‌های قدیمی",
       "hamta": "مدیریت کدهای فعال‌سازی همتا",
-      "market-sync": "همگام‌سازی بازار"
+      "market-sync": "همگام‌سازی بازار",
+      "attendance": "کارکنان و حضور و غیاب"
     },
     "action": {
       "view": "مشاهده",
@@ -1194,7 +1206,7 @@
       "ARCHIVED": "بایگانی‌شده", "BLOCKED": "مسدود", "BLACKLISTED": "در فهرست سیاه", "DISABLED": "غیرفعال", "EXPIRED": "منقضی‌شده",
       "CONFIRMED": "تأییدشده", "PARTIALLY_RETURNED": "مرجوعی جزئی", "RETURNED": "مرجوع‌شده", "PASSED": "موفق", "PUBLISHED": "منتشرشده",
       "READY": "آماده", "UPLOADED": "بارگذاری‌شده", "ANALYZING": "در حال تحلیل", "IMPORTING": "در حال ورود", "COMPLETED_WITH_WARNINGS": "تکمیل‌شده با هشدار",
-      "SETTLED": "تسویه‌شده", "WAIVED": "صرف‌نظرشده", "POSTED": "ثبت قطعی‌شده", "RECEIVING": "در حال دریافت", "RECEIVED": "دریافت‌شده", "SHIPPED": "ارسال‌شده",
+      "SETTLED": "تسویه‌شده", "WAIVED": "صرف‌نظرشده", "SETTLEMENT_UPDATED": "تسویه به‌روزرسانی شد", "POSTED": "ثبت قطعی‌شده", "RECEIVING": "در حال دریافت", "RECEIVED": "دریافت‌شده", "SHIPPED": "ارسال‌شده",
       "AVAILABLE": "موجود", "RESERVED": "رزروشده", "IN_TRANSIT": "در حال انتقال", "ISSUED": "خارج‌شده", "QUARANTINED": "قرنطینه‌شده",
       "RETURNED_TO_SUPPLIER": "مرجوع به تأمین‌کننده", "RELEASED": "آزادشده", "FULFILLED": "انجام‌شده", "COUNTED": "شمارش‌شده",
       "CALCULATED": "محاسبه‌شده", "DEGRADED": "دارای اختلال", "FAILING": "ناموفق", "NEAREST": "نزدیک‌ترین", "UP": "رو به بالا", "DOWN": "رو به پایین",
@@ -1474,6 +1486,12 @@
       "title": "تنظیمات اعلان‌ها",
       "demo": "فعال‌سازی اعلان‌های نمایشی",
       "demoHint": "اگر قابلیت نمایشی روی سرور فعال باشد، سامی برای این حساب حداکثر ساعتی یک یادآوری سبک درون‌برنامه‌ای ایجاد می‌کند."
+    },
+    "keyboard": {
+      "title": "میانبرهای صفحه‌کلید",
+      "enabled": "نمایش و فعال‌سازی میانبر اکشن‌ها",
+      "hint": "دکمه‌ها، لینک‌ها، اکشن‌های منو و تب‌ها کد دوکاراکتری می‌گیرند. Alt و نویسه اول، سپس نویسه دوم را بزنید؛ برای فیلدها از Tab و Shift+Tab، برای اجرا از Enter یا Space، برای بستن از Esc و برای جابه‌جایی سریع از Ctrl+K یا Command+K استفاده کنید.",
+      "sequence": "Alt+{prefix} · نویسه دوم را وارد کنید"
     }
   },
   "notifications": {
@@ -1810,6 +1828,13 @@
   },
   "marketSync": {
     "title":"همگام‌سازی بازار","subtitle":"همگام‌سازی موجودی سیم‌کارت، محاسبه قیمت و کنترل انتشار در وب‌سایت.","failSafe":"انتشار ایمن و محافظه‌کارانه","tabs":{"overview":"نمای کلی","sources":"منابع","pricing":"پروفایل‌های قیمت","rules":"قوانین انتشار","runs":"تاریخچه همگام‌سازی","history":"تاریخچه قیمت","errors":"خطاها","health":"سلامت"},"sources":"منابع","activeProducts":"کالاهای فعال","priceChanges":"تغییرات قیمت","errors":"خطاها","sourceHealth":"سلامت منابع","neverSynced":"هنوز همگام نشده","source":"منبع","status":"وضعیت","fetched":"دریافت‌شده","newProducts":"کالاهای جدید","startedAt":"شروع","addSource":"افزودن منبع","syncNow":"همگام‌سازی اکنون","addProfile":"افزودن پروفایل قیمت","rounding":"گرد کردن","addRule":"افزودن قانون","rulePrecedence":"فهرست سیاه همیشه مقدم است. در صورت وجود فهرست سفید، کالای نامنطبق منتشر نمی‌شود.","healthContract":"قرارداد وضعیت سلامت","healthHint":"سلامت بر اساس تلاش‌ها، اجرای موفق، هشدارها و خطاهای واقعی محاسبه می‌شود.","code":"کد","provider":"آداپتور منبع","endpoint":"نشانی HTTPS ساخت‌یافته","profile":"پروفایل قیمت","schedule":"زمان‌بندی Cron","enabled":"فعال","sourceContractWarning":"منابع HTML روند تا زمان ارائه قرارداد API ساخت‌یافته و مجاز غیرفعال می‌مانند. اطلاعات محرمانه اینجا ذخیره نمی‌شود.","percentageAdjustment":"درصد افزایش/کاهش","fixedAdjustment":"مبلغ ثابت افزایش/کاهش","minimumProfit":"حداقل سود","roundingStep":"گام گرد کردن","minPublicationPrice":"حداقل قیمت انتشار","maxPublicationPrice":"حداکثر قیمت انتشار","roundingMode":"روش گرد کردن","previewSourcePrice":"قیمت منبع برای پیش‌نمایش","acquisitionCost":"بهای تحصیل","calculate":"محاسبه پیش‌نمایش","finalPrice":"قیمت نهایی","publicationRule":"قانون انتشار","listType":"نوع فهرست","matchType":"نوع تطبیق","matchValue":"کد کالا یا پیشوند","error":"انجام درخواست همگام‌سازی بازار ممکن نشد.","health":{"HEALTHY":"سالم","DEGRADED":"کاهش‌یافته","FAILING":"ناموفق","DISABLED":"غیرفعال"}
+  },
+  "attendance": {
+    "required": "تکمیل این فیلد الزامی است",
+    "title": "کارکنان و حضور و غیاب", "employees": "کارکنان", "records": "سوابق حضور و غیاب", "newEmployee": "کارمند جدید", "editEmployee": "ویرایش کارمند",
+    "employee": "کارمند", "employeeCode": "کد پرسنلی", "firstName": "نام", "lastName": "نام خانوادگی", "jobTitle": "عنوان شغلی", "mobile": "شماره همراه",
+    "hireDate": "تاریخ استخدام", "company": "شرکت", "branch": "شعبه", "user": "حساب کاربری متصل", "status": "وضعیت", "clockIn": "ثبت ورود", "clockOut": "ثبت خروج", "open": "شیفت باز",
+    "values": { "ACTIVE": "فعال", "INACTIVE": "غیرفعال", "PRESENT": "حاضر", "LATE": "تأخیر", "ABSENT": "غایب", "LEAVE": "مرخصی", "MISSION": "مأموریت" }
   },
   "hamta": {
     "title": "مدیریت کد فعال‌سازی همتا", "subtitle": "نگهداری امن کد فعال‌سازی از دریافت گوشی کارکرده تا تحویل به مشتری.", "canonical": "رکورد مرجع متصل به IMEI", "settings": "تنظیمات سیاست", "enforcement": "الزام کد برای گوشی کارکرده مشمول", "enforcementHint": "با فعال‌سازی، دریافت و تکمیل خرید تا ثبت کد هر گوشی مشمول و اتصال آن به IMEI مسدود می‌شود.", "productEligible": "کالای مشمول همتا", "productEligibleHint": "برای مدل گوشی‌هایی که واحد کارکرده آن‌ها به کد فعال‌سازی نیاز دارد فعال شود.", "eligible": "مشمول همتا", "activationCode": "کد فعال‌سازی همتا", "purchaseHint": "در صورت فعال بودن سیاست و مشمول بودن کالای کارکرده الزامی است.", "correctCode": "اصلاح کد تحویل‌نشده", "salesDelivery": "فاکتور فروش و تحویل", "saleId": "شناسه فروش", "loadInvoice": "بارگذاری فاکتور", "confirmDelivery": "تأیید تحویل یک‌باره", "printPdf": "چاپ / ذخیره PDF", "invoiceTitle": "فاکتور فروش — اطلاعات فعال‌سازی همتا", "report": "گزارش همتا", "product": "کالا", "imei": "IMEI", "status": "وضعیت", "delivered": "تحویل‌شده", "pending": "در انتظار تحویل", "deliveredAt": "زمان تحویل", "error": "انجام درخواست همتا ممکن نشد."

@@ -15,6 +15,7 @@ import com.sami.app.purchasing.dto.PurchaseDtos.ReceiptResponse;
 import com.sami.app.purchasing.dto.PurchaseDtos.ReceiveRequest;
 import com.sami.app.purchasing.dto.PurchaseDtos.ReturnRequest;
 import com.sami.app.purchasing.dto.PurchaseDtos.ReturnResponse;
+import com.sami.app.purchasing.dto.PurchaseDtos.SettlementRequest;
 import com.sami.app.purchasing.dto.PurchaseDtos.ReportResponse;
 import com.sami.app.purchasing.service.PurchaseAttachmentService;
 import com.sami.app.purchasing.service.PurchaseLogService;
@@ -177,6 +178,14 @@ public class PurchaseController {
     @Operation(summary = "Approve a pending purchase")
     public ApiResponse<PurchaseDetailResponse> approve(@PathVariable Long id) {
         return ApiResponse.ok(purchaseService.approve(id));
+    }
+
+    @PutMapping("/{id}/settlement")
+    @PreAuthorize("@authz.has('purchasing:receive')")
+    @Operation(summary = "Resolve settlement for a receivable customer-origin purchase")
+    public ApiResponse<PurchaseDetailResponse> updateSettlement(
+            @PathVariable Long id, @Valid @RequestBody SettlementRequest request) {
+        return ApiResponse.ok(purchaseService.updateSettlement(id, request));
     }
 
     @PostMapping("/{id}/reject")

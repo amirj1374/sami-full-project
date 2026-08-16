@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useDisplay } from 'vuetify'
@@ -14,6 +14,7 @@ import ChangePasswordDialog from '@/components/ChangePasswordDialog.vue'
 import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
 import CommandPalette from '@/components/CommandPalette.vue'
 import StaffNotificationMenu from '@/components/StaffNotificationMenu.vue'
+import AppKeyboardShortcuts from '@/components/AppKeyboardShortcuts.vue'
 
 const { t } = useI18n()
 const { mobile } = useDisplay()
@@ -32,6 +33,8 @@ const rail = ref(localStorage.getItem(RAIL_KEY) === '1')
 const navQuery = ref('')
 const paletteOpen = ref(false)
 const changePasswordOpen = ref(false)
+let initialRouteHandled = false
+let routeFocusTimer: number | null = null
 
 const themeOptions: { value: ThemeMode; icon: string; label: string }[] = [
   { value: 'light', icon: 'mdi-white-balance-sunny', label: 'shell.themeLight' },
@@ -112,11 +115,29 @@ function onGlobalKey(e: KeyboardEvent): void {
   }
 }
 
+function focusMain(): void {
+  document.querySelector<HTMLElement>('#app-main-content')?.focus({ preventScroll: true })
+}
+
+async function focusMainAfterRouteTransition(): Promise<void> {
+  await nextTick()
+  if (routeFocusTimer != null) window.clearTimeout(routeFocusTimer)
+  routeFocusTimer = window.setTimeout(() => {
+    routeFocusTimer = null
+    focusMain()
+  }, 260)
+}
+
 watch(
   () => route.path,
-  (path) => {
+  async (path) => {
     recordVisit(path)
     if (mobile.value) drawer.value = false
+    if (!initialRouteHandled) {
+      initialRouteHandled = true
+      return
+    }
+    await focusMainAfterRouteTransition()
   },
   { immediate: true },
 )
@@ -156,11 +177,15 @@ watch(sanitizedMobileCodes, (codes) => {
   void userExperience.save({
     mobileNavigationCodes: codes,
     demoNotificationsEnabled: userExperience.preferences.demoNotificationsEnabled,
+    keyboardShortcutsEnabled: userExperience.preferences.keyboardShortcutsEnabled,
   })
 })
 
 onMounted(() => window.addEventListener('keydown', onGlobalKey))
-onBeforeUnmount(() => window.removeEventListener('keydown', onGlobalKey))
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onGlobalKey)
+  if (routeFocusTimer != null) window.clearTimeout(routeFocusTimer)
+})
 
 async function logout(): Promise<void> {
   await auth.logout()
@@ -169,6 +194,13 @@ async function logout(): Promise<void> {
 </script>
 
 <template>
+  <button
+    type="button"
+    class="app-skip-link"
+    @click="focusMain"
+    @keydown.enter.prevent="focusMain"
+    @keydown.space.prevent="focusMain"
+  >{{ t('shell.skipToContent') }}</button>
   <v-navigation-drawer
     v-model="drawer"
     :temporary="mobile"
@@ -446,7 +478,7 @@ async function logout(): Promise<void> {
     </v-menu>
   </v-app-bar>
 
-  <v-main class="app-main">
+  <v-main id="app-main-content" class="app-main" tabindex="-1">
     <v-container class="app-content-container py-6 py-md-8">
       <router-view v-slot="{ Component }">
         <transition name="route-fade" mode="out-in">
@@ -480,6 +512,7 @@ async function logout(): Promise<void> {
 
   <CommandPalette v-model="paletteOpen" />
   <ChangePasswordDialog v-model="changePasswordOpen" />
+  <AppKeyboardShortcuts :enabled="userExperience.keyboardShortcutsEnabled" />
 </template>
 
 <style scoped>

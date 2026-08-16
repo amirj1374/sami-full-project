@@ -452,7 +452,7 @@ html:lang(fa) .v-application .text-subtitle-1 { letter-spacing: 0 !important; }
     --app-space-6: 26px;
     --app-space-8: 36px;
     --app-form-control-height: 48px;
-    --app-form-field-gap: 18px;
+    --app-form-field-gap: 24px;
     --app-form-section-gap: 20px;
     --app-form-dialog-padding: 16px;
   }
@@ -483,6 +483,12 @@ html:lang(fa) .v-application .text-subtitle-1 { letter-spacing: 0 !important; }
     max-height: none !important;
     padding: var(--app-form-dialog-padding) !important;
     -webkit-overflow-scrolling: touch;
+  }
+  .v-application .app-form-section__body > .v-row,
+  .v-application .v-dialog .v-card-text > .v-row,
+  .v-application form > .v-row,
+  .v-application .v-form > .v-row {
+    row-gap: var(--app-form-field-gap);
   }
   .v-application .v-card-actions .v-btn {
     min-height: 44px;
@@ -531,6 +537,33 @@ html:lang(fa) .v-application .text-subtitle-1 { letter-spacing: 0 !important; }
 }
 .cursor-pointer {
   cursor: pointer;
+}
+.app-inline-action {
+  appearance: none;
+  display: inline;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  color: inherit;
+  text-align: inherit;
+}
+.app-skip-link {
+  position: fixed;
+  z-index: 4000;
+  inset-inline-start: var(--app-space-3);
+  inset-block-start: var(--app-space-3);
+  transform: translateY(calc(-100% - var(--app-space-5)));
+  padding: var(--app-space-2) var(--app-space-4);
+  border-radius: var(--app-radius-sm);
+  background: rgb(var(--v-theme-primary));
+  color: rgb(var(--v-theme-on-primary));
+  font-weight: 700;
+  text-decoration: none;
+  transition: transform var(--app-dur-fast) var(--app-ease-out);
+}
+.app-skip-link:focus-visible {
+  transform: translateY(0);
 }
 .app-elevate {
   transition: box-shadow var(--app-dur) var(--app-ease), transform var(--app-dur) var(--app-ease);

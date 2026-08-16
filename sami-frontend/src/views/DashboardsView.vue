@@ -251,7 +251,7 @@ function statusColor(row: DashboardRow): string {
           />
         </template>
         <template #[`item.name`]="{ item }">
-          <a class="text-primary cursor-pointer" @click="openViewer(item)">{{ item.name }}</a>
+          <button type="button" class="app-inline-action text-primary" @click="openViewer(item)">{{ item.name }}</button>
           <v-chip v-if="item.isDefault" size="x-small" variant="tonal" class="ms-1">{{ t('dash.default') }}</v-chip>
         </template>
         <template #[`item.status`]="{ item }">

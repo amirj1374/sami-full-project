@@ -28,6 +28,7 @@ import com.sami.app.purchasing.dto.PurchaseDtos.PurchaseDetailResponse;
 import com.sami.app.purchasing.dto.PurchaseDtos.PurchaseFilter;
 import com.sami.app.purchasing.dto.PurchaseDtos.PurchaseRequest;
 import com.sami.app.purchasing.dto.PurchaseDtos.PurchaseRowResponse;
+import com.sami.app.purchasing.dto.PurchaseDtos.SettlementRequest;
 import com.sami.app.purchasing.repository.PurchaseRepository;
 import com.sami.app.purchasing.repository.PurchaseSpecifications;
 import com.sami.app.security.CurrentActor;
@@ -205,6 +206,56 @@ public class PurchaseService {
         return PurchaseDetailResponse.from(purchase);
     }
 
+    /**
+     * Resolves the settlement gate for an approved customer-origin purchase.
+     * This remains separate from draft editing so a purchase cannot become
+     * permanently unreceivable after it enters the approval workflow.
+     */
+    @Transactional
+    public PurchaseDetailResponse updateSettlement(Long id, SettlementRequest request) {
+        Purchase purchase = findWithDetailsForUpdateOrThrow(id);
+        if (purchase.getSellerType() != PurchaseSellerType.CUSTOMER) {
+            throw new ApiException(ErrorCode.OPERATION_NOT_ALLOWED,
+                    "Settlement is only available for customer-origin purchases");
+        }
+        if (!purchase.getStatus().isAllowsReceiving()) {
+            throw new ApiException(ErrorCode.OPERATION_NOT_ALLOWED,
+                    "Settlement can only be recorded for a receivable purchase");
+        }
+        if (!request.expectedVersion().equals(purchase.getVersion())) {
+            throw new ApiException(ErrorCode.RESOURCE_CONFLICT,
+                    "The purchase was modified by someone else; reload and retry");
+        }
+        if (request.status() == PurchaseSettlementStatus.PENDING) {
+            throw new ApiException(ErrorCode.VALIDATION_FAILED,
+                    "Choose settled or explicitly waived before receiving goods");
+        }
+
+        purchase.setSettlementStatus(request.status());
+        if (request.status() == PurchaseSettlementStatus.SETTLED) {
+            purchase.setSettlementMethod(trimToNull(request.method()));
+            purchase.setSettlementReference(trimToNull(request.reference()));
+            purchase.setSettledAmount(request.amount());
+            purchase.setSettledAt(Instant.now());
+        } else {
+            purchase.setSettlementMethod(null);
+            purchase.setSettlementReference(null);
+            purchase.setSettledAmount(null);
+            purchase.setSettledAt(null);
+        }
+
+        Map<String, Object> detail = new java.util.LinkedHashMap<>();
+        detail.put("status", request.status().name());
+        if (request.amount() != null && request.status() == PurchaseSettlementStatus.SETTLED) {
+            detail.put("amount", request.amount());
+        }
+        logs.record(purchase, PurchaseLogService.SETTLEMENT_UPDATED,
+                "Customer purchase settlement updated", detail);
+        recordCustomerEvent(purchase, "CUSTOMER_PURCHASE_SETTLEMENT_UPDATED",
+                "Customer purchase settlement updated");
+        return PurchaseDetailResponse.from(purchase);
+    }
+
     @Transactional
     public PurchaseDetailResponse reject(Long id, String note) {
         Purchase purchase = findWithDetailsOrThrow(id);
@@ -376,6 +427,10 @@ public class PurchaseService {
             throw new ApiException(ErrorCode.VALIDATION_FAILED, "Linked sale must use the same company and branch");
         }
         return saleId;
+    }
+
+    private String trimToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 
     private void recordCustomerEvent(Purchase purchase, String type, String title) {

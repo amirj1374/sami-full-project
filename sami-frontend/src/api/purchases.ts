@@ -21,6 +21,7 @@ import type {
   PurchaseReport,
   PurchaseReturn,
   PurchaseRow,
+  PurchaseSettlementPayload,
   ReceivePayload,
   ReturnPayload,
 } from '@/types/models'
@@ -81,6 +82,9 @@ export const purchasesApi = {
 
   approve: (id: number): Promise<PurchaseDetail> =>
     unwrap(http.post<ApiResponse<PurchaseDetail>>(`/v1/purchases/${id}/approve`)),
+
+  updateSettlement: (id: number, payload: PurchaseSettlementPayload): Promise<PurchaseDetail> =>
+    unwrap(http.put<ApiResponse<PurchaseDetail>>(`/v1/purchases/${id}/settlement`, payload)),
 
   reject: (id: number, note?: string): Promise<PurchaseDetail> =>
     unwrap(

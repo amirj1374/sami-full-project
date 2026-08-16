@@ -8,6 +8,7 @@ import { usePermission } from '@/composables/usePermission'
 import { useFormat } from '@/composables/useFormat'
 import { useServerLabel } from '@/composables/useServerLabel'
 import { useNotifications } from '@/composables/useNotifications'
+import AppMoneyField from '@/components/AppMoneyField.vue'
 import type {
   PurCancelReason,
   PurIdentifierType,
@@ -83,6 +84,7 @@ watch(open, (isOpen) => {
   receiveOpen.value = false
   returnOpen.value = false
   cancelOpen.value = false
+  settlementOpen.value = false
   void reload()
 })
 
@@ -124,6 +126,41 @@ interface ReceiveLineForm {
 const receiveOpen = ref(false)
 const receiveNote = ref('')
 const receiveLines = ref<ReceiveLineForm[]>([])
+const settlementOpen = ref(false)
+const settlementStatus = ref<'SETTLED' | 'WAIVED'>('SETTLED')
+const settlementMethod = ref('')
+const settlementReference = ref('')
+const settlementAmount = ref<number | null>(null)
+
+const needsSettlement = computed(() =>
+  detail.value?.purchase.sellerType === 'CUSTOMER'
+    && detail.value.settlementStatus === 'PENDING',
+)
+
+function openSettlement() {
+  if (!detail.value) return
+  settlementStatus.value = 'SETTLED'
+  settlementMethod.value = detail.value.settlementMethod ?? ''
+  settlementReference.value = detail.value.settlementReference ?? ''
+  settlementAmount.value = detail.value.settledAmount
+    ?? detail.value.valuationAmount
+    ?? detail.value.purchase.totalAmount
+  settlementOpen.value = true
+}
+
+function confirmSettlement() {
+  if (!props.purchaseId || !detail.value) return
+  const settled = settlementStatus.value === 'SETTLED'
+  const payload = {
+    status: settlementStatus.value,
+    method: settled ? settlementMethod.value.trim() || undefined : undefined,
+    reference: settled ? settlementReference.value.trim() || undefined : undefined,
+    amount: settled ? settlementAmount.value ?? undefined : undefined,
+    expectedVersion: detail.value.purchase.version,
+  }
+  settlementOpen.value = false
+  void action(() => purchasesApi.updateSettlement(props.purchaseId as number, payload))
+}
 
 function serialized(item: PurchaseItemRow): boolean {
   return item.requiresSerial || item.requiresImei
@@ -253,7 +290,8 @@ const status = computed(() => detail.value?.purchase.status)
       </v-card-title>
 
       <v-card-subtitle class="px-4 px-sm-6 purchase-subtitle">
-        {{ t('purchases.detail.supplier') }}: {{ detail.purchase.supplierName }} ({{ detail.purchase.supplierCode }})
+        {{ t(detail.purchase.sellerType === 'CUSTOMER' ? 'purchases.detail.customer' : 'purchases.detail.supplier') }}:
+        {{ detail.purchase.sellerName }} ({{ detail.purchase.sellerCode }})
         <template v-if="detail.purchase.warehouse"> · {{ lookupLabel(detail.purchase.warehouse.name) }}</template>
         <template v-if="detail.cancelReason"> · {{ t('purchases.detail.cancelled') }}: {{ detail.cancelReason }}</template>
       </v-card-subtitle>
@@ -261,6 +299,15 @@ const status = computed(() => detail.value?.purchase.status)
       <v-card-text class="px-4 px-sm-6 purchase-detail-body">
         <v-alert v-if="errorMessage" type="error" variant="tonal" density="compact" class="mb-3">
           {{ errorMessage }}
+        </v-alert>
+        <v-alert
+          v-if="needsSettlement && status?.allowsReceiving"
+          type="warning"
+          variant="tonal"
+          density="compact"
+          class="mb-3"
+        >
+          {{ t('purchases.settlement.receiveBlocked') }}
         </v-alert>
 
         <!-- Workflow actions -->
@@ -294,7 +341,7 @@ const status = computed(() => detail.value?.purchase.status)
             {{ t('purchases.actions.reject') }}
           </v-btn>
           <v-btn
-            v-if="status?.allowsReceiving && can('purchasing:receive')"
+            v-if="status?.allowsReceiving && can('purchasing:receive') && !needsSettlement"
             size="small"
             color="primary"
             variant="tonal"
@@ -302,6 +349,16 @@ const status = computed(() => detail.value?.purchase.status)
             @click="openReceive"
           >
             {{ t('purchases.actions.receive') }}
+          </v-btn>
+          <v-btn
+            v-if="status?.allowsReceiving && can('purchasing:receive') && needsSettlement"
+            size="small"
+            color="warning"
+            variant="tonal"
+            prepend-icon="mdi-cash-check"
+            @click="openSettlement"
+          >
+            {{ t('purchases.actions.recordSettlement') }}
           </v-btn>
           <v-btn
             v-if="detail.items.some((i) => returnable(i) > 0) && can('purchasing:return')"
@@ -501,6 +558,50 @@ const status = computed(() => detail.value?.purchase.status)
           <v-btn variant="text" @click="cancelOpen = false">{{ t('common.back') }}</v-btn>
           <v-btn color="error" :disabled="cancelReasonId === null" @click="confirmCancel">
             {{ t('purchases.actions.cancelPurchase') }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Customer settlement dialog -->
+    <v-dialog v-model="settlementOpen" :fullscreen="smAndDown" max-width="560">
+      <v-card rounded="lg">
+        <v-card-title class="text-h6">{{ t('purchases.settlement.title') }}</v-card-title>
+        <v-card-text>
+          <v-alert type="info" variant="tonal" density="compact" class="mb-4">
+            {{ t('purchases.settlement.hint') }}
+          </v-alert>
+          <v-select
+            v-model="settlementStatus"
+            :items="[
+              { title: enumLabel('SETTLED'), value: 'SETTLED' },
+              { title: enumLabel('WAIVED'), value: 'WAIVED' },
+            ]"
+            :label="t('purchases.form.settlement')"
+          />
+          <template v-if="settlementStatus === 'SETTLED'">
+            <AppMoneyField
+              v-model="settlementAmount"
+              min="0"
+              :label="t('purchases.form.settledAmount')"
+            />
+            <v-text-field
+              v-model="settlementMethod"
+              :label="t('purchases.form.settlementMethod')"
+              maxlength="40"
+            />
+            <v-text-field
+              v-model="settlementReference"
+              :label="t('purchases.form.settlementReference')"
+              maxlength="160"
+            />
+          </template>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" @click="settlementOpen = false">{{ t('common.back') }}</v-btn>
+          <v-btn color="primary" :loading="busy" @click="confirmSettlement">
+            {{ t('purchases.settlement.confirm') }}
           </v-btn>
         </v-card-actions>
       </v-card>

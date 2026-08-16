@@ -55,6 +55,9 @@ public class UserExperiencePreferenceService {
                         .build());
         preference.setMobileNavigationCodes(unique.stream().toList());
         preference.setDemoNotificationsEnabled(request.demoNotificationsEnabled());
+        if (request.keyboardShortcutsEnabled() != null) {
+            preference.setKeyboardShortcutsEnabled(request.keyboardShortcutsEnabled());
+        }
         return UserExperiencePreferenceResponse.from(repository.save(preference));
     }
 }

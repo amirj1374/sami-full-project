@@ -8,6 +8,7 @@ import AppEmptyState from '@/components/AppEmptyState.vue'
 import AppErrorState from '@/components/AppErrorState.vue'
 import AppLoadingState from '@/components/AppLoadingState.vue'
 import AppPageHeader from '@/components/AppPageHeader.vue'
+import AppMobileRecordCard from '@/components/AppMobileRecordCard.vue'
 import PurchaseDetailDialog from '@/components/PurchaseDetailDialog.vue'
 import PurchaseFormDialog from '@/components/PurchaseFormDialog.vue'
 import PurchasingConfigPanel from '@/components/purchasing/PurchasingConfigPanel.vue'
@@ -278,7 +279,7 @@ onMounted(async () => {
             :headers="headers" :items="items" :items-length="totalItems" :loading="loading"
             :items-per-page="lastOptions.itemsPerPage" item-value="id" @update:options="loadItems"
           >
-            <template #[`item.purchaseNumber`]="{ item }"><a class="text-primary cursor-pointer font-weight-medium" @click="openDetail(item)">{{ item.purchaseNumber }}</a></template>
+            <template #[`item.purchaseNumber`]="{ item }"><button type="button" class="app-inline-action text-primary font-weight-medium" @click="openDetail(item)">{{ item.purchaseNumber }}</button></template>
             <template #[`item.supplier`]="{ item }">{{ item.supplierName }}<div class="text-caption text-medium-emphasis">{{ item.supplierCode }}</div></template>
             <template #[`item.type`]="{ item }"><v-chip size="small" variant="tonal">{{ srvLabel(item.type.name) }}</v-chip></template>
             <template #[`item.status`]="{ item }"><v-chip :color="statusColor(item.status)" size="small" variant="tonal">{{ srvLabel(item.status.name) }}</v-chip></template>
@@ -293,8 +294,7 @@ onMounted(async () => {
         </v-card>
 
         <div v-else-if="items.length" class="d-grid ga-3">
-          <v-card v-for="item in items" :key="item.id" rounded="xl" class="app-data-surface" @click="openDetail(item)">
-            <v-card-text>
+          <AppMobileRecordCard v-for="item in items" :key="item.id" :label="item.purchaseNumber">
               <div class="d-flex align-start ga-3">
                 <v-avatar color="primary" variant="tonal" rounded="lg"><v-icon icon="mdi-file-document-outline" /></v-avatar>
                 <div class="flex-grow-1 min-width-0">
@@ -304,12 +304,19 @@ onMounted(async () => {
                 </div>
                 <strong>{{ formatNumber(item.totalAmount) }}</strong>
               </div>
-              <div class="d-flex justify-end ga-1 mt-2" @click.stop>
-                <v-btn v-if="item.status.allowsEditing && can('purchasing:edit')" icon="mdi-pencil" size="small" variant="text" @click="openEdit(item)" />
-                <v-btn v-if="item.status.isDraftState && can('purchasing:delete')" icon="mdi-delete" size="small" variant="text" color="error" @click="deleteTarget = item" />
-              </div>
-            </v-card-text>
-          </v-card>
+              <template #details>
+                <div class="d-grid ga-2 text-body-2">
+                  <div class="d-flex justify-space-between"><span>{{ t('purchases.headers.supplier') }}</span><strong>{{ item.supplierName }}</strong></div>
+                  <div class="d-flex justify-space-between"><span>{{ t('purchases.filters.warehouse') }}</span><strong>{{ item.warehouse?.name || '—' }}</strong></div>
+                  <div class="d-flex justify-space-between"><span>{{ t('purchases.headers.total') }}</span><strong>{{ formatNumber(item.totalAmount) }} {{ t('common.currency') }}</strong></div>
+                </div>
+              </template>
+              <template #actions>
+                <v-btn :aria-label="t('purchases.actions.view')" icon="mdi-eye" size="small" color="primary" variant="tonal" @click="openDetail(item)" />
+                <v-btn v-if="item.status.allowsEditing && can('purchasing:edit')" :aria-label="t('common.edit')" icon="mdi-pencil" size="small" color="primary" variant="tonal" @click="openEdit(item)" />
+                <v-btn v-if="item.status.isDraftState && can('purchasing:delete')" :aria-label="t('common.delete')" icon="mdi-delete" size="small" color="error" variant="tonal" @click="deleteTarget = item" />
+              </template>
+          </AppMobileRecordCard>
           <v-pagination v-if="pageCount > 1" v-model="lastOptions.page" :length="pageCount" :total-visible="5" @update:model-value="() => loadItems()" />
         </div>
         <AppEmptyState v-else icon="mdi-cart-outline" :title="t('purchases.empty.title')" :description="t('purchases.empty.description')" />

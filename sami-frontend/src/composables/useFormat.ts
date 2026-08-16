@@ -36,5 +36,11 @@ export function useFormat() {
     return new Intl.NumberFormat(intlLocale(), options).format(n)
   }
 
-  return { formatDate, formatDateTime, formatNumber }
+  function formatMoney(value: number | string | null | undefined): string {
+    const formatted = formatNumber(value, { maximumFractionDigits: 2 })
+    if (!formatted) return ''
+    return `${formatted} ${locale.value === 'fa' ? 'تومان' : 'Toman'}`
+  }
+
+  return { formatDate, formatDateTime, formatNumber, formatMoney }
 }

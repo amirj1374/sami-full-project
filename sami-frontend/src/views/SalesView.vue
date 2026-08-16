@@ -7,6 +7,8 @@ import SaleActionPanel from "@/components/SaleActionPanel.vue";
 import SalesReportsPanel from "@/components/SalesReportsPanel.vue";
 import LostSalesPanel from "@/components/LostSalesPanel.vue";
 import AppQuickCreateButton from "@/components/AppQuickCreateButton.vue";
+import AppMoneyField from "@/components/AppMoneyField.vue";
+import AppMobileRecordCard from "@/components/AppMobileRecordCard.vue";
 import QuickCustomerCreateDialog from "@/components/QuickCustomerCreateDialog.vue";
 import QuickProductCreateDialog from "@/components/QuickProductCreateDialog.vue";
 import { salesApi } from "@/api/sales";
@@ -432,15 +434,12 @@ onMounted(load);
             @click="show(item)" /></template
       ></v-data-table-server>
       <div v-else class="pa-3">
-        <v-skeleton-loader v-if="loading" type="article@3" /><v-card
+        <v-skeleton-loader v-if="loading" type="article@3" /><AppMobileRecordCard
           v-for="s in sales"
           :key="s.id"
-          variant="outlined"
-          rounded="lg"
-          class="sale-card mb-3"
-          @click="show(s)"
-          ><v-card-text
-            ><div class="d-flex align-center">
+          class="mb-3"
+          :label="s.invoiceNumber"
+          ><div class="d-flex align-center">
               <strong>{{ s.invoiceNumber }}</strong
               ><v-spacer /><v-chip
                 :color="statusColor(s.status)"
@@ -453,8 +452,10 @@ onMounted(load);
               ><v-spacer /><strong
                 >{{ money(s.finalAmount) }} {{ s.currency }}</strong
               >
-            </div></v-card-text
-          ></v-card
+            </div>
+            <template #details><div class="d-grid ga-2 text-body-2"><div class="d-flex justify-space-between"><span>{{ t('sales.saleType') }}</span><strong>{{ label(s.saleType) }}</strong></div><div class="d-flex justify-space-between"><span>{{ t('sales.total') }}</span><strong>{{ money(s.finalAmount) }} {{ t('common.currency') }}</strong></div><div class="d-flex justify-space-between"><span>{{ t('sales.createdAt') }}</span><strong>{{ new Date(s.createdAt).toLocaleDateString() }}</strong></div></div></template>
+            <template #actions><v-btn icon="mdi-eye-outline" color="primary" variant="tonal" :aria-label="t('sales.details')" @click="show(s)" /></template>
+          </AppMobileRecordCard
         >
         <div
           v-if="!loading && !sales.length"
@@ -548,9 +549,8 @@ onMounted(load);
                   min="1"
                   :label="t('sales.quantity')" /></v-col
               ><v-col cols="6" md="2"
-                ><v-text-field
-                  v-model.number="line.unitPrice"
-                  type="number"
+                ><AppMoneyField
+                  v-model="line.unitPrice"
                   :label="t('sales.unitPrice')" /></v-col
               ><v-col cols="6" md="2"
                 ><v-text-field
@@ -588,15 +588,13 @@ onMounted(load);
                   v-model="service.description"
                   :label="t('sales.description')" /></v-col
               ><v-col cols="5" md="2"
-                ><v-text-field
-                  v-model.number="service.price"
-                  type="number"
+                ><AppMoneyField
+                  v-model="service.price"
                   min="0"
                   :label="t('sales.price')" /></v-col
               ><v-col cols="5" md="2"
-                ><v-text-field
-                  v-model.number="service.cost"
-                  type="number"
+                ><AppMoneyField
+                  v-model="service.cost"
                   min="0"
                   :label="t('sales.cost')" /></v-col
               ><v-col cols="2" md="1"

@@ -33,4 +33,8 @@ public class UserExperiencePreference extends BaseEntity {
 
     @Column(name = "demo_notifications_enabled", nullable = false)
     private boolean demoNotificationsEnabled;
+
+    @Column(name = "keyboard_shortcuts_enabled", nullable = false)
+    @Builder.Default
+    private boolean keyboardShortcutsEnabled = true;
 }

@@ -1388,6 +1388,14 @@ export interface ReceivePayload {
   lines: ReceiveLinePayload[]
 }
 
+export interface PurchaseSettlementPayload {
+  status: 'SETTLED' | 'WAIVED'
+  method?: string
+  reference?: string
+  amount?: number
+  expectedVersion: number
+}
+
 export interface PurchaseReceipt {
   id: number
   note: string | null

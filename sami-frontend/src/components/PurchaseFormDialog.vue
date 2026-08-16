@@ -11,6 +11,7 @@ import { useNotifications } from '@/composables/useNotifications'
 import { usePermission } from '@/composables/usePermission'
 import { useServerLabel } from '@/composables/useServerLabel'
 import AppQuickCreateButton from '@/components/AppQuickCreateButton.vue'
+import AppMoneyField from '@/components/AppMoneyField.vue'
 import QuickCustomerCreateDialog from '@/components/QuickCustomerCreateDialog.vue'
 import QuickProductCreateDialog from '@/components/QuickProductCreateDialog.vue'
 import QuickSupplierCreateDialog from '@/components/QuickSupplierCreateDialog.vue'
@@ -337,7 +338,7 @@ async function submit() {
           <template v-if="form.sellerType === 'CUSTOMER'">
             <v-col cols="12" sm="4"><v-select v-model="form.itemCondition" :label="t('purchases.form.condition')"
               :items="[{ title: t('purchases.form.used'), value: 'USED' }, { title: t('purchases.form.newSealed'), value: 'NEW_SEALED' }, { title: t('purchases.form.other'), value: 'OTHER' }]" /></v-col>
-            <v-col cols="12" sm="4"><v-text-field v-model.number="form.valuationAmount" type="number" min="0" :label="t('purchases.form.valuation')" /></v-col>
+            <v-col cols="12" sm="4"><AppMoneyField v-model="form.valuationAmount" min="0" :label="t('purchases.form.valuation')" /></v-col>
             <v-col cols="12" sm="4"><v-text-field v-model.number="form.linkedSaleId" type="number" min="1" :label="t('purchases.form.linkedSale')" /></v-col>
             <v-col cols="12"><v-textarea v-model="form.inspectionNotes" rows="2" :label="t('purchases.form.inspection')" /></v-col>
             <v-col cols="12"><v-checkbox v-model="form.ownershipDeclared" :label="t('purchases.form.ownership')" /></v-col>
@@ -345,7 +346,7 @@ async function submit() {
             <v-col cols="12" sm="4"><v-select v-model="form.settlementStatus" :label="t('purchases.form.settlement')"
               :items="['PENDING','SETTLED','WAIVED']" :item-title="enumLabel" /></v-col>
             <v-col cols="12" sm="4"><v-text-field v-model="form.settlementMethod" :label="t('purchases.form.settlementMethod')" /></v-col>
-            <v-col cols="12" sm="4"><v-text-field v-model.number="form.settledAmount" type="number" min="0" :label="t('purchases.form.settledAmount')" /></v-col>
+            <v-col cols="12" sm="4"><AppMoneyField v-model="form.settledAmount" min="0" :label="t('purchases.form.settledAmount')" /></v-col>
             <v-col cols="12"><v-text-field v-model="form.settlementReference" :label="t('purchases.form.settlementReference')" /></v-col>
           </template>
         </v-row>
@@ -389,20 +390,18 @@ async function submit() {
               <v-text-field v-model="item.unit" :label="t('purchases.form.unit')" density="compact" hide-details />
             </v-col>
             <v-col cols="4" sm="2">
-              <v-text-field
-                v-model.number="item.unitPrice"
+              <AppMoneyField
+                v-model="item.unitPrice"
                 :label="t('purchases.form.unitPrice')"
-                type="number"
                 min="0"
                 density="compact"
                 hide-details
               />
             </v-col>
             <v-col cols="4" sm="2">
-              <v-text-field
-                v-model.number="item.discount"
+              <AppMoneyField
+                v-model="item.discount"
                 :label="t('purchases.form.discount')"
-                type="number"
                 min="0"
                 density="compact"
                 hide-details

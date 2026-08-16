@@ -242,6 +242,15 @@ public final class PurchaseDtos {
     ) {
     }
 
+    public record SettlementRequest(
+            @NotNull PurchaseSettlementStatus status,
+            @Size(max = 40) String method,
+            @Size(max = 160) String reference,
+            @DecimalMin(value = "0.00") BigDecimal amount,
+            @NotNull Long expectedVersion
+    ) {
+    }
+
     public record ReceiveRequest(
             @Size(max = 500) String note,
             @NotEmpty(message = "At least one line is required") @Valid List<ReceiveLine> lines

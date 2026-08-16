@@ -31,6 +31,7 @@ public class PurchaseLogService {
     public static final String UPDATED = "UPDATED";
     public static final String SUBMITTED = "SUBMITTED";
     public static final String APPROVED = "APPROVED";
+    public static final String SETTLEMENT_UPDATED = "SETTLEMENT_UPDATED";
     public static final String REJECTED = "REJECTED";
     public static final String RECEIVED = "RECEIVED";
     public static final String COMPLETED = "COMPLETED";

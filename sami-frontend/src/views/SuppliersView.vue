@@ -337,7 +337,7 @@ function statusColor(status: SupStatus): string {
         @update:options="loadItems"
       >
         <template #[`item.displayName`]="{ item }">
-          <a class="text-primary cursor-pointer" @click="openDetail(item)">{{ item.displayName }}</a>
+          <button type="button" class="app-inline-action text-primary" @click="openDetail(item)">{{ item.displayName }}</button>
           <div class="text-caption text-medium-emphasis">{{ item.companyName }}</div>
         </template>
         <template #[`item.type`]="{ item }">

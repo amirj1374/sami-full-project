@@ -2,16 +2,19 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useDebounceFn } from '@vueuse/core'
+import { useDisplay } from 'vuetify'
 import { productsApi, type ProductListParams } from '@/api/products'
 import { usePermission } from '@/composables/usePermission'
 import { useApiError } from '@/composables/useApiError'
 import { useFormat } from '@/composables/useFormat'
 import ProductFormDialog from '@/components/ProductFormDialog.vue'
 import AppPageHeader from '@/components/AppPageHeader.vue'
+import AppMobileRecordCard from '@/components/AppMobileRecordCard.vue'
 import type { Product } from '@/types/models'
 import { marketSyncApi, type MarketRow } from '@/api/marketSync'
 
 const { t } = useI18n()
+const { smAndUp } = useDisplay()
 const { formatNumber } = useFormat()
 const { can } = usePermission()
 const { message: errorMessage, set: setError, clear: clearError } = useApiError()
@@ -31,6 +34,7 @@ const items = ref<Product[]>([])
 const totalItems = ref(0)
 const loading = ref(false)
 const lastOptions = ref<TableOptions>({ page: 1, itemsPerPage: 10, sortBy: [] })
+const pageCount = computed(() => Math.max(1, Math.ceil(totalItems.value / lastOptions.value.itemsPerPage)))
 
 const headers = computed(() => [
   { title: t('products.colName'), key: 'name' },
@@ -164,6 +168,7 @@ function formatPrice(value: number): string {
       </v-card-text>
 
       <v-data-table-server
+        v-if="smAndUp"
         :headers="headers"
         :items="items"
         :items-length="totalItems"
@@ -201,6 +206,31 @@ function formatPrice(value: number): string {
           />
         </template>
       </v-data-table-server>
+      <div v-else class="pa-3 d-grid ga-3">
+        <AppMobileRecordCard v-for="item in items" :key="item.id" :label="item.name">
+          <div class="d-flex align-start ga-3">
+            <v-avatar color="primary" variant="tonal" rounded="lg"><v-icon icon="mdi-package-variant" /></v-avatar>
+            <div class="flex-grow-1 min-width-0">
+              <div class="font-weight-bold text-truncate">{{ item.name }}</div>
+              <div class="text-caption text-medium-emphasis"><bdi>{{ item.sku }}</bdi></div>
+            </div>
+            <div class="text-end"><strong>{{ formatPrice(item.price) }}</strong><div class="text-caption">{{ t('products.colStock') }}: {{ formatNumber(item.stockQuantity) }}</div></div>
+          </div>
+          <template #details>
+            <div class="d-grid ga-2 text-body-2">
+              <div class="d-flex justify-space-between"><span>{{ t('products.status') }}</span><v-chip :color="item.active ? 'success' : 'default'" size="x-small" variant="tonal">{{ item.active ? t('products.active') : t('products.inactive') }}</v-chip></div>
+              <div class="d-flex justify-space-between"><span>{{ t('hamta.eligible') }}</span><strong>{{ item.hamtaEligible ? t('common.yes') : t('common.no') }}</strong></div>
+              <div v-if="item.description" class="text-medium-emphasis">{{ item.description }}</div>
+            </div>
+          </template>
+          <template #actions>
+            <v-btn v-if="can('market-sync:view') && item.sku.startsWith('SIM-')" icon="mdi-sync-circle" size="small" color="primary" variant="tonal" :aria-label="t('marketSync.title')" @click="showMarketStatus(item)" />
+            <v-btn v-if="can('products:edit')" icon="mdi-pencil" size="small" color="primary" variant="tonal" :aria-label="t('common.edit')" @click="openEdit(item)" />
+            <v-btn v-if="can('products:delete')" icon="mdi-delete" size="small" color="error" variant="tonal" :aria-label="t('common.delete')" @click="deleteTarget = item" />
+          </template>
+        </AppMobileRecordCard>
+        <v-pagination v-if="pageCount > 1" v-model="lastOptions.page" :length="pageCount" :total-visible="5" @update:model-value="loadItems(lastOptions)" />
+      </div>
     </v-card>
 
     <ProductFormDialog v-model="dialogOpen" :product="editing" @saved="onSaved" />

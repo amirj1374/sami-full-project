@@ -9,6 +9,7 @@ import java.util.List;
 public record UserExperiencePreferenceRequest(
         @NotNull @Size(max = 4)
         List<@Pattern(regexp = "[a-z0-9][a-z0-9-]{0,63}") String> mobileNavigationCodes,
-        boolean demoNotificationsEnabled
+        boolean demoNotificationsEnabled,
+        Boolean keyboardShortcutsEnabled
 ) {
 }

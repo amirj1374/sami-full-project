@@ -200,10 +200,10 @@ onMounted(load)
         <v-card-text>
           <div class="d-flex align-start ga-3">
             <v-avatar rounded="lg" :color="job.handlerRegistered ? 'primary' : 'error'" variant="tonal"><v-icon icon="mdi-timer-cog-outline" /></v-avatar>
-            <div class="flex-grow-1 min-width-0" @click="openDetail(job)">
+            <button type="button" class="app-inline-action flex-grow-1 min-width-0" @click="openDetail(job)">
               <div class="font-weight-bold text-truncate">{{ job.name }}</div>
               <div class="text-caption text-medium-emphasis text-truncate">{{ job.code }} · {{ job.schedule }}</div>
-            </div>
+            </button>
             <v-menu><template #activator="{ props }"><v-btn v-bind="props" icon="mdi-dots-vertical" variant="text" /></template>
               <v-list density="compact">
                 <v-list-item prepend-icon="mdi-information-outline" :title="t('common.details')" @click="openDetail(job)" />

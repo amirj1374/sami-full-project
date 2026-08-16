@@ -144,6 +144,31 @@ test('mobile navigation preferences are user-scoped and capped at four modules',
   assert.doesNotMatch(shell, /localStorage.*mobile/i)
 })
 
+test('keyboard shortcuts cover dynamic buttons and remain a persisted user preference', () => {
+  const shell = read('src/layouts/DefaultLayout.vue')
+  const shortcuts = read('src/components/AppKeyboardShortcuts.vue')
+  const settings = read('src/views/ProfileView.vue')
+  const types = read('src/types/userExperience.ts')
+  const migration = read('../sami-backend/src/main/resources/db/migration/V44__keyboard_shortcut_preferences.sql')
+
+  assert.match(shell, /AppKeyboardShortcuts/)
+  assert.match(shortcuts, /MutationObserver/)
+  assert.match(shortcuts, /event\.code/)
+  assert.match(shortcuts, /a\[href\]/)
+  assert.match(shortcuts, /\[role="menuitem"\]/)
+  assert.match(shortcuts, /\[role="tab"\]/)
+  assert.match(shortcuts, /\[role="dialog"\]/)
+  assert.match(shortcuts, /ariaHidden = 'true'/)
+  assert.match(shortcuts, /removeEventListener\('keydown'/)
+  assert.match(settings, /settings\.keyboard\.enabled/)
+  assert.match(shell, /app-main-content/)
+  assert.match(shell, /skipToContent/)
+  assert.match(shell, /function focusMain/)
+  assert.match(shell, /focus\(\{ preventScroll: true \}\)/)
+  assert.match(types, /keyboardShortcutsEnabled: boolean/)
+  assert.match(migration, /keyboard_shortcuts_enabled BOOLEAN NOT NULL DEFAULT TRUE/)
+})
+
 test('all forms inherit the shared mobile-first rhythm and persistent labels', () => {
   const vuetify = read('src/plugins/vuetify.ts')
   const styles = read('src/styles/global.css')
@@ -232,6 +257,74 @@ test('Persian date, locale, dark theme, and form rhythm are centralized', () => 
   assert.match(styles, /--app-form-field-gap: 20px/)
   assert.match(picker, /u-ca-persian/)
   assert.doesNotMatch(frontendSource, /type=["']date["']/)
+})
+
+test('money fields use the shared Toman formatter and mobile-safe input rhythm', () => {
+  const field = read('src/components/AppMoneyField.vue')
+  const formatter = read('src/composables/useFormat.ts')
+  const styles = read('src/styles/global.css')
+  const i18n = read('src/i18n.ts')
+  const vuetify = read('src/plugins/vuetify.ts')
+
+  assert.match(field, /Intl\.NumberFormat/)
+  assert.match(field, /\[٬,\\s\]/)
+  assert.match(field, /t\('common\.currency'\)/)
+  assert.match(formatter, /function formatMoney/)
+  assert.match(formatter, /تومان/)
+  assert.match(i18n, /locale: 'fa'/)
+  assert.match(i18n, /stored : 'fa'/)
+  assert.match(vuetify, /defaultTheme: 'dark'/)
+  assert.match(styles, /--app-form-field-gap: 24px/)
+  assert.match(styles, /\.app-form-section__body > \.v-row/)
+})
+
+test('primary ERP lists use direction-aware expandable mobile record cards', () => {
+  const card = read('src/components/AppMobileRecordCard.vue')
+  assert.match(card, /@pointerdown="pointerDown"/)
+  assert.match(card, /rtl\.value \? props\.actionsWidth : -props\.actionsWidth/)
+  assert.match(card, /prefers-reduced-motion/)
+  assert.match(card, /@keydown\.enter\.prevent/)
+  assert.match(card, /common\.showDetails/)
+
+  for (const view of ['src/views/ProductsView.vue', 'src/views/PurchasesView.vue', 'src/views/SalesView.vue']) {
+    assert.match(read(view), /AppMobileRecordCard/, `${view} does not use mobile record cards`)
+  }
+})
+
+test('Employees and Attendance is migration-backed, permission-gated, localized, and mobile-first', () => {
+  const migration = read('../sami-backend/src/main/resources/db/migration/V43__employees_and_attendance.sql')
+  const controller = read('../sami-backend/src/main/java/com/sami/app/attendance/web/AttendanceController.java')
+  const router = read('src/router/index.ts')
+  const view = read('src/views/AttendanceView.vue')
+  const en = JSON.parse(read('src/locales/en.json'))
+  const fa = JSON.parse(read('src/locales/fa.json'))
+  assert.match(migration, /CREATE TABLE employees/)
+  assert.match(migration, /CREATE TABLE attendance_records/)
+  assert.match(migration, /uq_attendance_open_record/)
+  for (const permission of ['view', 'manage-employees', 'clock', 'correct', 'report']) {
+    assert.match(migration, new RegExp(`'${permission}'`))
+    assert.match(controller, new RegExp(`attendance:${permission}`))
+  }
+  assert.match(router, /path: 'attendance'[\s\S]*permission: 'attendance:view'/)
+  assert.match(view, /AppMobileRecordCard/)
+  assert.deepEqual(Object.keys(en.attendance).sort(), Object.keys(fa.attendance).sort())
+  assert.equal(en.server.module.attendance, 'Employees & Attendance')
+  assert.equal(fa.server.module.attendance, 'کارکنان و حضور و غیاب')
+})
+
+test('customer purchases can resolve pending settlement before receiving goods', () => {
+  const service = read('../sami-backend/src/main/java/com/sami/app/purchasing/service/PurchaseService.java')
+  const controller = read('../sami-backend/src/main/java/com/sami/app/purchasing/web/PurchaseController.java')
+  const api = read('src/api/purchases.ts')
+  const detail = read('src/components/PurchaseDetailDialog.vue')
+
+  assert.match(service, /updateSettlement\(Long id, SettlementRequest request\)/)
+  assert.match(service, /PurchaseSettlementStatus\.PENDING/)
+  assert.match(controller, /@PutMapping\("\/\{id\}\/settlement"\)/)
+  assert.match(controller, /purchasing:receive/)
+  assert.match(api, /updateSettlement/)
+  assert.match(detail, /needsSettlement/)
+  assert.match(detail, /purchases\.settlement\.receiveBlocked/)
 })
 
 test('Licensing mock responses preserve the production API shapes', () => {

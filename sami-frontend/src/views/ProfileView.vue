@@ -29,6 +29,7 @@ const { message: errorMessage, set: setError, clear: clearError } = useApiError(
 const passwordOpen = ref(false)
 const selectedCodes = ref<string[]>([])
 const demoEnabled = ref(false)
+const keyboardShortcutsEnabled = ref(true)
 const user = computed(() => auth.user)
 const themeItems = computed(() => [
   { title: t('profile.light'), value: 'light' },
@@ -51,6 +52,7 @@ watch(() => userExperience.preferences, (preferences) => {
     ? [...preferences.mobileNavigationCodes]
     : mobileCandidates.value.slice(0, 4).map((item) => item.code)
   demoEnabled.value = preferences.demoNotificationsEnabled
+  keyboardShortcutsEnabled.value = preferences.keyboardShortcutsEnabled
 }, { deep: true })
 
 function addMobileItem(code: string): void {
@@ -80,6 +82,7 @@ async function savePreferences(): Promise<void> {
     await userExperience.save({
       mobileNavigationCodes: selectedCodes.value,
       demoNotificationsEnabled: demoEnabled.value,
+      keyboardShortcutsEnabled: keyboardShortcutsEnabled.value,
     })
     notifications.success(t('settings.saved'))
   } catch (cause) {
@@ -101,6 +104,7 @@ onMounted(async () => {
       ? preferences.mobileNavigationCodes.filter((code) => mobileCandidates.value.some((item) => item.code === code))
       : mobileCandidates.value.slice(0, 4).map((item) => item.code)
     demoEnabled.value = preferences.demoNotificationsEnabled
+    keyboardShortcutsEnabled.value = preferences.keyboardShortcutsEnabled
   } catch (cause) {
     setError(cause)
   }
@@ -194,6 +198,14 @@ onMounted(async () => {
           <v-card-text>
             <v-switch v-model="demoEnabled" color="primary" inset hide-details :label="t('settings.notifications.demo')" />
             <p class="text-body-2 text-medium-emphasis mt-2">{{ t('settings.notifications.demoHint') }}</p>
+          </v-card-text>
+        </v-card>
+
+        <v-card rounded="xl" class="mb-4">
+          <v-card-title class="d-flex align-center ga-2"><v-icon icon="mdi-keyboard-outline" />{{ t('settings.keyboard.title') }}</v-card-title>
+          <v-card-text>
+            <v-switch v-model="keyboardShortcutsEnabled" color="primary" inset hide-details :label="t('settings.keyboard.enabled')" />
+            <p class="text-body-2 text-medium-emphasis mt-2 mb-0">{{ t('settings.keyboard.hint') }}</p>
           </v-card-text>
         </v-card>
 

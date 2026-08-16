@@ -33,6 +33,8 @@
     "createNew": "Create new {entity}",
     "delete": "Delete",
     "description": "Description",
+    "showDetails": "Show details",
+    "hideDetails": "Hide details",
     "edit": "Edit",
     "export": "Export",
     "goHome": "Go home",
@@ -65,6 +67,7 @@
     "favorites": "Favorites",
     "recent": "Recent",
     "navigation": "Navigation",
+    "skipToContent": "Skip to main content",
     "noNavResults": "No matching pages",
     "pinToFavorites": "Pin to favorites",
     "collapse": "Collapse",
@@ -900,6 +903,7 @@
       "approve": "Approve",
       "reject": "Reject",
       "receive": "Receive",
+      "recordSettlement": "Record settlement",
       "returnToSupplier": "Return to supplier",
       "cancelPurchase": "Cancel purchase"
     },
@@ -945,6 +949,7 @@
     },
     "detail": {
       "supplier": "Supplier",
+      "customer": "Customer",
       "system": "System",
       "cancelled": "Cancelled",
       "itemLine": "{name} — {qty} {unit}",
@@ -989,6 +994,12 @@
       "remaining": "Remaining",
       "unit": "Unit",
       "noteOptional": "Note (optional)"
+    },
+    "settlement": {
+      "title": "Customer purchase settlement",
+      "hint": "Record payment or explicitly waive settlement before receiving the goods.",
+      "receiveBlocked": "Receiving is waiting for settlement. Record payment or explicitly waive it to continue.",
+      "confirm": "Confirm settlement"
     },
     "returns": {
       "returnQty": "Return quantity",
@@ -1151,7 +1162,8 @@
       "inventory": "Inventory",
       "legacy-import": "Legacy Data Import & Comparison",
       "hamta": "HAMTA Activation Codes",
-      "market-sync": "Market Sync"
+      "market-sync": "Market Sync",
+      "attendance": "Employees & Attendance"
     },
     "action": {
       "view": "View",
@@ -1194,7 +1206,7 @@
       "ARCHIVED": "Archived", "BLOCKED": "Blocked", "BLACKLISTED": "Blacklisted", "DISABLED": "Disabled", "EXPIRED": "Expired",
       "CONFIRMED": "Confirmed", "PARTIALLY_RETURNED": "Partially returned", "RETURNED": "Returned", "PASSED": "Passed", "PUBLISHED": "Published",
       "READY": "Ready", "UPLOADED": "Uploaded", "ANALYZING": "Analyzing", "IMPORTING": "Importing", "COMPLETED_WITH_WARNINGS": "Completed with warnings",
-      "SETTLED": "Settled", "WAIVED": "Waived", "POSTED": "Posted", "RECEIVING": "Receiving", "RECEIVED": "Received", "SHIPPED": "Shipped",
+      "SETTLED": "Settled", "WAIVED": "Waived", "SETTLEMENT_UPDATED": "Settlement updated", "POSTED": "Posted", "RECEIVING": "Receiving", "RECEIVED": "Received", "SHIPPED": "Shipped",
       "AVAILABLE": "Available", "RESERVED": "Reserved", "IN_TRANSIT": "In transit", "ISSUED": "Issued", "QUARANTINED": "Quarantined",
       "RETURNED_TO_SUPPLIER": "Returned to supplier", "RELEASED": "Released", "FULFILLED": "Fulfilled", "COUNTED": "Counted",
       "CALCULATED": "Calculated", "DEGRADED": "Degraded", "FAILING": "Failing", "NEAREST": "Nearest", "UP": "Round up", "DOWN": "Round down",
@@ -1474,6 +1486,12 @@
       "title": "Notification preferences",
       "demo": "Enable demo notifications",
       "demoHint": "When the demo feature is enabled on the server, SAMI creates at most one light in-app reminder per hour for this account."
+    },
+    "keyboard": {
+      "title": "Keyboard shortcuts",
+      "enabled": "Show and enable action shortcuts",
+      "hint": "Buttons, links, menu actions and tabs receive two-character badges. Use Alt plus the first character, then the second; use Tab and Shift+Tab for fields, Enter or Space to activate, Esc to close, and Ctrl+K or Command+K for fast navigation.",
+      "sequence": "Alt+{prefix} · enter the second character"
     }
   },
   "notifications": {
@@ -1810,6 +1828,13 @@
   },
   "marketSync": {
     "title":"Market Sync","subtitle":"Synchronize SIM inventory, calculate prices, and control website publication.","failSafe":"Fail-safe publication","tabs":{"overview":"Overview","sources":"Sources","pricing":"Pricing profiles","rules":"Publication rules","runs":"Sync history","history":"Price history","errors":"Errors","health":"Health"},"sources":"Sources","activeProducts":"Active products","priceChanges":"Price changes","errors":"Errors","sourceHealth":"Source health","neverSynced":"Never synchronized","source":"Source","status":"Status","fetched":"Fetched","newProducts":"New products","startedAt":"Started","addSource":"Add source","syncNow":"Sync now","addProfile":"Add pricing profile","rounding":"Rounding","addRule":"Add rule","rulePrecedence":"Blacklist always wins. When any whitelist rule exists, unmatched products are not published.","healthContract":"Health status contract","healthHint":"Health is computed from actual attempts, successful runs, warnings, and failures.","code":"Code","provider":"Provider adapter","endpoint":"Structured HTTPS endpoint","profile":"Pricing profile","schedule":"Cron schedule","enabled":"Enabled","sourceContractWarning":"Rond HTML sources remain disabled until an authorized structured API contract is supplied. Credentials are never stored here.","percentageAdjustment":"Percentage adjustment","fixedAdjustment":"Fixed adjustment","minimumProfit":"Minimum profit","roundingStep":"Rounding step","minPublicationPrice":"Minimum publication price","maxPublicationPrice":"Maximum publication price","roundingMode":"Rounding mode","previewSourcePrice":"Preview source price","acquisitionCost":"Acquisition cost","calculate":"Calculate preview","finalPrice":"Final price","publicationRule":"Publication rule","listType":"List type","matchType":"Match type","matchValue":"Product code or prefix","error":"The Market Sync request could not be completed.","health":{"HEALTHY":"Healthy","DEGRADED":"Degraded","FAILING":"Failing","DISABLED":"Disabled"}
+  },
+  "attendance": {
+    "required": "This field is required",
+    "title": "Employees & Attendance", "employees": "Employees", "records": "Attendance records", "newEmployee": "New employee", "editEmployee": "Edit employee",
+    "employee": "Employee", "employeeCode": "Employee code", "firstName": "First name", "lastName": "Last name", "jobTitle": "Job title", "mobile": "Mobile",
+    "hireDate": "Hire date", "company": "Company", "branch": "Branch", "user": "Linked user account", "status": "Status", "clockIn": "Clock in", "clockOut": "Clock out", "open": "Open shift",
+    "values": { "ACTIVE": "Active", "INACTIVE": "Inactive", "PRESENT": "Present", "LATE": "Late", "ABSENT": "Absent", "LEAVE": "Leave", "MISSION": "Mission" }
   },
   "hamta": {
     "title": "HAMTA activation codes", "subtitle": "Securely manage activation-code custody from used-phone receipt through customer delivery.", "canonical": "IMEI-linked canonical record", "settings": "Policy settings", "enforcement": "Require a code for eligible used phones", "enforcementHint": "When enabled, receipt and completion are blocked until every eligible used phone has an IMEI-linked code.", "productEligible": "HAMTA-eligible product", "productEligibleHint": "Use for phone products whose used units require an activation code.", "eligible": "HAMTA eligible", "activationCode": "HAMTA activation code", "purchaseHint": "Required when enforcement is enabled and this used-phone product is eligible.", "correctCode": "Correct an undelivered code", "salesDelivery": "Sales invoice and delivery", "saleId": "Sale ID", "loadInvoice": "Load invoice", "confirmDelivery": "Confirm one-time delivery", "printPdf": "Print / Save PDF", "invoiceTitle": "Sales invoice — HAMTA activation information", "report": "HAMTA report", "product": "Product", "imei": "IMEI", "status": "Status", "delivered": "Delivered", "pending": "Pending delivery", "deliveredAt": "Delivered at", "error": "The HAMTA request could not be completed."

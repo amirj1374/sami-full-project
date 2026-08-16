@@ -6,6 +6,7 @@ import type { UserExperiencePreferencePayload, UserExperiencePreferences } from 
 const defaults = (): UserExperiencePreferences => ({
   mobileNavigationCodes: [],
   demoNotificationsEnabled: false,
+  keyboardShortcutsEnabled: true,
   mobileNavigationConfigured: false,
   version: 0,
 })
@@ -64,6 +65,7 @@ export const useUserExperienceStore = defineStore('userExperience', () => {
     error,
     mobileNavigationCodes: computed(() => preferences.value.mobileNavigationCodes),
     demoNotificationsEnabled: computed(() => preferences.value.demoNotificationsEnabled),
+    keyboardShortcutsEnabled: computed(() => preferences.value.keyboardShortcutsEnabled),
     load,
     save,
     reset,

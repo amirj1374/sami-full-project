@@ -7,6 +7,7 @@ import { productSchema } from '@/schemas/product'
 import { productsApi } from '@/api/products'
 import { useApiError } from '@/composables/useApiError'
 import AppFormSection from '@/components/AppFormSection.vue'
+import AppMoneyField from '@/components/AppMoneyField.vue'
 import type { Product } from '@/types/models'
 
 const { t } = useI18n()
@@ -201,17 +202,15 @@ const onSubmit = handleSubmit(async (values) => {
           >
             <v-row>
               <v-col cols="12" sm="6">
-                <v-text-field
+                <AppMoneyField
                   v-model="price"
                   v-bind="priceProps"
                   :error-messages="errors.price"
-                  type="number"
                   step="0.01"
                   min="0"
-                  :suffix="t('common.currency')"
                 >
                   <template #label>{{ t('products.fieldPrice') }} <span class="app-req">*</span></template>
-                </v-text-field>
+                </AppMoneyField>
               </v-col>
               <v-col cols="12" sm="6">
                 <v-text-field

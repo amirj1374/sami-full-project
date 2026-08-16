@@ -487,7 +487,7 @@ function statusColor(status: CustomerStatus): string {
         @update:options="loadItems"
       >
         <template #[`item.displayName`]="{ item }">
-          <a class="text-primary cursor-pointer" @click="openProfile(item)">{{ item.displayName }}</a>
+          <button type="button" class="app-inline-action text-primary" @click="openProfile(item)">{{ item.displayName }}</button>
           <div v-if="item.companyName" class="text-caption text-medium-emphasis">
             {{ item.companyName }}
           </div>
@@ -589,7 +589,18 @@ function statusColor(status: CustomerStatus): string {
 
       <AppLoadingState v-else-if="loading && !items.length" variant="table" :rows="5" :label="t('common.loading')" />
       <div v-else-if="items.length" class="d-grid ga-3 pa-3 pt-0">
-        <v-card v-for="item in items" :key="item.id" rounded="xl" variant="outlined" @click="openProfile(item)">
+        <v-card
+          v-for="item in items"
+          :key="item.id"
+          rounded="xl"
+          variant="outlined"
+          role="button"
+          tabindex="0"
+          :aria-label="item.displayName"
+          @click="openProfile(item)"
+          @keydown.enter.prevent="openProfile(item)"
+          @keydown.space.prevent="openProfile(item)"
+        >
           <v-card-text>
             <div class="d-flex align-start ga-3">
               <v-avatar color="primary" variant="tonal" rounded="lg"><v-icon icon="mdi-account" /></v-avatar>
@@ -605,7 +616,7 @@ function statusColor(status: CustomerStatus): string {
                 </div>
               </div>
             </div>
-            <div class="d-flex justify-end ga-1 mt-2" @click.stop>
+            <div class="d-flex justify-end ga-1 mt-2" @click.stop @keydown.stop>
               <v-btn :aria-label="t('customers.actions.viewProfile')" icon="mdi-account-details" size="small" variant="text" @click="openProfile(item)" />
               <v-btn v-if="can('customers:edit')" :aria-label="t('common.edit')" icon="mdi-pencil" size="small" variant="text" @click="openEdit(item)" />
               <v-menu location="bottom end">

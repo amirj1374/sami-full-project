@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { useServerLabel } from '@/composables/useServerLabel'
 import { suppliersApi } from '@/api/suppliers'
 import { useApiError } from '@/composables/useApiError'
+import AppMoneyField from '@/components/AppMoneyField.vue'
 import type {
   SupBankAccount,
   SupCategory,
@@ -272,7 +273,7 @@ async function submit(ignoreDuplicates = false) {
                 <v-select v-model="form.paymentTermId" :label="t('suppliers.form.fields.paymentTerm')" :items="paymentTerms.filter((pt) => pt.active)" item-title="name" item-value="id" clearable />
               </v-col>
               <v-col cols="6" sm="3">
-                <v-text-field v-model.number="form.creditLimit" :label="t('suppliers.form.fields.creditLimit')" type="number" min="0" clearable />
+                <AppMoneyField v-model="form.creditLimit" :label="t('suppliers.form.fields.creditLimit')" min="0" clearable />
               </v-col>
               <v-col cols="6" sm="3"><v-text-field v-model="form.nationalId" :label="t('suppliers.form.fields.nationalId')" maxlength="32" /></v-col>
               <v-col cols="6" sm="3"><v-text-field v-model="form.economicCode" :label="t('suppliers.form.fields.economicCode')" maxlength="32" /></v-col>
