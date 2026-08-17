@@ -130,3 +130,34 @@ code was modified during this validation continuation.
 - Authenticated UI/RTL/responsive business workflows therefore require the
   human checklist at `docs/release/MANUAL_RC_BROWSER_CHECKLIST.md`; each is
   **MANUAL_BROWSER_FOLLOW_UP**, not `NOT_RUN`.
+
+## Deployment candidate — 2026-08-17
+
+- **APPLICATION_SOURCE_SHA:** `8c019753e76153487bd9541e47ae8d77ae023d78`
+  (`development`). This includes the final purchase and sales product-lookup
+  reliability correction; it is distinct from any later documentation-only
+  commit.
+- Backend source gate: `mvn clean verify` completed in the official Maven
+  Java 21 container with **240 tests, 0 failures, 0 errors, 0 skipped**. The
+  initial backend-only bind mount was not counted because a cross-monorepo
+  contract test intentionally reads the sibling frontend; the rerun mounted
+  the repository root and passed.
+- Frontend source gate: `npm ci`, `npm test` (**25 tests**),
+  `npm run type-check`, and `npm run build` passed. The source-contract tests
+  include exact English/Persian localization parity.
+- Fresh PostgreSQL 16 Compose gate: Flyway validated and applied **V1–V44**;
+  Hibernate/Spring Boot started successfully; PostgreSQL, backend and frontend
+  health checks were healthy. Nginx SPA, `/health`, login, and authenticated
+  `/api/v1/menu` and `/api/v1/users/me` requests returned HTTP 200.
+- Validated `linux/amd64` images:
+  - backend `sami-backend:test` —
+    `sha256:95330a3d3dd573ac8e54c136f9918f2b37e2dcd1b2d31c2f113f01dfb852ce6a`
+  - frontend `sami-frontend:test` —
+    `sha256:c8c6fee83c7ada9b60296f8c584bb9319c5486c0cf4b4e402f0e23581fd45a98`
+  Both OCI revision labels equal the application source SHA.
+- Prepared ignored deployment artifacts:
+  `deployment-artifacts/sami-backend-test.tar` (SHA-256
+  `CAF091126AA17675D235EF3245BACE2282A4B14C9E016E7183D79DE00C835EA2`) and
+  `deployment-artifacts/sami-frontend-test.tar` (SHA-256
+  `66B9CC8549B8ED1B0279DF734A8710FF2766442BBA2573F05D3C1BBA1B90C50D`).
+  Their TAR manifest configs match the validated image config IDs.
