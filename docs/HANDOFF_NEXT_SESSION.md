@@ -127,3 +127,24 @@ Invoke-WebRequest -UseBasicParsing http://localhost/api/v1/menu -SkipHttpErrorCh
 ```
 
 Acceptance requires fresh-volume Flyway V1→V42, backend integration/schema validation, healthy PostgreSQL/backend/frontend, nginx `/api`, login, provenance equal to `$sha`, and browser/mobile RTL/LTR smoke for Customer Purchase, Data Quality, Legacy Asan, HAMTA, Market Sync and font rendering. Tear down the throwaway stack afterward; do not deploy.
+
+## Deployment candidate update — 2026-08-17
+
+- **Application source:** `development` at
+  `8c019753e76153487bd9541e47ae8d77ae023d78`. A subsequent documentation-only
+  commit, if present, must not be used as the image provenance.
+- Validation completed locally with Docker Desktop: official Maven/Java 21
+  `mvn clean verify` (240 tests, zero failures/errors/skips); frontend
+  `npm ci`, 25 source-contract tests, type-check and production build; and a
+  fresh PostgreSQL 16 production-like Compose stack.
+- Fresh runtime evidence: Flyway V1–V44, Spring/Hibernate startup, all three
+  service health checks, nginx SPA and protected API proxy, bootstrap login,
+  authenticated menu and authenticated user endpoints passed.
+- Validated export images are `sami-backend:test`
+  (`sha256:95330a3d3dd573ac8e54c136f9918f2b37e2dcd1b2d31c2f113f01dfb852ce6a`)
+  and `sami-frontend:test`
+  (`sha256:c8c6fee83c7ada9b60296f8c584bb9319c5486c0cf4b4e402f0e23581fd45a98`),
+  both linux/amd64 and OCI-labelled with the application SHA. TAR artifacts
+  are intentionally ignored under `deployment-artifacts/`.
+- The legacy portions of this handoff that say Docker was unavailable or end
+  at V42 are historical only; do not treat them as current release evidence.
