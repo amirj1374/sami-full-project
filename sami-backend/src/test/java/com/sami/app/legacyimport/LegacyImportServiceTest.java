@@ -16,6 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -28,7 +29,8 @@ class LegacyImportServiceTest {
     @Mock TenantContext tenants;
     @Mock FileStorage storage;
     @Mock ObjectMapper json;
-    @Mock AsanLegacyImportAdapter adapter;
+    @Mock LegacyImportAdapter adapter;
+    @Mock List<LegacyImportAdapter> adapters;
     @Mock LegacyImportProperties properties;
     @InjectMocks LegacyImportService service;
 
@@ -48,6 +50,8 @@ class LegacyImportServiceTest {
         when(file.isEmpty()).thenReturn(false); when(file.getSize()).thenReturn((long)rar.length);
         when(file.getOriginalFilename()).thenReturn("safe.rar"); when(file.getBytes()).thenReturn(rar);
         when(properties.maxUploadBytes()).thenReturn(1024L); when(tenants.requireTenantId()).thenReturn(42L);
+        when(adapters.stream()).thenReturn(Stream.of(adapter)); when(adapter.supports("safe.rar",rar)).thenReturn(true);
+        when(adapter.mediaType()).thenReturn("application/vnd.rar"); when(adapter.parserVersion()).thenReturn("asan-1.0");
         when(storage.store(eq("legacy-imports/42"),same(rar),eq("application/vnd.rar"))).thenReturn("opaque-key");
         when(adapter.sourceSystem()).thenReturn("ASAN");
         when(jdbc.queryForObject(contains("INSERT INTO legacy_import_batches"),eq(Long.class),any(Object[].class)))
@@ -62,14 +66,18 @@ class LegacyImportServiceTest {
     @Test void comparisonIsTenantScopedAndUsesOnlyExactCustomerCode() throws Exception {
         when(tenants.requireTenantId()).thenReturn(73L);
         when(jdbc.queryForMap(anyString(),eq(73L),eq(8L))).thenReturn(Map.of("status","COMPLETED"));
-        when(jdbc.queryForObject(anyString(),eq(Long.class),any(Object[].class))).thenReturn(9L,5L,2L,1L);
+        when(jdbc.queryForObject(anyString(),eq(Long.class),any(Object[].class)))
+                .thenReturn(9L,10L,3L,4L,1L,1L,0L,2L);
         when(jdbc.queryForList(contains("LEFT JOIN customers"),eq(73L),eq(8L))).thenReturn(List.of());
         when(json.writeValueAsString(any())).thenReturn("{}");
 
         Map<String,Object> result=service.compare(8L);
 
-        assertThat(result).containsEntry("matchedByCustomerCode",1L).containsEntry("unmapped",4L);
-        assertThat(result.get("matchingPolicy")).asString().contains("Exact tenant-scoped customer_code only");
+        assertThat(result).containsEntry("matchedByCustomerCode",1L)
+                .containsEntry("matchedBySupplierCode",1L)
+                .containsEntry("matchedByProductSku",2L)
+                .containsEntry("unmapped",6L);
+        assertThat(result.get("matchingPolicy")).asString().contains("Exact tenant-scoped customer/supplier codes");
         verify(jdbc).queryForList(contains("c.tenant_id=r.tenant_id"),eq(73L),eq(8L));
         verify(jdbc,never()).update(contains("UPDATE customers"),any(Object[].class));
     }

@@ -41,6 +41,11 @@ public class AsanLegacyImportAdapter implements LegacyImportAdapter {
     private final LegacyImportProperties properties;
 
     @Override public String sourceSystem() { return "ASAN"; }
+    @Override public String parserVersion() { return PARSER_VERSION; }
+    @Override public String mediaType() { return "application/vnd.rar"; }
+    @Override public boolean supports(String filename, byte[] archive) {
+        return archive != null && (startsWith(archive, RAR4) || startsWith(archive, RAR5));
+    }
 
     @Override
     public Analysis analyze(byte[] archiveBytes, boolean includeRecords) {
@@ -159,7 +164,7 @@ public class AsanLegacyImportAdapter implements LegacyImportAdapter {
                     records.add(new Record(id, LegacyNormalizer.code(code), LegacyNormalizer.text(code), raw, normalized));
                 }
                 String key = sourcePath + "#" + tableName;
-                datasets.add(new Dataset(sourcePath, key, tableName, semantic(tableName), "SUPPORTED", "UTF-16LE", count, dictionary, records));
+                datasets.add(new Dataset(sourcePath, key, tableName, semantic(tableName), "SUPPORTED", "UTF-16LE", count, dictionary, Map.of(), records));
             }
         } catch (RuntimeException ex) {
             messages.add(new Message(sourcePath, null, "ERROR", "JET_READ_FAILED", "Jet database metadata could not be read safely."));
@@ -173,7 +178,7 @@ public class AsanLegacyImportAdapter implements LegacyImportAdapter {
         Map<String,Map<String,Object>> fields = new LinkedHashMap<>();
         while (matcher.find()) fields.putIfAbsent(matcher.group(1), Map.of("sourceField", matcher.group(1), "meaning", "Report expression field", "sourceType", "UNKNOWN", "nullableEvidence", "UNKNOWN", "confidence", "MEDIUM", "stagingField", "raw_record." + matcher.group(1)));
         String key = sourcePath + "#report-fields";
-        datasets.add(new Dataset(sourcePath, key, "report-fields", "REPORT_SCHEMA", "PARTIAL", "BINARY_TEXT", 0, new ArrayList<>(fields.values()), List.of()));
+        datasets.add(new Dataset(sourcePath, key, "report-fields", "REPORT_SCHEMA", "PARTIAL", "BINARY_TEXT", 0, new ArrayList<>(fields.values()), Map.of(), List.of()));
         messages.add(new Message(sourcePath, key, "INFO", "SCHEMA_ONLY", "Report field names were discovered; the report definition contains no source records."));
     }
 

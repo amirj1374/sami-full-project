@@ -192,11 +192,13 @@ test('all forms inherit the shared mobile-first rhythm and persistent labels', (
   assert.match(styles, /max-height: calc\(100dvh/)
 })
 
-test('Legacy Asan archive upload uses the shared multipart request convention', () => {
+test('Legacy Asan archive upload supports RAR and manifest-driven ZIP packages', () => {
   const legacyClient = read('src/api/legacyImports.ts')
+  const legacyView = read('src/views/LegacyImportsView.vue')
 
   assert.match(legacyClient, /new FormData\(\)/)
   assert.match(legacyClient, /headers:\s*\{\s*'Content-Type':\s*'multipart\/form-data'\s*\}/)
+  assert.match(legacyView, /accept="\.rar,\.zip,application\/vnd\.rar,application\/zip"/)
 })
 
 test('active integration menu modules have localized server labels', () => {

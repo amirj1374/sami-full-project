@@ -18,6 +18,7 @@ import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -28,30 +29,25 @@ public class LegacyImportService {
     private final TenantContext tenants;
     private final FileStorage storage;
     private final ObjectMapper json;
-    private final AsanLegacyImportAdapter adapter;
+    private final List<LegacyImportAdapter> adapters;
     private final LegacyImportProperties properties;
 
     @Transactional
     public Map<String,Object> upload(MultipartFile file) {
-        if (file == null || file.isEmpty()) throw badRequest("A non-empty RAR archive is required");
+        if (file == null || file.isEmpty()) throw badRequest("A non-empty RAR or ZIP archive is required");
         if (file.getSize() > properties.maxUploadBytes()) throw badRequest("Archive exceeds the configured upload limit");
         String name = file.getOriginalFilename() == null ? "legacy.rar" : file.getOriginalFilename();
-        if (!name.toLowerCase().endsWith(".rar")) throw badRequest("Only .rar archives are accepted");
         try {
             byte[] bytes = file.getBytes();
-            try {
-                AsanLegacyImportAdapter.requireRarSignature(bytes);
-            } catch (IllegalArgumentException ex) {
-                throw badRequest("Only valid RAR archives are accepted");
-            }
+            LegacyImportAdapter adapter = selectAdapter(name, bytes);
             Long tenant = tenants.requireTenantId();
             String hash = sha256(bytes);
-            String key = storage.store("legacy-imports/" + tenant, bytes, "application/vnd.rar");
+            String key = storage.store("legacy-imports/" + tenant, bytes, adapter.mediaType());
             try {
                 Long id = jdbc.queryForObject("""
                     INSERT INTO legacy_import_batches(tenant_id,source_system,original_filename,storage_key,sha256,parser_version,status,metadata)
                     VALUES (?,?,?,?,?,?,'UPLOADED',cast(? as jsonb)) RETURNING id
-                    """, Long.class, tenant, adapter.sourceSystem(), basename(name), key, hash, AsanLegacyImportAdapter.PARSER_VERSION,
+                    """, Long.class, tenant, adapter.sourceSystem(), basename(name), key, hash, adapter.parserVersion(),
                         json(Map.of("uploadBytes", bytes.length)));
                 audit(tenant, id, "UPLOAD", Map.of("sha256", hash, "filename", basename(name)));
                 return batch(id);
@@ -79,6 +75,7 @@ public class LegacyImportService {
         jdbc.update("UPDATE legacy_import_batches SET status='ANALYZING',started_at=now(),updated_at=now() WHERE tenant_id=? AND id=?", tenant, id);
         try {
             byte[] bytes = storage.load(storageKey(tenant,id)).orElseThrow(() -> new IllegalStateException("Stored archive is unavailable")).content();
+            LegacyImportAdapter adapter = selectAdapter(String.valueOf(batch.get("original_filename")), bytes);
             LegacyImportAdapter.Analysis analysis = adapter.analyze(bytes, false);
             replaceAnalysis(tenant, id, analysis, false);
             jdbc.update("UPDATE legacy_import_batches SET status='READY',dataset_count=?,warning_count=?,error_count=?,metadata=cast(? as jsonb),updated_at=now() WHERE tenant_id=? AND id=?",
@@ -98,11 +95,13 @@ public class LegacyImportService {
         jdbc.update("UPDATE legacy_import_batches SET status='IMPORTING',updated_at=now() WHERE tenant_id=? AND id=?",tenant,id);
         try {
             byte[] bytes = storage.load(storageKey(tenant,id)).orElseThrow(() -> new IllegalStateException("Stored archive is unavailable")).content();
+            Map<String,Object> current = batch(id);
+            LegacyImportAdapter adapter = selectAdapter(String.valueOf(current.get("original_filename")), bytes);
             LegacyImportAdapter.Analysis analysis = adapter.analyze(bytes, true);
             replaceAnalysis(tenant,id,analysis,true);
             long count = analysis.datasets().stream().mapToLong(d -> d.records().size()).sum();
             int warnings = severity(analysis,"WARNING"), errors = severity(analysis,"ERROR");
-            String completed = warnings > 0 ? "COMPLETED_WITH_WARNINGS" : "COMPLETED";
+            String completed = warnings > 0 || errors > 0 ? "COMPLETED_WITH_WARNINGS" : "COMPLETED";
             jdbc.update("UPDATE legacy_import_batches SET status=?,record_count=?,dataset_count=?,warning_count=?,error_count=?,completed_at=now(),updated_at=now() WHERE tenant_id=? AND id=?",completed,count,analysis.datasets().size(),warnings,errors,tenant,id);
             audit(tenant,id,"IMPORT",Map.of("stagedRecords",count,"canonicalWrites",0));
             return batch(id);
@@ -113,32 +112,54 @@ public class LegacyImportService {
     }
 
     public List<Map<String,Object>> files(Long id) { batch(id); return jdbc.queryForList("SELECT id,source_path,safe_name,size_bytes,sha256,format,support_status,metadata FROM legacy_import_files WHERE tenant_id=? AND import_batch_id=? ORDER BY id",tenants.requireTenantId(),id); }
-    public List<Map<String,Object>> datasets(Long id) { batch(id); return jdbc.queryForList("SELECT id,dataset_key,source_table,semantic_type,support_status,source_encoding,source_record_count,imported_record_count,field_dictionary FROM legacy_datasets WHERE tenant_id=? AND import_batch_id=? ORDER BY id",tenants.requireTenantId(),id); }
+    public List<Map<String,Object>> datasets(Long id) { batch(id); return jdbc.queryForList("SELECT id,dataset_key,source_table,semantic_type,support_status,source_encoding,source_record_count,imported_record_count,field_dictionary,metadata FROM legacy_datasets WHERE tenant_id=? AND import_batch_id=? ORDER BY id",tenants.requireTenantId(),id); }
     public List<Map<String,Object>> messages(Long id) { batch(id); return jdbc.queryForList("SELECT severity,code,message,source_record_id,context,created_at FROM legacy_import_messages WHERE tenant_id=? AND import_batch_id=? ORDER BY id",tenants.requireTenantId(),id); }
     public List<Map<String,Object>> records(Long id, int limit, int offset) { batch(id); return jdbc.queryForList("SELECT r.id,d.dataset_key,d.semantic_type,r.source_record_id,r.legacy_code,r.raw_record,r.normalized_record FROM legacy_records r JOIN legacy_datasets d ON d.id=r.dataset_id AND d.tenant_id=r.tenant_id WHERE r.tenant_id=? AND r.import_batch_id=? ORDER BY r.id LIMIT ? OFFSET ?",tenants.requireTenantId(),id,Math.min(Math.max(limit,1),200),Math.max(offset,0)); }
 
     @Transactional
     public Map<String,Object> compare(Long id) {
-        Long tenant = tenants.requireTenantId(); batch(id);
+        Long tenant = tenants.requireTenantId(); Map<String,Object> batch = batch(id);
         long started = System.nanoTime();
-        Long run = jdbc.queryForObject("INSERT INTO legacy_comparison_runs(tenant_id,import_batch_id,status,comparison_version) VALUES (?,?,'RUNNING','asan-1.0') RETURNING id",Long.class,tenant,id);
+        String comparisonVersion = String.valueOf(batch.getOrDefault("parser_version", "legacy-1.0"));
+        Long run = jdbc.queryForObject("INSERT INTO legacy_comparison_runs(tenant_id,import_batch_id,status,comparison_version) VALUES (?,?,'RUNNING',?) RETURNING id",Long.class,tenant,id,comparisonVersion);
         long total = jdbc.queryForObject("SELECT count(*) FROM legacy_records WHERE tenant_id=? AND import_batch_id=?",Long.class,tenant,id);
-        long customer = jdbc.queryForObject("SELECT count(*) FROM legacy_records r JOIN legacy_datasets d ON d.id=r.dataset_id AND d.tenant_id=r.tenant_id WHERE r.tenant_id=? AND r.import_batch_id=? AND d.semantic_type='CUSTOMER'",Long.class,tenant,id);
-        long exactCode = jdbc.queryForObject("SELECT count(*) FROM legacy_records r JOIN legacy_datasets d ON d.id=r.dataset_id AND d.tenant_id=r.tenant_id JOIN customers c ON c.tenant_id=r.tenant_id AND c.customer_code=r.legacy_code WHERE r.tenant_id=? AND r.import_batch_id=? AND d.semantic_type='CUSTOMER'",Long.class,tenant,id);
-        Map<String,Object> counts = Map.of("total",total,"eligibleCustomers",customer,"matchedByCustomerCode",exactCode,"unmapped",total-exactCode,"ambiguous",0);
+        long parties = count(id, tenant, "d.semantic_type IN ('CUSTOMER','PARTY')");
+        long products = count(id, tenant, "d.semantic_type IN ('PRODUCT_MOVEMENT','INVENTORY_BALANCE')");
+        long customerMatches = count(id, tenant, "d.semantic_type IN ('CUSTOMER','PARTY') AND EXISTS (SELECT 1 FROM customers c WHERE c.tenant_id=r.tenant_id AND c.customer_code=r.legacy_code)");
+        long supplierMatches = count(id, tenant, "d.semantic_type='PARTY' AND EXISTS (SELECT 1 FROM suppliers s WHERE s.tenant_id=r.tenant_id AND s.supplier_code=r.legacy_code)");
+        long ambiguousParties = count(id, tenant, "d.semantic_type='PARTY' AND EXISTS (SELECT 1 FROM customers c WHERE c.tenant_id=r.tenant_id AND c.customer_code=r.legacy_code) AND EXISTS (SELECT 1 FROM suppliers s WHERE s.tenant_id=r.tenant_id AND s.supplier_code=r.legacy_code)");
+        long productMatches = count(id, tenant, "d.semantic_type IN ('PRODUCT_MOVEMENT','INVENTORY_BALANCE') AND EXISTS (SELECT 1 FROM products p WHERE p.tenant_id=r.tenant_id AND lower(p.sku)=lower(r.legacy_code))");
+        long matched = customerMatches + supplierMatches - ambiguousParties + productMatches;
+        Map<String,Object> counts = new LinkedHashMap<>();
+        counts.put("total", total); counts.put("eligibleParties", parties); counts.put("eligibleProductRows", products);
+        counts.put("matchedByCustomerCode", customerMatches); counts.put("matchedBySupplierCode", supplierMatches);
+        counts.put("matchedByProductSku", productMatches); counts.put("ambiguousParties", ambiguousParties);
+        counts.put("unmapped", Math.max(0, total - matched));
         List<Map<String,Object>> results=jdbc.queryForList("""
             SELECT r.id AS legacy_record_id,d.dataset_key,d.semantic_type,r.source_record_id,r.legacy_code,
-                   CASE WHEN c.id IS NOT NULL THEN 'MATCHED' ELSE 'UNMAPPED' END AS classification,
-                   c.id AS sami_customer_id,
-                   CASE WHEN c.id IS NOT NULL THEN 'EXACT_CUSTOMER_CODE' ELSE 'NO_APPROVED_MATCH_RULE' END AS reason
+                   CASE
+                     WHEN c.id IS NOT NULL AND s.id IS NOT NULL THEN 'AMBIGUOUS'
+                     WHEN c.id IS NOT NULL OR s.id IS NOT NULL OR p.id IS NOT NULL THEN 'MATCHED'
+                     ELSE 'UNMAPPED'
+                   END AS classification,
+                   c.id AS sami_customer_id,s.id AS sami_supplier_id,p.id AS sami_product_id,
+                   CASE
+                     WHEN c.id IS NOT NULL AND s.id IS NOT NULL THEN 'CUSTOMER_AND_SUPPLIER_CODE_COLLISION'
+                     WHEN c.id IS NOT NULL THEN 'EXACT_CUSTOMER_CODE'
+                     WHEN s.id IS NOT NULL THEN 'EXACT_SUPPLIER_CODE'
+                     WHEN p.id IS NOT NULL THEN 'EXACT_PRODUCT_SKU'
+                     ELSE 'NO_APPROVED_MATCH_RULE'
+                   END AS reason
             FROM legacy_records r JOIN legacy_datasets d ON d.id=r.dataset_id AND d.tenant_id=r.tenant_id
-            LEFT JOIN customers c ON d.semantic_type='CUSTOMER' AND c.tenant_id=r.tenant_id AND c.customer_code=r.legacy_code
+            LEFT JOIN customers c ON d.semantic_type IN ('CUSTOMER','PARTY') AND c.tenant_id=r.tenant_id AND c.customer_code=r.legacy_code
+            LEFT JOIN suppliers s ON d.semantic_type='PARTY' AND s.tenant_id=r.tenant_id AND s.supplier_code=r.legacy_code
+            LEFT JOIN products p ON d.semantic_type IN ('PRODUCT_MOVEMENT','INVENTORY_BALANCE') AND p.tenant_id=r.tenant_id AND lower(p.sku)=lower(r.legacy_code)
             WHERE r.tenant_id=? AND r.import_batch_id=? ORDER BY r.id LIMIT 200
             """,tenant,id);
         long duration = (System.nanoTime()-started)/1_000_000;
         jdbc.update("UPDATE legacy_comparison_runs SET status='COMPLETED',counts=cast(? as jsonb),duration_ms=?,completed_at=now(),updated_at=now() WHERE tenant_id=? AND id=?",json(counts),duration,tenant,run);
         audit(tenant,id,"COMPARE",counts);
-        Map<String,Object> result = new LinkedHashMap<>(counts); result.put("runId",run); result.put("durationMs",duration); result.put("matchingPolicy","Exact tenant-scoped customer_code only; all other records remain unmapped for review"); result.put("results",results); return result;
+        Map<String,Object> result = new LinkedHashMap<>(counts); result.put("runId",run); result.put("durationMs",duration); result.put("matchingPolicy","Exact tenant-scoped customer/supplier codes and product SKUs only; accounting and inventory totals remain staging evidence until canonical mappings are approved"); result.put("results",results); return result;
     }
 
     @Transactional
@@ -167,8 +188,8 @@ public class LegacyImportService {
             fileIds.put(f.sourcePath(),fileId);
         }
         for (var d:analysis.datasets()) {
-            Long datasetId=jdbc.queryForObject("INSERT INTO legacy_datasets(tenant_id,import_batch_id,import_file_id,dataset_key,source_table,semantic_type,support_status,source_encoding,source_record_count,imported_record_count,field_dictionary) VALUES (?,?,?,?,?,?,?,?,?,?,cast(? as jsonb)) RETURNING id",Long.class,tenant,batchId,fileIds.get(d.sourcePath()),d.key(),d.sourceTable(),d.semanticType(),d.supportStatus(),d.encoding(),d.sourceCount(),includeRecords?d.records().size():0,json(d.dictionary()));
-            if (includeRecords) for (var r:d.records()) jdbc.update("INSERT INTO legacy_records(tenant_id,import_batch_id,dataset_id,source_record_id,legacy_code,normalized_key,raw_record,normalized_record) VALUES (?,?,?,?,?,?,cast(? as jsonb),cast(? as jsonb))",tenant,batchId,datasetId,r.sourceId(),r.legacyCode(),r.normalizedKey(),json(r.raw()),json(r.normalized()));
+            Long datasetId=jdbc.queryForObject("INSERT INTO legacy_datasets(tenant_id,import_batch_id,import_file_id,dataset_key,source_table,semantic_type,support_status,source_encoding,source_record_count,imported_record_count,field_dictionary,metadata) VALUES (?,?,?,?,?,?,?,?,?,?,cast(? as jsonb),cast(? as jsonb)) RETURNING id",Long.class,tenant,batchId,fileIds.get(d.sourcePath()),d.key(),d.sourceTable(),d.semanticType(),d.supportStatus(),d.encoding(),d.sourceCount(),includeRecords?d.records().size():0,json(d.dictionary()),json(d.metadata()));
+            if (includeRecords) insertRecords(tenant, batchId, datasetId, d.records());
         }
         for (var m:analysis.messages()) jdbc.update("INSERT INTO legacy_import_messages(tenant_id,import_batch_id,import_file_id,severity,code,message) VALUES (?,?,?,?,?,?)",tenant,batchId,fileIds.get(m.sourcePath()),m.severity(),m.code(),m.message());
     }
@@ -177,7 +198,39 @@ public class LegacyImportService {
     private void audit(Long tenant,Long batch,String action,Map<String,?> detail) { jdbc.update("INSERT INTO legacy_import_audit_logs(tenant_id,import_batch_id,action,detail) VALUES (?,?,?,cast(? as jsonb))",tenant,batch,action,json(detail)); }
     private String json(Object value) { try { return json.writeValueAsString(value); } catch (JsonProcessingException e) { throw new IllegalStateException(e); } }
     private static int severity(LegacyImportAdapter.Analysis a,String s) { return (int)a.messages().stream().filter(m->s.equals(m.severity())).count(); }
-    private static Map<String,Object> summary(LegacyImportAdapter.Analysis a) { return Map.of("fileCount",a.files().size(),"datasetCount",a.datasets().size(),"supportedFiles",a.files().stream().filter(f->"SUPPORTED".equals(f.supportStatus())).count(),"partialFiles",a.files().stream().filter(f->"PARTIAL".equals(f.supportStatus())).count(),"unsupportedFiles",a.files().stream().filter(f->"UNSUPPORTED".equals(f.supportStatus())).count()); }
+    private Map<String,Object> summary(LegacyImportAdapter.Analysis a) {
+        Map<String,Object> result = new LinkedHashMap<>();
+        result.put("fileCount",a.files().size()); result.put("datasetCount",a.datasets().size());
+        result.put("supportedFiles",a.files().stream().filter(f->"SUPPORTED".equals(f.supportStatus())).count());
+        result.put("partialFiles",a.files().stream().filter(f->"PARTIAL".equals(f.supportStatus())).count());
+        result.put("unsupportedFiles",a.files().stream().filter(f->"UNSUPPORTED".equals(f.supportStatus())).count());
+        result.put("stagingOnly",true); result.put("canonicalWrites",0);
+        result.put("datasetControls",a.datasets().stream().collect(java.util.stream.Collectors.toMap(
+                LegacyImportAdapter.Dataset::key, LegacyImportAdapter.Dataset::metadata, (left,right)->left, LinkedHashMap::new)));
+        return result;
+    }
+
+    private LegacyImportAdapter selectAdapter(String filename, byte[] bytes) {
+        return adapters.stream().filter(candidate -> candidate.supports(filename, bytes)).findFirst()
+                .orElseThrow(() -> badRequest("Only valid Asan RAR archives or manifest-driven ZIP/Excel packages are accepted"));
+    }
+
+    private long count(Long batchId, Long tenant, String predicate) {
+        String sql = "SELECT count(*) FROM legacy_records r JOIN legacy_datasets d ON d.id=r.dataset_id AND d.tenant_id=r.tenant_id WHERE r.tenant_id=? AND r.import_batch_id=? AND " + predicate;
+        Long value = jdbc.queryForObject(sql, Long.class, tenant, batchId);
+        return value == null ? 0 : value;
+    }
+
+    private void insertRecords(Long tenant, Long batchId, Long datasetId, List<LegacyImportAdapter.Record> records) {
+        String sql = "INSERT INTO legacy_records(tenant_id,import_batch_id,dataset_id,source_record_id,legacy_code,normalized_key,raw_record,normalized_record) VALUES (?,?,?,?,?,?,cast(? as jsonb),cast(? as jsonb))";
+        int chunkSize = properties.importChunkSize();
+        List<Object[]> chunk = new ArrayList<>(chunkSize);
+        for (var record : records) {
+            chunk.add(new Object[]{tenant,batchId,datasetId,record.sourceId(),record.legacyCode(),record.normalizedKey(),json(record.raw()),json(record.normalized())});
+            if (chunk.size() == chunkSize) { jdbc.batchUpdate(sql, chunk); chunk.clear(); }
+        }
+        if (!chunk.isEmpty()) jdbc.batchUpdate(sql, chunk);
+    }
     private static String extension(String n) { int i=n.lastIndexOf('.'); return i<0?null:n.substring(i+1).toLowerCase(); }
     private static ApiException badRequest(String message) { return new ApiException(ErrorCode.BAD_REQUEST, message); }
     private static String basename(String n) { String clean=n.replace('\\','/'); return clean.substring(clean.lastIndexOf('/')+1); }

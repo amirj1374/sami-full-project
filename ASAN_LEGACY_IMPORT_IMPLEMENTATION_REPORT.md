@@ -10,6 +10,8 @@
 - Exact-code-only customer comparison that cannot cross tenant boundaries.
 - Persian/English responsive Vue import center with RTL/LTR support and field-dictionary inspection.
 - Unit coverage for normalization, signature validation, and path traversal defenses.
+- Manifest-driven ZIP/XLSX/XLS staging with per-file provenance, source-row IDs, legacy codes, field dictionaries, mapping metadata and reconciliation totals.
+- Conservative exact-code comparison for customers, suppliers and product SKUs; canonical writes remain zero.
 
 ## Supplied archive validation
 
@@ -20,6 +22,7 @@ The production parser was run directly against `ji14050511.rar`: 190 files, 57 d
 - Proprietary fixed-record files remain unsupported until an authoritative layout and codec are supplied.
 - FastReport definitions contribute field dictionaries only, not data rows.
 - Import remains staging-only. Promotion into canonical SAMI modules requires a separately approved mapping/reconciliation workflow.
+- The supplied accounting package parses to 77,475 staging records, but canonical accounting/bank/cash owners are not implemented. Final accounting promotion is therefore blocked rather than guessed.
 - RAR5 processing requires the official UnRAR executable on the backend host.
 - An infrastructure-backed Flyway migration run requires PostgreSQL/Docker and is part of environment deployment validation, not this repository-only implementation.
 

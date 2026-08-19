@@ -21,4 +21,5 @@ export interface LegacyDataset {
   source_record_count: number
   imported_record_count: number
   field_dictionary: Array<Record<string, unknown>>
+  metadata: Record<string, unknown>
 }
