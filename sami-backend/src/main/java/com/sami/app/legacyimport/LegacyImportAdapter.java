@@ -2,6 +2,7 @@ package com.sami.app.legacyimport;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 
 public interface LegacyImportAdapter {
     String sourceSystem();
@@ -11,6 +12,14 @@ public interface LegacyImportAdapter {
     Analysis analyze(byte[] archive, boolean includeRecords);
     default Analysis analyze(String filename, byte[] archive, boolean includeRecords) {
         return analyze(archive, includeRecords);
+    }
+    /**
+     * Optional bounded-memory record stream.  Callers must use the dataset key
+     * from the preceding analysis and persist each callback in bounded chunks.
+     */
+    default boolean supportsStreamingRecords() { return false; }
+    default void streamRecords(String filename, byte[] archive, BiConsumer<String, Record> consumer) {
+        throw new UnsupportedOperationException("This adapter does not stream records");
     }
 
     record Analysis(List<SourceFile> files, List<Dataset> datasets, List<Message> messages) {}

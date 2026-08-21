@@ -111,9 +111,19 @@ public class LegacyImportService {
             byte[] bytes = storage.load(storageKey(tenant,id)).orElseThrow(() -> new IllegalStateException("Stored archive is unavailable")).content();
             Map<String,Object> current = batch(id);
             LegacyImportAdapter adapter = selectAdapter(String.valueOf(current.get("original_filename")), bytes);
-            LegacyImportAdapter.Analysis analysis = adapter.analyze(String.valueOf(current.get("original_filename")), bytes, true);
-            replaceAnalysis(tenant,id,analysis,true);
-            long count = analysis.datasets().stream().mapToLong(d -> d.records().size()).sum();
+            LegacyImportAdapter.Analysis analysis = adapter.analyze(String.valueOf(current.get("original_filename")), bytes, false);
+            Map<String, Long> datasetIds = replaceAnalysis(tenant,id,analysis,false);
+            long count;
+            if (adapter.supportsStreamingRecords()) {
+                StreamingRecordWriter writer = new StreamingRecordWriter(tenant, id, datasetIds);
+                adapter.streamRecords(String.valueOf(current.get("original_filename")), bytes, writer::accept);
+                count = writer.flush();
+            } else {
+                LegacyImportAdapter.Analysis records = adapter.analyze(String.valueOf(current.get("original_filename")), bytes, true);
+                replaceAnalysis(tenant,id,records,true);
+                analysis = records;
+                count = records.datasets().stream().mapToLong(d -> d.records().size()).sum();
+            }
             int warnings = severity(analysis,"WARNING"), errors = severity(analysis,"ERROR");
             String completed = warnings > 0 || errors > 0 ? "COMPLETED_WITH_WARNINGS" : "COMPLETED";
             jdbc.update("UPDATE legacy_import_batches SET status=?,record_count=?,dataset_count=?,warning_count=?,error_count=?,completed_at=now(),updated_at=now() WHERE tenant_id=? AND id=?",completed,count,analysis.datasets().size(),warnings,errors,tenant,id);
@@ -240,18 +250,21 @@ public class LegacyImportService {
     @Transactional
     public void delete(Long id) { Long tenant=tenants.requireTenantId(); String key=storageKey(tenant,id); jdbc.update("DELETE FROM legacy_import_batches WHERE tenant_id=? AND id=?",tenant,id); storage.delete(key); }
 
-    private void replaceAnalysis(Long tenant, Long batchId, LegacyImportAdapter.Analysis analysis, boolean includeRecords) {
+    private Map<String,Long> replaceAnalysis(Long tenant, Long batchId, LegacyImportAdapter.Analysis analysis, boolean includeRecords) {
         jdbc.update("DELETE FROM legacy_import_files WHERE tenant_id=? AND import_batch_id=?",tenant,batchId);
         Map<String,Long> fileIds = new LinkedHashMap<>();
         for (var f:analysis.files()) {
             Long fileId=jdbc.queryForObject("INSERT INTO legacy_import_files(tenant_id,import_batch_id,source_path,safe_name,extension,size_bytes,sha256,format,support_status,metadata) VALUES (?,?,?,?,?,?,?,?,?,cast(? as jsonb)) RETURNING id",Long.class,tenant,batchId,f.sourcePath(),f.safeName(),extension(f.safeName()),f.size(),f.sha256(),f.format(),f.supportStatus(),json(f.metadata()));
             fileIds.put(f.sourcePath(),fileId);
         }
+        Map<String, Long> datasetIds = new LinkedHashMap<>();
         for (var d:analysis.datasets()) {
             Long datasetId=jdbc.queryForObject("INSERT INTO legacy_datasets(tenant_id,import_batch_id,import_file_id,dataset_key,source_table,semantic_type,support_status,source_encoding,source_record_count,imported_record_count,field_dictionary,metadata) VALUES (?,?,?,?,?,?,?,?,?,?,cast(? as jsonb),cast(? as jsonb)) RETURNING id",Long.class,tenant,batchId,fileIds.get(d.sourcePath()),d.key(),d.sourceTable(),d.semanticType(),d.supportStatus(),d.encoding(),d.sourceCount(),includeRecords?d.records().size():0,json(d.dictionary()),json(d.metadata()));
+            datasetIds.put(d.key(), datasetId);
             if (includeRecords) insertRecords(tenant, batchId, datasetId, d.records());
         }
         for (var m:analysis.messages()) jdbc.update("INSERT INTO legacy_import_messages(tenant_id,import_batch_id,import_file_id,severity,code,message) VALUES (?,?,?,?,?,?)",tenant,batchId,fileIds.get(m.sourcePath()),m.severity(),m.code(),m.message());
+        return datasetIds;
     }
 
     private String storageKey(Long tenant,Long id) { return jdbc.queryForObject("SELECT storage_key FROM legacy_import_batches WHERE tenant_id=? AND id=?",String.class,tenant,id); }
@@ -297,6 +310,18 @@ public class LegacyImportService {
             if (chunk.size() == chunkSize) { jdbc.batchUpdate(sql, chunk); chunk.clear(); }
         }
         if (!chunk.isEmpty()) jdbc.batchUpdate(sql, chunk);
+    }
+    private final class StreamingRecordWriter {
+        private final Long tenant; private final Long batchId; private final Map<String, Long> datasetIds;
+        private final List<Object[]> chunk = new ArrayList<>(properties.importChunkSize()); private long count;
+        private StreamingRecordWriter(Long tenant, Long batchId, Map<String, Long> datasetIds) { this.tenant=tenant; this.batchId=batchId; this.datasetIds=datasetIds; }
+        private void accept(String datasetKey, LegacyImportAdapter.Record record) {
+            Long datasetId = datasetIds.get(datasetKey); if (datasetId == null) throw new IllegalStateException("Streamed row has no analyzed dataset");
+            chunk.add(new Object[]{tenant,batchId,datasetId,record.sourceId(),record.legacyCode(),record.normalizedKey(),json(record.raw()),json(record.normalized())}); count++;
+            if (chunk.size() >= properties.importChunkSize()) flushChunk();
+        }
+        private long flush() { flushChunk(); return count; }
+        private void flushChunk() { if (chunk.isEmpty()) return; jdbc.batchUpdate("INSERT INTO legacy_records(tenant_id,import_batch_id,dataset_id,source_record_id,legacy_code,normalized_key,raw_record,normalized_record) VALUES (?,?,?,?,?,?,cast(? as jsonb),cast(? as jsonb))",chunk); chunk.clear(); }
     }
     private static String extension(String n) { int i=n.lastIndexOf('.'); return i<0?null:n.substring(i+1).toLowerCase(); }
     private static ApiException badRequest(String message) { return new ApiException(ErrorCode.BAD_REQUEST, message); }
