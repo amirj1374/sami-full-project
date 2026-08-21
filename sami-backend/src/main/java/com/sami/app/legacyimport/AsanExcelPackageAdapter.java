@@ -55,7 +55,8 @@ public class AsanExcelPackageAdapter implements LegacyImportAdapter {
     @Override public String parserVersion() { return PARSER_VERSION; }
     @Override public String mediaType() { return "application/zip"; }
     @Override public boolean supports(String filename, byte[] archive) {
-        return archive != null && startsWith(archive, ZIP_SIGNATURE);
+        return (filename == null || filename.toLowerCase(Locale.ROOT).endsWith(".zip"))
+                && archive != null && startsWith(archive, ZIP_SIGNATURE);
     }
 
     @Override

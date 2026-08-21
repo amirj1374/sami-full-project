@@ -35,8 +35,11 @@ spring:
 
   servlet:
     multipart:
-      max-file-size: 5MB
-      max-request-size: 6MB
+      # Must accommodate the verified Asan accounting reports while remaining
+      # bounded for every multipart endpoint. Deployment may lower this through
+      # environment only when it still satisfies the required import files.
+      max-file-size: ${SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE:20MB}
+      max-request-size: ${SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE:21MB}
 
 server:
   port: ${SERVER_PORT:8080}

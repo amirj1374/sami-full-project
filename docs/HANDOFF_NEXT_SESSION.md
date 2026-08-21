@@ -33,6 +33,13 @@ Updated: 2026-08-08 (Asia/Tehran)
 - Migration: V40. Permissions: `legacy-import:view/upload/execute/compare/delete`.
 - Evidence: focused supplied-archive/parser/security tests and full local gates passed. Fresh Flyway/containers remain pending.
 
+### Asan accounting migration & acceptance — IN PROGRESS
+
+- Extends `legacyimport/**`; it does not create a second migration module and never promotes accounting, bank, cheque, inventory, or customer rows.
+- V46 adds migration groups, Asan XLSX evidence staging, reconciliation exceptions, acceptance checks, and `legacy-import:reconcile` / `legacy-import:accept` permissions.
+- The supplied accounting handoff establishes Daily Journal as the primary journal source, Trial Balance as control evidence, and an explicit IRR 699,837,000 bank timing difference. General/subsidiary/detailed ledger exports need explicit level confirmation because their row signatures are structurally indistinguishable.
+- Canonical accounting final import remains blocked until an approved accounting/bank/cheque owner and promotion contract exist.
+
 ### HAMTA Activation Code Management — COMPLETE implementation, release infrastructure pending
 
 - Inventory-owned one-code-per-eligible-serial custody, controlled correction, Sales invoice/delivery exposure, reporting and audit.
@@ -127,6 +134,23 @@ Invoke-WebRequest -UseBasicParsing http://localhost/api/v1/menu -SkipHttpErrorCh
 ```
 
 Acceptance requires fresh-volume Flyway V1→V42, backend integration/schema validation, healthy PostgreSQL/backend/frontend, nginx `/api`, login, provenance equal to `$sha`, and browser/mobile RTL/LTR smoke for Customer Purchase, Data Quality, Legacy Asan, HAMTA, Market Sync and font rendering. Tear down the throwaway stack afterward; do not deploy.
+
+## Asan accounting continuation — 2026-08-22
+
+- Work is on `codex/feature-asan-accounting-reconciliation`, based on
+  `d497b5535afe47150ddfbaaccf7f292814bae7b2`; commit and push this checkpoint
+  before switching machines.
+- V46 adds migration groups and staging-only reconciliation. A disposable
+  PostgreSQL 16 stack proved Flyway V1–V46, Hibernate startup and health
+  checks. Trial Balance staged 32 rows without canonical writes.
+- **Blocker:** staging the supplied 33,796-row Daily Journal fails with
+  `OutOfMemoryError` in Apache POI XSSF/DataFormatter. The transaction rolls
+  back, leaving the batch `READY`; no partial legacy records or canonical data
+  are written. Continue by replacing only the XLSX adapter's large-workbook
+  read path with streaming/SAX processing, then rerun the real-file smoke.
+- The named `sami-asan-qa-20260821` Compose stack is disposable and must be
+  cleaned up. Never commit user spreadsheets, test credentials, or temporary
+  smoke scripts.
 
 ## Deployment candidate update — 2026-08-17
 

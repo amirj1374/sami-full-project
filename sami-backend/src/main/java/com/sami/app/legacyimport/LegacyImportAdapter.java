@@ -9,6 +9,9 @@ public interface LegacyImportAdapter {
     String mediaType();
     boolean supports(String filename, byte[] archive);
     Analysis analyze(byte[] archive, boolean includeRecords);
+    default Analysis analyze(String filename, byte[] archive, boolean includeRecords) {
+        return analyze(archive, includeRecords);
+    }
 
     record Analysis(List<SourceFile> files, List<Dataset> datasets, List<Message> messages) {}
     record SourceFile(String sourcePath, String safeName, long size, String sha256,

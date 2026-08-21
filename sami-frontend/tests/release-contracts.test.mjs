@@ -192,13 +192,23 @@ test('all forms inherit the shared mobile-first rhythm and persistent labels', (
   assert.match(styles, /max-height: calc\(100dvh/)
 })
 
-test('Legacy Asan archive upload supports RAR and manifest-driven ZIP packages', () => {
+test('Legacy Asan upload supports RAR, manifest ZIP, and staged XLSX accounting reports', () => {
   const legacyClient = read('src/api/legacyImports.ts')
   const legacyView = read('src/views/LegacyImportsView.vue')
 
   assert.match(legacyClient, /new FormData\(\)/)
   assert.match(legacyClient, /headers:\s*\{\s*'Content-Type':\s*'multipart\/form-data'\s*\}/)
-  assert.match(legacyView, /accept="\.rar,\.zip,application\/vnd\.rar,application\/zip"/)
+  assert.match(legacyView, /accept="\.rar,\.zip,\.xlsx"/)
+})
+
+test('reverse proxy and backend multipart limits admit verified Asan accounting workbooks', () => {
+  const nginx = read('nginx.conf')
+  const backendConfiguration = read('../sami-backend/src/main/resources/application.yml')
+  assert.match(nginx, /client_max_body_size\s+21m/)
+  assert.match(nginx, /proxy_read_timeout\s+10m/)
+  assert.match(nginx, /proxy_send_timeout\s+10m/)
+  assert.match(backendConfiguration, /max-file-size:\s*\$\{SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE:20MB\}/)
+  assert.match(backendConfiguration, /max-request-size:\s*\$\{SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE:21MB\}/)
 })
 
 test('active integration menu modules have localized server labels', () => {
