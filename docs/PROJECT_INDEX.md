@@ -91,7 +91,7 @@ historical reports.
 - `AUTOMATION_RELEASE_REPORT.md` — Automation release evidence.
 - `LICENSING_RELEASE_REPORT.md` — Licensing release evidence.
 - `PWA_IMPLEMENTATION_REPORT.md` and `SETTINGS_MOBILE_NAVIGATION_NOTIFICATION_REPORT.md` — PWA/Settings evidence.
-- `ASAN_LEGACY_IMPORT_IMPLEMENTATION_REPORT.md` and `docs/features/LEGACY_ASAN_IMPORT_AND_COMPARISON.md` — secure legacy staging, archive evidence, comparison policy and operational requirements.
+- `ASAN_LEGACY_IMPORT_IMPLEMENTATION_REPORT.md`, `docs/features/LEGACY_ASAN_IMPORT_AND_COMPARISON.md`, and `docs/features/ASAN_ACCOUNTING_MIGRATION_RECONCILIATION.md` — secure legacy staging, Asan accounting Excel evidence, reconciliation, acceptance, and final-import safety boundaries.
 - `HAMTA_ACTIVATION_CODE_IMPLEMENTATION_REPORT.md` and `docs/features/HAMTA_ACTIVATION_CODE.md` — CR-001 purchase, inventory, sales, delivery, security and validation evidence.
 - `MARKET_SYNC_AUTO_PRICING_IMPLEMENTATION_REPORT.md` and `docs/features/MARKET_SYNC_AND_AUTO_PRICING.md` — market-source, pricing, inventory, publication and validation boundaries.
 
@@ -120,7 +120,7 @@ gate. Contribution rules are in `docs/20-contribution-guide.md`.
 
 - Customer Purchase / Trade-in: Purchasing now supports Supplier or CRM Customer sellers with valuation, inspection, settlement, linked Sale, CRM timeline, inventory and IMEI integrity (`V38`).
 - Data Quality: production route and lifecycle are active (`V39`).
-- Legacy Asan import and comparison: tenant-safe staging, verified Jet parsing, RAR controls and conservative comparison are implemented (`V40`).
+- Legacy Asan import and comparison: tenant-safe staging, verified Jet parsing, RAR/manifest controls and conservative comparison are implemented (`V40`, `V45`). Accounting XLSX evidence groups, reconciliation, explained differences, and acceptance controls are additive in `V46`; canonical final import remains blocked.
 - HAMTA activation-code custody is implemented through Purchasing, Inventory and Sales (`V41`).
 - Market Sync source/pricing/inventory/rules/health ownership is implemented; external source and website connectors remain partial (`V42`).
 - Font system: Vazirmatn Variable is globally bundled and browser-verified.

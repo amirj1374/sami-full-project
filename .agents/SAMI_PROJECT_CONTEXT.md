@@ -5,7 +5,7 @@ Last repository inspection: 2026-08-16. Source/configuration is authoritative; c
 ## Repository and stack
 
 - Monorepo; `sami-backend` and `sami-frontend` are tracked directories. Integration branch: `development`.
-- Backend: Java 21, Spring Boot 3.5.3, PostgreSQL 16 target, Flyway, Maven 3.9+. Schema is contiguous through V45.
+- Backend: Java 21, Spring Boot 3.5.3, PostgreSQL 16 target, Flyway, Maven 3.9+. Schema is contiguous through V46.
 - Frontend: Node 22 image, Vue 3.5, TypeScript 5.7, Vite 8, Vuetify 3, Pinia, Vue Router, Axios and Vue I18n.
 - Containers: PostgreSQL 16, JDK/JRE 21 backend, Node 22/nginx frontend; production Compose is under `sami-backend`.
 
@@ -24,7 +24,7 @@ Last repository inspection: 2026-08-16. Source/configuration is authoritative; c
 - Complete core: Authentication/RBAC/Users, Dashboard, CRM, Suppliers, Products basic CRUD, Inventory, supplier Purchasing, Sales, Automation, Licensing, Scheduler and PWA/Settings.
 - Customer Purchase/Trade-in: implemented in V38 with CRM Customer seller, inspection/valuation/settlement, linked-Sale integrity, CRM history, Inventory receipt guard and IMEI validation.
 - Data Quality: active/routed in V39 at `/data-quality` with `data-quality:view`.
-- Legacy Asan: V40 secure staging/comparison plus V45 dataset mapping metadata; supports RAR/Jet and manifest-driven ZIP/XLSX/XLS packages with tenant isolation, idempotency, exact-code comparison and zero canonical writes. The supplied accounting package yields 77,475 staging records; database-backed validation and canonical accounting promotion remain pending.
+- Legacy Asan: V40 secure staging/comparison plus V45 mapping metadata and V46 accounting migration groups/reconciliation/acceptance evidence. It supports RAR/Jet, manifest ZIP, and individually uploaded Asan accounting XLSX reports with tenant isolation, idempotency, conservative matching, raw provenance, and zero canonical writes. Canonical accounting promotion remains intentionally blocked pending an approved owner.
 - HAMTA: V41 Inventory-owned activation-code custody with Purchasing/Sales/reporting/audit; implementation complete, infrastructure/live bilingual validation pending.
 - Market Sync: V42 source/pricing/inventory/sale/rules/history/health UI implemented. Production remains partial until authorized Rond structured contracts and a real website publication connector exist; publication fails closed.
 - Employees & Attendance: V43 introduces the canonical tenant-scoped employee identity, optional user linkage, company/branch assignment, manual clock-in/out, correction/report contracts, audit trail, permissions, bilingual UI and mobile record cards. Payroll, leave workflows and biometric/device ingestion are not part of this phase; fresh PostgreSQL runtime and live-browser validation remain pending.

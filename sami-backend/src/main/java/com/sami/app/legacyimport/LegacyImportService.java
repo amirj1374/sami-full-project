@@ -16,6 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.security.MessageDigest;
 import java.time.Instant;
+import java.math.BigDecimal;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.ArrayList;
@@ -33,23 +34,24 @@ public class LegacyImportService {
     private final LegacyImportProperties properties;
 
     @Transactional
-    public Map<String,Object> upload(MultipartFile file) {
-        if (file == null || file.isEmpty()) throw badRequest("A non-empty RAR or ZIP archive is required");
+    public Map<String,Object> upload(MultipartFile file, Long migrationGroupId) {
+        if (file == null || file.isEmpty()) throw badRequest("A non-empty RAR, ZIP, or XLSX report is required");
         if (file.getSize() > properties.maxUploadBytes()) throw badRequest("Archive exceeds the configured upload limit");
         String name = file.getOriginalFilename() == null ? "legacy.rar" : file.getOriginalFilename();
         try {
             byte[] bytes = file.getBytes();
             LegacyImportAdapter adapter = selectAdapter(name, bytes);
             Long tenant = tenants.requireTenantId();
+            if (migrationGroupId != null) group(migrationGroupId);
             String hash = sha256(bytes);
             String key = storage.store("legacy-imports/" + tenant, bytes, adapter.mediaType());
             try {
                 Long id = jdbc.queryForObject("""
-                    INSERT INTO legacy_import_batches(tenant_id,source_system,original_filename,storage_key,sha256,parser_version,status,metadata)
-                    VALUES (?,?,?,?,?,?,'UPLOADED',cast(? as jsonb)) RETURNING id
-                    """, Long.class, tenant, adapter.sourceSystem(), basename(name), key, hash, adapter.parserVersion(),
-                        json(Map.of("uploadBytes", bytes.length)));
-                audit(tenant, id, "UPLOAD", Map.of("sha256", hash, "filename", basename(name)));
+                    INSERT INTO legacy_import_batches(tenant_id,migration_group_id,source_system,evidence_type,original_filename,storage_key,sha256,parser_version,status,metadata)
+                    VALUES (?,?,?,?,?,?,?,?,'UPLOADED',cast(? as jsonb)) RETURNING id
+                    """, Long.class, tenant, migrationGroupId, adapter.sourceSystem(), evidenceType(adapter), basename(name), key, hash, adapter.parserVersion(),
+                        json(Map.of("uploadBytes", bytes.length, "stagingOnly", true)));
+                audit(tenant, id, "UPLOAD", Map.of("sha256", hash, "filename", basename(name), "evidenceType", evidenceType(adapter)));
                 return batch(id);
             } catch (DuplicateKeyException ex) {
                 storage.delete(key);
@@ -58,12 +60,24 @@ public class LegacyImportService {
         } catch (IOException e) { throw badRequest("Archive upload could not be read"); }
     }
 
+    public Map<String,Object> upload(MultipartFile file) { return upload(file, null); }
+
+    @Transactional
+    public Map<String,Object> createGroup(String name) {
+        Long tenant = tenants.requireTenantId();
+        String safeName = name == null || name.isBlank() ? "Asan accounting migration" : name.trim();
+        Long id = jdbc.queryForObject("INSERT INTO legacy_migration_groups(tenant_id,name,status) VALUES (?,?,'ACTIVE') RETURNING id", Long.class, tenant, safeName);
+        return group(id);
+    }
+    public List<Map<String,Object>> groups() { return jdbc.queryForList("SELECT id,name,status,acceptance_status,created_at,updated_at FROM legacy_migration_groups WHERE tenant_id=? ORDER BY created_at DESC", tenants.requireTenantId()); }
+    public Map<String,Object> group(Long id) { return jdbc.queryForMap("SELECT id,name,status,acceptance_status,metadata,created_at,updated_at FROM legacy_migration_groups WHERE tenant_id=? AND id=?", tenants.requireTenantId(), id); }
+
     public List<Map<String,Object>> list() {
-        return jdbc.queryForList("SELECT id,source_system,original_filename,sha256,status,dataset_count,record_count,warning_count,error_count,created_at,completed_at FROM legacy_import_batches WHERE tenant_id=? ORDER BY created_at DESC", tenants.requireTenantId());
+        return jdbc.queryForList("SELECT id,migration_group_id,source_system,evidence_type,original_filename,sha256,status,dataset_count,record_count,warning_count,error_count,created_at,completed_at FROM legacy_import_batches WHERE tenant_id=? ORDER BY created_at DESC", tenants.requireTenantId());
     }
 
     public Map<String,Object> batch(Long id) {
-        return jdbc.queryForMap("SELECT id,source_system,original_filename,sha256,parser_version,status,dataset_count,record_count,warning_count,error_count,metadata,created_at,started_at,completed_at FROM legacy_import_batches WHERE tenant_id=? AND id=?", tenants.requireTenantId(), id);
+        return jdbc.queryForMap("SELECT id,migration_group_id,source_system,evidence_type,original_filename,sha256,parser_version,status,dataset_count,record_count,warning_count,error_count,metadata,created_at,started_at,completed_at FROM legacy_import_batches WHERE tenant_id=? AND id=?", tenants.requireTenantId(), id);
     }
 
     @Transactional
@@ -76,7 +90,7 @@ public class LegacyImportService {
         try {
             byte[] bytes = storage.load(storageKey(tenant,id)).orElseThrow(() -> new IllegalStateException("Stored archive is unavailable")).content();
             LegacyImportAdapter adapter = selectAdapter(String.valueOf(batch.get("original_filename")), bytes);
-            LegacyImportAdapter.Analysis analysis = adapter.analyze(bytes, false);
+            LegacyImportAdapter.Analysis analysis = adapter.analyze(String.valueOf(batch.get("original_filename")), bytes, false);
             replaceAnalysis(tenant, id, analysis, false);
             jdbc.update("UPDATE legacy_import_batches SET status='READY',dataset_count=?,warning_count=?,error_count=?,metadata=cast(? as jsonb),updated_at=now() WHERE tenant_id=? AND id=?",
                     analysis.datasets().size(), severity(analysis,"WARNING"), severity(analysis,"ERROR"), json(summary(analysis)), tenant, id);
@@ -97,7 +111,7 @@ public class LegacyImportService {
             byte[] bytes = storage.load(storageKey(tenant,id)).orElseThrow(() -> new IllegalStateException("Stored archive is unavailable")).content();
             Map<String,Object> current = batch(id);
             LegacyImportAdapter adapter = selectAdapter(String.valueOf(current.get("original_filename")), bytes);
-            LegacyImportAdapter.Analysis analysis = adapter.analyze(bytes, true);
+            LegacyImportAdapter.Analysis analysis = adapter.analyze(String.valueOf(current.get("original_filename")), bytes, true);
             replaceAnalysis(tenant,id,analysis,true);
             long count = analysis.datasets().stream().mapToLong(d -> d.records().size()).sum();
             int warnings = severity(analysis,"WARNING"), errors = severity(analysis,"ERROR");
@@ -115,6 +129,52 @@ public class LegacyImportService {
     public List<Map<String,Object>> datasets(Long id) { batch(id); return jdbc.queryForList("SELECT id,dataset_key,source_table,semantic_type,support_status,source_encoding,source_record_count,imported_record_count,field_dictionary,metadata FROM legacy_datasets WHERE tenant_id=? AND import_batch_id=? ORDER BY id",tenants.requireTenantId(),id); }
     public List<Map<String,Object>> messages(Long id) { batch(id); return jdbc.queryForList("SELECT severity,code,message,source_record_id,context,created_at FROM legacy_import_messages WHERE tenant_id=? AND import_batch_id=? ORDER BY id",tenants.requireTenantId(),id); }
     public List<Map<String,Object>> records(Long id, int limit, int offset) { batch(id); return jdbc.queryForList("SELECT r.id,d.dataset_key,d.semantic_type,r.source_record_id,r.legacy_code,r.raw_record,r.normalized_record FROM legacy_records r JOIN legacy_datasets d ON d.id=r.dataset_id AND d.tenant_id=r.tenant_id WHERE r.tenant_id=? AND r.import_batch_id=? ORDER BY r.id LIMIT ? OFFSET ?",tenants.requireTenantId(),id,Math.min(Math.max(limit,1),200),Math.max(offset,0)); }
+
+    @Transactional
+    public Map<String,Object> confirmDatasetType(Long batchId, Long datasetId, String reportType) {
+        Long tenant = tenants.requireTenantId(); batch(batchId);
+        if (!List.of("GENERAL_LEDGER","SUBSIDIARY_LEDGER","DETAILED_LEDGER").contains(reportType)) throw badRequest("Unsupported accounting report type");
+        int updated = jdbc.update("UPDATE legacy_datasets SET semantic_type=?, metadata=jsonb_set(metadata,'{reportTypeConfirmed}', 'true'::jsonb), updated_at=now() WHERE tenant_id=? AND import_batch_id=? AND id=?", reportType, tenant, batchId, datasetId);
+        if (updated == 0) throw badRequest("Dataset is outside this import batch");
+        audit(tenant, batchId, "CONFIRM_REPORT_TYPE", Map.of("datasetId", datasetId, "reportType", reportType));
+        return jdbc.queryForMap("SELECT id,dataset_key,semantic_type,metadata FROM legacy_datasets WHERE tenant_id=? AND id=?", tenant, datasetId);
+    }
+
+    @Transactional
+    public Map<String,Object> reconcileGroup(Long groupId) {
+        Long tenant = tenants.requireTenantId(); group(groupId);
+        jdbc.update("UPDATE legacy_migration_groups SET status='RECONCILING',updated_at=now() WHERE tenant_id=? AND id=?", tenant, groupId);
+        List<Map<String,Object>> datasets = jdbc.queryForList("SELECT d.semantic_type,count(r.id) AS records FROM legacy_datasets d JOIN legacy_import_batches b ON b.id=d.import_batch_id AND b.tenant_id=d.tenant_id LEFT JOIN legacy_records r ON r.dataset_id=d.id AND r.tenant_id=d.tenant_id WHERE d.tenant_id=? AND b.migration_group_id=? GROUP BY d.semantic_type", tenant, groupId);
+        BigDecimal debit = amount(groupId, tenant, "debit"); BigDecimal credit = amount(groupId, tenant, "credit");
+        long journals = datasetRecords(groupId, tenant, "ACCOUNTING_JOURNAL"); long trial = datasetRecords(groupId, tenant, "TRIAL_BALANCE"); long cheques = datasetRecords(groupId, tenant, "CHEQUE_RECEIVABLE") + datasetRecords(groupId, tenant, "CHEQUE_PAYABLE");
+        Map<String,Object> summary = new LinkedHashMap<>(); summary.put("datasets", datasets); summary.put("journalRows", journals); summary.put("journalDebit", debit); summary.put("journalCredit", credit); summary.put("journalDifference", debit.subtract(credit)); summary.put("trialBalanceRows", trial); summary.put("chequeRows", cheques); summary.put("canonicalAccountingAvailable", false); summary.put("stagingOnly", true);
+        upsertCheck(tenant, groupId, "JOURNAL_DEBIT_CREDIT", journals == 0 ? "PENDING" : debit.compareTo(credit) == 0 ? "PASS" : "FAIL", Map.of("debit",debit,"credit",credit));
+        upsertCheck(tenant, groupId, "TRIAL_BALANCE_STAGED", trial > 0 ? "PASS" : "PENDING", Map.of("rows",trial));
+        upsertCheck(tenant, groupId, "CHEQUES_STAGED", cheques > 0 ? "PASS" : "WARNING", Map.of("rows",cheques));
+        upsertCheck(tenant, groupId, "CANONICAL_FINAL_IMPORT", "PENDING", Map.of("reason","Canonical accounting, bank, and cheque owners are not implemented; final import remains fail-closed."));
+        upsertKnownBankTimingException(tenant, groupId);
+        jdbc.update("UPDATE legacy_migration_groups SET status='READY_FOR_ACCEPTANCE',acceptance_status='BLOCKED',metadata=cast(? as jsonb),updated_at=now() WHERE tenant_id=? AND id=?", json(summary), tenant, groupId);
+        auditGroup(tenant, groupId, "RECONCILE", Map.of("journalRows", journals, "chequeRows", cheques, "canonicalWrites", 0));
+        return reconciliation(groupId);
+    }
+
+    public Map<String,Object> reconciliation(Long groupId) {
+        Long tenant=tenants.requireTenantId(); Map<String,Object> group=group(groupId); Map<String,Object> result=new LinkedHashMap<>(group);
+        result.put("checks", jdbc.queryForList("SELECT id,check_code,status,evidence,reviewed_at FROM legacy_migration_acceptance_checks WHERE tenant_id=? AND migration_group_id=? ORDER BY check_code",tenant,groupId));
+        result.put("exceptions", jdbc.queryForList("SELECT id,domain,source_key,classification,legacy_value,sami_value,difference_value,explanation,source_evidence,approval_status,reviewed_at FROM legacy_reconciliation_exceptions WHERE tenant_id=? AND migration_group_id=? ORDER BY domain,source_key",tenant,groupId));
+        result.put("batches", jdbc.queryForList("SELECT id,original_filename,evidence_type,status,record_count,warning_count,error_count FROM legacy_import_batches WHERE tenant_id=? AND migration_group_id=? ORDER BY created_at",tenant,groupId));
+        return result;
+    }
+
+    @Transactional
+    public Map<String,Object> reviewException(Long groupId, Long exceptionId, String approvalStatus, String explanation) {
+        Long tenant=tenants.requireTenantId(); group(groupId);
+        if (!List.of("NEEDS_INVESTIGATION","EXPLAINED","ACCEPTED","REJECTED").contains(approvalStatus)) throw badRequest("Unsupported reconciliation approval status");
+        int updated=jdbc.update("UPDATE legacy_reconciliation_exceptions SET approval_status=?,explanation=?,reviewed_at=now(),updated_at=now() WHERE tenant_id=? AND migration_group_id=? AND id=?",approvalStatus,explanation,tenant,groupId,exceptionId);
+        if(updated==0) throw badRequest("Reconciliation exception is outside this migration group");
+        auditGroup(tenant,groupId,"REVIEW_EXCEPTION",Map.of("exceptionId",exceptionId,"approvalStatus",approvalStatus));
+        return jdbc.queryForMap("SELECT id,approval_status,explanation,reviewed_at FROM legacy_reconciliation_exceptions WHERE tenant_id=? AND id=?",tenant,exceptionId);
+    }
 
     @Transactional
     public Map<String,Object> compare(Long id) {
@@ -214,6 +274,13 @@ public class LegacyImportService {
         return adapters.stream().filter(candidate -> candidate.supports(filename, bytes)).findFirst()
                 .orElseThrow(() -> badRequest("Only valid Asan RAR archives or manifest-driven ZIP/Excel packages are accepted"));
     }
+
+    private BigDecimal amount(Long group, Long tenant, String field) { BigDecimal value=jdbc.queryForObject("SELECT coalesce(sum(coalesce(nullif(r.normalized_record->>?,'')::numeric,0)),0) FROM legacy_records r JOIN legacy_import_batches b ON b.id=r.import_batch_id AND b.tenant_id=r.tenant_id WHERE r.tenant_id=? AND b.migration_group_id=?",BigDecimal.class,field,tenant,group); return value==null?BigDecimal.ZERO:value; }
+    private long datasetRecords(Long group, Long tenant, String type) { Long value=jdbc.queryForObject("SELECT count(r.id) FROM legacy_records r JOIN legacy_datasets d ON d.id=r.dataset_id AND d.tenant_id=r.tenant_id JOIN legacy_import_batches b ON b.id=r.import_batch_id AND b.tenant_id=r.tenant_id WHERE r.tenant_id=? AND b.migration_group_id=? AND d.semantic_type=?",Long.class,tenant,group,type); return value==null?0:value; }
+    private void upsertCheck(Long tenant,Long group,String code,String status,Map<String,?> evidence) { jdbc.update("INSERT INTO legacy_migration_acceptance_checks(tenant_id,migration_group_id,check_code,status,evidence) VALUES (?,?,?,?,cast(? as jsonb)) ON CONFLICT(migration_group_id,check_code) DO UPDATE SET status=excluded.status,evidence=excluded.evidence,updated_at=now()",tenant,group,code,status,json(evidence)); }
+    private void upsertKnownBankTimingException(Long tenant,Long group) { jdbc.update("INSERT INTO legacy_reconciliation_exceptions(tenant_id,migration_group_id,domain,source_key,classification,legacy_value,difference_value,explanation,source_evidence,approval_status) VALUES (?,?, 'BANK','HANDOFF_BANK_TIMING_699837000','EXPLAINED_DIFFERENCE',cast(? as jsonb),cast(? as jsonb),?,cast(? as jsonb),'EXPLAINED') ON CONFLICT(migration_group_id,domain,source_key) DO NOTHING",tenant,group,json(Map.of("amount",new BigDecimal("699837000"),"currency","IRR")),json(Map.of("amount",new BigDecimal("699837000"),"currency","IRR")),"Documented Asan extraction timing difference: 700,000,000 receipt less 163,000 bank charge.",json(Map.of("source","SAMI_ERP_Accounting_Migration_Handoff.xlsx","rule","اختلاف بانک"))); }
+    private void auditGroup(Long tenant,Long group,String action,Map<String,?> detail) { List<Long> batches=jdbc.query("SELECT id FROM legacy_import_batches WHERE tenant_id=? AND migration_group_id=? ORDER BY id LIMIT 1",(rs,n)->rs.getLong(1),tenant,group); if(!batches.isEmpty())audit(tenant,batches.getFirst(),action,detail); }
+    private static String evidenceType(LegacyImportAdapter adapter) { return adapter instanceof AsanAccountingExcelAdapter ? "ASAN_EXCEL_REPORT" : "ASAN_BACKUP"; }
 
     private long count(Long batchId, Long tenant, String predicate) {
         String sql = "SELECT count(*) FROM legacy_records r JOIN legacy_datasets d ON d.id=r.dataset_id AND d.tenant_id=r.tenant_id WHERE r.tenant_id=? AND r.import_batch_id=? AND " + predicate;

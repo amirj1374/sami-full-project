@@ -26,7 +26,7 @@ alone.
 | Inventory | COMPLETE | `inventory`; `InventoryView.vue`; `InventoryStockOperations`; V32 | Moving weighted-average model; no speculative lot/variant model |
 | Purchasing | COMPLETE | `purchasing`; `PurchasesView.vue`; Customer Purchase dialogs; V33/V38 | Supplier and CRM Customer sellers, inspection, valuation, settlement, linked-Sale and Inventory receipt are implemented; Accounting posting remains outside the approved scope |
 | Sales | COMPLETE | `sales`; `SalesView.vue`; V31/V32/V36 | Inventory integration is canonical; no purchase-offset accounting contract |
-| Legacy Asan Import and Comparison | COMPLETE | `legacyimport`; `LegacyImportsView.vue`; V40 | Customer-UI scope is complete and never writes canonical data; fresh Flyway/container/live-stack validation remains blocked |
+| Legacy Asan Import and Comparison | ACTIVE | `legacyimport`; `LegacyImportsView.vue`; V40, V45, V46 | Tenant-safe Asan archive and accounting-XLSX staging, reconciliation, acceptance evidence, and explained differences. Canonical final import remains intentionally blocked pending an approved accounting owner. |
 | HAMTA activation codes | COMPLETE | `hamta`; `HamtaView.vue`; Purchasing/Inventory/Sales integration; V41 | Implementation/source/fixture gates pass; fresh PostgreSQL/Flyway, container stack and live bilingual smoke remain blocked |
 | Market Sync and Auto Pricing | PARTIAL | `marketsync`; `MarketSyncView.vue`; Product/Inventory/Sales/Scheduler integration; V42 | Local implementation gates pass; authorized Rond contracts, real website connector, fresh Flyway and container/live validation remain missing |
 | Automation | COMPLETE | `automation`; `AutomationsView.vue`; V29 | Events are process-local; timeout cancellation is cooperative |
