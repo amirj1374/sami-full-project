@@ -14,6 +14,7 @@ export const mockMenu: MenuItem[] = [
   { code: 'dashboards', name: 'داشبوردها', icon: 'mdi-view-dashboard-variant', path: '/dashboards', displayOrder: 15, ...lifecycleOf('ACTIVE', 'ACTIVE', 100) },
   { code: 'customers', name: 'مشتریان', icon: 'mdi-account-heart', path: '/customers', displayOrder: 20, ...lifecycleOf('ACTIVE', 'ACTIVE', 100) },
   { code: 'legacy-import', name: 'ورود داده‌های قدیمی', icon: 'mdi-database-import-outline', path: '/legacy-imports', displayOrder: 135, ...lifecycleOf('ACTIVE', 'ACTIVE', 100) },
+  { code: 'sim-investment', name: 'سرمایه‌گذاری 0912', icon: 'mdi-chart-line-variant', path: '/sim-investment', displayOrder: 138, ...lifecycleOf('ACTIVE', 'ACTIVE', 100) },
   { code: 'suppliers', name: 'تأمین‌کنندگان', icon: 'mdi-truck', path: '/suppliers', displayOrder: 22, ...lifecycleOf('ACTIVE', 'ACTIVE', 100) },
   { code: 'products', name: 'محصولات', icon: 'mdi-package-variant-closed', path: '/products', displayOrder: 30, ...lifecycleOf('ACTIVE', 'ACTIVE', 100) },
   { code: 'purchasing', name: 'خرید', icon: 'mdi-cart-arrow-down', path: '/purchases', displayOrder: 35, ...lifecycleOf('ACTIVE', 'ACTIVE', 100) },

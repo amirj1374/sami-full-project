@@ -126,6 +126,12 @@ const routes: RouteRecordRaw[] = [
         meta: { requiresAuth: true, permission: 'market-sync:view' },
       },
       {
+        path: 'sim-investment',
+        name: 'sim-investment',
+        component: () => import('@/views/SimInvestmentView.vue'),
+        meta: { requiresAuth: true, permission: 'sim-investment:view' },
+      },
+      {
         path: 'attendance',
         name: 'attendance',
         component: () => import('@/views/AttendanceView.vue'),

@@ -71,6 +71,42 @@ export const handlers = [
     source_record_id: 'fixture-1', legacy_code: '1001', semantic_type: 'REFERENCE_GEOGRAPHY',
   }])),
 
+  // 0912 investment fixtures exercise dashboard, desktop table and mobile cards.
+  http.get('*/api/v1/sim-investment/overview', () => ok({
+    analyzed_numbers: 48554, activeListings: 48554, portfolio_cost: 210000000,
+    estimated_portfolio_value: 285000000, potential_portfolio_profit: 75000000,
+    strong_opportunities: 318, high_liquidity: 12640, low_confidence: 431,
+    calculated_at: '2026-08-21T11:30:00Z', classDistribution: [
+      { label: 'ORDINARY', value: 31200 }, { label: 'SEMI_ROUND', value: 11500 },
+      { label: 'ROUND', value: 4700 }, { label: 'SPECIAL', value: 1030 }, { label: 'VIP', value: 124 },
+    ], conditionDistribution: [{ label: 'کارکرده', value: 36683 }, { label: 'در حدصفر', value: 11871 }],
+  })),
+  http.get('*/api/v1/sim-investment/numbers', () => ok({ content: [{
+    id: 1, normalized_phone: '09123323333', number_class: 'VIP', rondi_score: 92,
+    rondi_patterns: ['FOUR_OR_MORE_REPEAT', 'SPECIAL_ENDING'], current_asking_price: 15000000000,
+    market_median: 17200000000, best_buy_price: 14000000000, normal_buy_price: 15500000000,
+    normal_sell_price: 17200000000, best_sell_price: 19000000000, sample_count: 42,
+    confidence: 'HIGH', liquidity: 'MEDIUM', investment_score: 84, potential_profit: 2200000000,
+    last_observed_on: '2026-08-21', condition_code: 'در حدصفر', seller_external_id: 'SELLER_220702',
+  }], page: 0, size: 25, totalElements: 1, totalPages: 1, first: true, last: true })),
+  http.get('*/api/v1/sim-investment/opportunities', () => ok([{
+    id: 1, normalized_phone: '09123323333', number_class: 'VIP', rondi_score: 92,
+    current_asking_price: 15000000000, market_median: 17200000000, sample_count: 42,
+    confidence: 'HIGH', liquidity: 'MEDIUM', investment_score: 84, potential_profit: 2200000000,
+  }])),
+  http.get('*/api/v1/sim-investment/imports', () => ok([{
+    id: 1, source_code: '0912_MARKET', original_filename: '0912_2026-08-21.csv', observed_on: '2026-08-21',
+    full_snapshot: true, status: 'COMPLETED_WITH_WARNINGS', source_row_count: 48815, imported_count: 48554,
+    duplicate_count: 261, warning_count: 5469, error_count: 0, started_at: '2026-08-21T11:00:00Z', completed_at: '2026-08-21T11:30:00Z',
+  }])),
+  http.get('*/api/v1/sim-investment/numbers/:phone', ({ params }) => ok({
+    id: 1, normalized_phone: params.phone, number_class: 'VIP', rondi_score: 92, investment_score: 84,
+    rondi_patterns: ['FOUR_OR_MORE_REPEAT', 'SPECIAL_ENDING'], best_buy_price: 14000000000,
+    normal_buy_price: 15500000000, normal_sell_price: 17200000000, best_sell_price: 19000000000,
+    sample_count: 42, confidence: 'HIGH', liquidity: 'MEDIUM', potential_profit: 2200000000,
+  })),
+  http.get('*/api/v1/sim-investment/imports/:id/messages', () => ok([{ severity: 'WARNING', code: 'DUPLICATE_ROW', source_row_number: 18, message: 'Duplicate 0912 number was ignored' }])),
+
   // Lifecycle: the stage catalogue and the modules that carry the statuses.
   // Registered before the generic /modules fallback so the literal path wins.
   http.get('*/api/v1/modules/lifecycle-statuses', () => ok(mockLifecycleStatuses)),

@@ -264,6 +264,24 @@ test('Market Sync is localized, permission-gated, responsive, and backend-priced
   assert.equal(Object.keys(en.marketSync).sort().join(','), Object.keys(fa.marketSync).sort().join(','))
 })
 
+test('0912 investment module is migration-backed, importable, localized, and mobile-first', () => {
+  const migration = read('../sami-backend/src/main/resources/db/migration/V47__sim_0912_investment.sql')
+  const controller = read('../sami-backend/src/main/java/com/sami/app/siminvestment/SimInvestmentController.java')
+  const api = read('src/api/simInvestment.ts')
+  const view = read('src/views/SimInvestmentView.vue')
+  const router = read('src/router/index.ts')
+  assert.match(migration, /sim-investment/)
+  assert.match(migration, /m\.code\|\|':'\|\|a\.action/)
+  for (const permission of ['view', 'import', 'recalculate', 'view-history']) assert.match(migration, new RegExp(`\\('${permission}'`))
+  assert.match(controller, /@RequestMapping\("\/api\/v1\/sim-investment"\)/)
+  assert.match(api, /new FormData\(\)/)
+  assert.match(api, /multipart\/form-data/)
+  assert.match(view, /AppMobileRecordCard/)
+  assert.match(view, /accept="\.csv,\.xlsx/)
+  assert.match(view, /sim-investment:import/)
+  assert.match(router, /permission: 'sim-investment:view'/)
+})
+
 test('Persian date, locale, dark theme, and form rhythm are centralized', () => {
   const i18n = read('src/i18n.ts')
   const vuetify = read('src/plugins/vuetify.ts')

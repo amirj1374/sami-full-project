@@ -1,11 +1,11 @@
 # SAMI ERP — reusable development context
 
-Last repository inspection: 2026-08-16. Source/configuration is authoritative; current operational state is in `docs/HANDOFF_NEXT_SESSION.md`.
+Last repository inspection: 2026-08-22. Source/configuration is authoritative; current operational state is in `docs/HANDOFF_NEXT_SESSION.md`.
 
 ## Repository and stack
 
 - Monorepo; `sami-backend` and `sami-frontend` are tracked directories. Integration branch: `development`.
-- Backend: Java 21, Spring Boot 3.5.3, PostgreSQL 16 target, Flyway, Maven 3.9+. Schema is contiguous through V46.
+- Backend: Java 21, Spring Boot 3.5.3, PostgreSQL 16 target, Flyway, Maven 3.9+. Schema is contiguous through V47.
 - Frontend: Node 22 image, Vue 3.5, TypeScript 5.7, Vite 8, Vuetify 3, Pinia, Vue Router, Axios and Vue I18n.
 - Containers: PostgreSQL 16, JDK/JRE 21 backend, Node 22/nginx frontend; production Compose is under `sami-backend`.
 
@@ -28,6 +28,7 @@ Last repository inspection: 2026-08-16. Source/configuration is authoritative; c
 - HAMTA: V41 Inventory-owned activation-code custody with Purchasing/Sales/reporting/audit; implementation complete, infrastructure/live bilingual validation pending.
 - Market Sync: V42 source/pricing/inventory/sale/rules/history/health UI implemented. Production remains partial until authorized Rond structured contracts and a real website publication connector exist; publication fails closed.
 - Employees & Attendance: V43 introduces the canonical tenant-scoped employee identity, optional user linkage, company/branch assignment, manual clock-in/out, correction/report contracts, audit trail, permissions, bilingual UI and mobile record cards. Payroll, leave workflows and biometric/device ingestion are not part of this phase; fresh PostgreSQL runtime and live-browser validation remain pending.
+- 0912 SIM Investment: V47 provides tenant-scoped, idempotent CSV/XLSX market-snapshot staging, normalized 0912 identities, price/listing history, rond-pattern classification, confidence-aware market valuation, opportunity ranking, audit evidence, bilingual responsive UI and read-only links to canonical purchasing/sales prices. Imports never write Inventory, Purchasing or Sales records; zero prices remain evidence but are excluded from valuation.
 - Keyboard-only operation: V44 persists a default-on per-user shortcut preference; authenticated actions receive scoped two-character shortcuts, including active-dialog isolation, Persian/English physical-key support, semantic Enter/Space activation and fast command-palette navigation.
 - Partial/unrouted: Files/Media, Metadata, Appointments/Resources, Knowledge, Portal, Organization and Communication. Reports remain partial.
 - Web Push: browser foundation/in-app inbox only. Backend subscriptions, VAPID secret and provider delivery are not implemented; approval proposal is in `FULL_NEXT_PHASE_IMPLEMENTATION_REPORT.md`.

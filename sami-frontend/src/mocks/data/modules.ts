@@ -43,6 +43,7 @@ export const mockModules: AppModule[] = [
   mod('modules', 'ماژول‌ها', 'mdi-view-module', '/modules', 'ACTIVE', 'ACTIVE', 100, true),
   mod('products', 'محصولات', 'mdi-package-variant-closed', '/products', 'ACTIVE', 'ACTIVE', 100),
   mod('customers', 'مشتریان', 'mdi-account-heart', '/customers', 'ACTIVE', 'ACTIVE', 100),
+  mod('sim-investment', 'سرمایه‌گذاری 0912', 'mdi-chart-line-variant', '/sim-investment', 'ACTIVE', 'ACTIVE', 100),
   // Backend complete, screens pending.
   mod('knowledge', 'پایگاه دانش', 'mdi-book-open-variant', '/knowledge', 'ACTIVE', 'PLANNED', 60),
   // Part-built on both axes.
