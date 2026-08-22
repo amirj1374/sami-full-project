@@ -1,4 +1,7 @@
 target/
+# Runtime-only packaging deliberately admits only the separately verified JAR.
+!target/
+!target/sami-backend-0.1.0.jar
 *.iml
 .idea/
 .vscode/

@@ -1,0 +1,29 @@
+# syntax=docker/dockerfile:1
+
+# Packages a separately verified SAMI Spring Boot JAR. This Dockerfile never
+# compiles source and must only be used after Maven package/verify has produced
+# target/sami-backend-0.1.0.jar with matching build-info metadata.
+FROM eclipse-temurin:21-jre-jammy AS runtime
+ARG BUILD_BRANCH=unknown
+ARG BUILD_COMMIT=unknown
+ARG APP_VERSION=0.1.0
+LABEL org.opencontainers.image.revision=$BUILD_COMMIT \
+      org.opencontainers.image.version=$APP_VERSION \
+      org.opencontainers.image.source-branch=$BUILD_BRANCH
+WORKDIR /app
+
+# Keep runtime behavior identical to the canonical multi-stage Dockerfile.
+RUN apt-get update && apt-get install --yes --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd --system spring && useradd --system --gid spring spring \
+    && mkdir -p /app/data/uploads /app/data/files /app/data/files-staging \
+    && chown -R spring:spring /app/data
+USER spring:spring
+
+COPY --chown=spring:spring target/sami-backend-0.1.0.jar app.jar
+
+EXPOSE 8080
+ENV JAVA_OPTS=""
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=5 \
+    CMD curl --fail --silent http://localhost:8080/actuator/health >/dev/null || exit 1
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

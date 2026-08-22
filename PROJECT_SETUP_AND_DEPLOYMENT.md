@@ -327,6 +327,25 @@ docker build --build-arg VITE_API_BASE_URL=/api -t sami-frontend:<version> .
 The backend Dockerfile packages with tests skipped, so run `mvn clean verify`
 separately before building a release image.
 
+### Verified-JAR runtime image
+
+`sami-backend/Dockerfile.runtime-only` is an intentional release packaging
+path for a JAR already produced by a successful Maven package/verify run. It
+contains no Maven or source compilation; it preserves the canonical backend
+runtime image, non-root user, directories, healthcheck and OCI labels. Use it
+only when the JAR's `META-INF/build-info.properties` branch and commit match
+the image build arguments. It is not a workaround for a failed package or test
+run.
+
+```powershell
+$sha = git rev-parse HEAD
+docker buildx build --platform linux/amd64 --load `
+  --file sami-backend/Dockerfile.runtime-only `
+  --build-arg BUILD_BRANCH=development --build-arg BUILD_COMMIT=$sha `
+  --build-arg APP_VERSION=0.1.0 -t sami-backend:test sami-backend
+docker image inspect sami-backend:test --format '{{.Os}}/{{.Architecture}} {{index .Config.Labels "org.opencontainers.image.revision"}}'
+```
+
 Production Compose build:
 
 ```bash
