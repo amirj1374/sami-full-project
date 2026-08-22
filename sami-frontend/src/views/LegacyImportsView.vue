@@ -4,7 +4,12 @@ import { useI18n } from 'vue-i18n'
 import { legacyImportsApi } from '@/api/legacyImports'
 import { buildInfo } from '@/buildInfo'
 import { useServerLabel } from '@/composables/useServerLabel'
+import type { ApiError } from '@/types/api'
 import type { LegacyBatch, LegacyDataset, LegacyMigrationGroup, LegacyReconciliation } from '@/types/legacyImports'
+
+type LegacyStage = 'load' | 'upload' | 'analyze' | 'stage' | 'reconcile'
+interface CustomerIssue { code: string; fileName?: string; stage: LegacyStage; reasonKey: string; solutionKey: string }
+interface UploadResult { fileName: string; success: boolean; issue?: CustomerIssue }
 
 const { t } = useI18n()
 const { enumLabel } = useServerLabel()
@@ -15,7 +20,8 @@ const selectedGroup = ref<LegacyMigrationGroup>()
 const datasets = ref<LegacyDataset[]>([])
 const reconciliation = ref<LegacyReconciliation>()
 const busy = ref(false)
-const error = ref('')
+const issue = ref<CustomerIssue>()
+const uploadResults = ref<UploadResult[]>([])
 const tab = ref('overview')
 const selectedFiles = ref<File[]>([])
 const groupName = ref('')
@@ -24,17 +30,63 @@ const statusColor = (status?: string) => ({ FAILED: 'error', READY: 'info', COMP
 const groupBatches = computed(() => reconciliation.value?.batches ?? batches.value.filter(batch => batch.migration_group_id === selectedGroup.value?.id))
 const hasLowConfidenceDataset = computed(() => datasets.value.some(dataset => dataset.metadata?.requiresTypeConfirmation === true))
 
+function errorCode(error: unknown): string {
+  if (typeof error === 'object' && error !== null && 'code' in error && typeof (error as ApiError).code === 'string') return (error as ApiError).code
+  if (error instanceof Error && error.name === 'TimeoutError') return 'TIMEOUT'
+  return 'UNKNOWN'
+}
+function customerIssue(error: unknown, stage: LegacyStage, fileName?: string): CustomerIssue {
+  const code = errorCode(error)
+  const key = ({
+    LEGACY_IMPORT_FILE_REQUIRED: 'fileRequired', LEGACY_IMPORT_UNSUPPORTED_FORMAT: 'unsupportedFormat',
+    LEGACY_IMPORT_UNSAFE_ARCHIVE: 'unsafeArchive', LEGACY_IMPORT_EMPTY: 'empty',
+    LEGACY_IMPORT_MANIFEST_REQUIRED: 'manifestRequired', LEGACY_IMPORT_UNREADABLE: 'unreadable',
+    LEGACY_IMPORT_TOO_LARGE: 'tooLarge', UPLOAD_TOO_LARGE: 'tooLarge', LEGACY_IMPORT_DUPLICATE: 'duplicate',
+    LEGACY_IMPORT_INVALID_STATE: 'invalidState', LEGACY_IMPORT_TOOL_UNAVAILABLE: 'toolUnavailable',
+    NETWORK_ERROR: 'network', TIMEOUT: 'network', ACCESS_DENIED: 'access', UNAUTHENTICATED: 'access',
+  } as Record<string, string>)[code] ?? 'unexpected'
+  return { code, fileName, stage, reasonKey: `legacy.customerErrors.${key}.reason`, solutionKey: `legacy.customerErrors.${key}.solution` }
+}
 async function load() { [batches.value, groups.value] = await Promise.all([legacyImportsApi.list(), legacyImportsApi.groups()]) }
-async function select(batch: LegacyBatch) { selected.value = batch; datasets.value = await legacyImportsApi.datasets(batch.id) }
-async function selectGroup(group: LegacyMigrationGroup) { selectedGroup.value = group; reconciliation.value = await legacyImportsApi.reconciliation(group.id) }
-async function action(work: () => Promise<unknown>) { busy.value = true; error.value = ''; try { await work(); await load(); if (selectedGroup.value) await selectGroup(groups.value.find(group => group.id === selectedGroup.value?.id) ?? selectedGroup.value) } catch (e) { error.value = e instanceof Error ? e.message : t('legacy.error') } finally { busy.value = false } }
-async function createGroup() { await action(async () => { const group = await legacyImportsApi.createGroup(groupName.value); groupName.value = ''; selectedGroup.value = group; reconciliation.value = await legacyImportsApi.reconciliation(group.id) }) }
-async function upload() { if (!selectedFiles.value.length || !selectedGroup.value) return; await action(async () => { for (const file of selectedFiles.value) await legacyImportsApi.upload(file, selectedGroup.value!.id); selectedFiles.value = [] }) }
-async function analyze(batch: LegacyBatch) { await action(async () => { await legacyImportsApi.analyze(batch.id); await select(batch) }) }
-async function stage(batch: LegacyBatch) { await action(async () => { await legacyImportsApi.execute(batch.id); await select(batch) }) }
-async function reconcile() { if (selectedGroup.value) await action(async () => { reconciliation.value = await legacyImportsApi.reconcile(selectedGroup.value!.id) }) }
-async function confirmType(dataset: LegacyDataset, reportType: string) { if (selected.value) await action(async () => { await legacyImportsApi.confirmReportType(selected.value!.id, dataset.id, reportType); await select(selected.value!) }) }
-async function explain(exceptionId: number) { if (selectedGroup.value) await action(() => legacyImportsApi.reviewException(selectedGroup.value!.id, exceptionId, 'EXPLAINED', 'Reviewed migration evidence.')) }
+async function refreshSelectedGroup() {
+  if (!selectedGroup.value) return
+  const current = groups.value.find(group => group.id === selectedGroup.value?.id) ?? selectedGroup.value
+  selectedGroup.value = current
+  reconciliation.value = await legacyImportsApi.reconciliation(current.id)
+}
+async function select(batch: LegacyBatch) {
+  try { issue.value = undefined; selected.value = batch; datasets.value = await legacyImportsApi.datasets(batch.id) }
+  catch (error) { issue.value = customerIssue(error, 'load', batch.original_filename) }
+}
+async function selectGroup(group: LegacyMigrationGroup) {
+  try { issue.value = undefined; selectedGroup.value = group; reconciliation.value = await legacyImportsApi.reconciliation(group.id) }
+  catch (error) { issue.value = customerIssue(error, 'load') }
+}
+async function action(stageName: LegacyStage, fileName: string | undefined, work: () => Promise<unknown>) {
+  busy.value = true; issue.value = undefined
+  try { await work(); await load(); await refreshSelectedGroup() }
+  catch (error) { issue.value = customerIssue(error, stageName, fileName) }
+  finally { busy.value = false }
+}
+async function createGroup() { await action('load', undefined, async () => { const group = await legacyImportsApi.createGroup(groupName.value); groupName.value = ''; selectedGroup.value = group; reconciliation.value = await legacyImportsApi.reconciliation(group.id) }) }
+async function upload() {
+  if (!selectedFiles.value.length || !selectedGroup.value) return
+  busy.value = true; issue.value = undefined; uploadResults.value = []
+  const failed: File[] = []
+  for (const file of selectedFiles.value) {
+    try { await legacyImportsApi.upload(file, selectedGroup.value.id); uploadResults.value.push({ fileName: file.name, success: true }) }
+    catch (error) { const detail = customerIssue(error, 'upload', file.name); failed.push(file); uploadResults.value.push({ fileName: file.name, success: false, issue: detail }); issue.value ??= detail }
+  }
+  selectedFiles.value = failed
+  try { await load(); await refreshSelectedGroup() }
+  catch (error) { issue.value ??= customerIssue(error, 'load') }
+  finally { busy.value = false }
+}
+async function analyze(batch: LegacyBatch) { await action('analyze', batch.original_filename, async () => { await legacyImportsApi.analyze(batch.id); await select(batch) }) }
+async function stage(batch: LegacyBatch) { await action('stage', batch.original_filename, async () => { await legacyImportsApi.execute(batch.id); await select(batch) }) }
+async function reconcile() { if (selectedGroup.value) await action('reconcile', undefined, async () => { reconciliation.value = await legacyImportsApi.reconcile(selectedGroup.value!.id) }) }
+async function confirmType(dataset: LegacyDataset, reportType: string) { if (selected.value) await action('analyze', selected.value.original_filename, async () => { await legacyImportsApi.confirmReportType(selected.value!.id, dataset.id, reportType); await select(selected.value!) }) }
+async function explain(exceptionId: number) { if (selectedGroup.value) await action('reconcile', undefined, () => legacyImportsApi.reviewException(selectedGroup.value!.id, exceptionId, 'EXPLAINED', 'Reviewed migration evidence.')) }
 function downloadValidationReport() {
   if (!selectedGroup.value || !reconciliation.value) return
   const source = reconciliation.value
@@ -89,17 +141,23 @@ function downloadValidationReport() {
   link.remove()
   URL.revokeObjectURL(url)
 }
-onMounted(() => load().catch(e => { error.value = e instanceof Error ? e.message : t('legacy.error') }))
+onMounted(() => load().catch(error => { issue.value = customerIssue(error, 'load') }))
 </script>
 
 <template>
   <div class="legacy-page pa-4 pa-md-6">
     <div class="d-flex flex-wrap align-center justify-space-between ga-4 mb-6"><div><h1 class="text-h4 font-weight-bold">{{ t('legacy.title') }}</h1><p class="text-medium-emphasis mt-1">{{ t('legacy.accountingSubtitle') }}</p></div><v-chip color="primary" variant="tonal" prepend-icon="mdi-shield-lock-outline">{{ t('legacy.stagingOnly') }}</v-chip></div>
-    <v-alert v-if="error" type="error" closable class="mb-4" @click:close="error = ''">{{ error }}</v-alert><v-alert type="info" variant="tonal" class="mb-4">{{ t('legacy.finalImportBlocked') }}</v-alert>
+    <v-alert v-if="issue" type="error" variant="tonal" closable class="customer-error mb-4" role="alert" @click:close="issue = undefined">
+      <div class="text-subtitle-1 font-weight-bold">{{ t('legacy.customerErrorTitle') }}</div>
+      <div v-if="issue.fileName" class="mt-2"><strong>{{ t('legacy.problemFile') }}:</strong> <span dir="auto">{{ issue.fileName }}</span></div>
+      <div><strong>{{ t('legacy.problemStage') }}:</strong> {{ t(`legacy.stages.${issue.stage}`) }}</div>
+      <div><strong>{{ t('legacy.problemReason') }}:</strong> {{ t(issue.reasonKey) }}</div>
+      <div class="mt-2"><strong>{{ t('legacy.problemSolution') }}:</strong> {{ t(issue.solutionKey) }}</div>
+    </v-alert><v-alert type="info" variant="tonal" class="mb-4">{{ t('legacy.finalImportBlocked') }}</v-alert>
     <v-row><v-col cols="12" lg="4">
       <v-card rounded="xl" class="mb-4"><v-card-title>{{ t('legacy.migrationBatch') }}</v-card-title><v-card-text><v-text-field v-model="groupName" :label="t('legacy.migrationBatchName')" hide-details /><v-btn block color="primary" class="mt-4" :loading="busy" @click="createGroup">{{ t('legacy.createMigrationBatch') }}</v-btn></v-card-text></v-card>
       <v-card rounded="xl" class="mb-4"><v-card-title>{{ t('legacy.migrationBatches') }}</v-card-title><v-list lines="two"><v-list-item v-for="group in groups" :key="group.id" :active="selectedGroup?.id === group.id" @click="selectGroup(group)"><template #prepend><v-avatar color="primary" variant="tonal"><v-icon>mdi-clipboard-check-outline</v-icon></v-avatar></template><v-list-item-title>{{ group.name }}</v-list-item-title><v-list-item-subtitle><v-chip :color="statusColor(group.acceptance_status)" size="x-small">{{ enumLabel(group.acceptance_status) }}</v-chip></v-list-item-subtitle></v-list-item><v-list-item v-if="!groups.length" :title="t('legacy.emptyMigrationBatches')" /></v-list></v-card>
-      <v-card rounded="xl" :disabled="!selectedGroup"><v-card-title>{{ t('legacy.addReports') }}</v-card-title><v-card-text><v-file-input v-model="selectedFiles" multiple accept=".rar,.zip,.xlsx" prepend-icon="mdi-file-excel-outline" :label="t('legacy.chooseReports')" :hint="t('legacy.reportUploadHint')" persistent-hint /><v-btn block color="primary" class="mt-4" :disabled="!selectedFiles.length" :loading="busy" @click="upload">{{ t('legacy.uploadReports') }}</v-btn></v-card-text></v-card>
+      <v-card rounded="xl" :disabled="!selectedGroup"><v-card-title>{{ t('legacy.addReports') }}</v-card-title><v-card-text><v-file-input v-model="selectedFiles" multiple accept=".rar,.zip,.xlsx" prepend-icon="mdi-file-excel-outline" :label="t('legacy.chooseReports')" :hint="t('legacy.reportUploadHint')" persistent-hint /><v-btn block color="primary" class="mt-4" :disabled="!selectedFiles.length" :loading="busy" @click="upload">{{ t('legacy.uploadReports') }}</v-btn><v-list v-if="uploadResults.length" class="mt-3" density="compact" bg-color="transparent"><v-list-item v-for="result in uploadResults" :key="result.fileName" :prepend-icon="result.success ? 'mdi-check-circle-outline' : 'mdi-alert-circle-outline'" :base-color="result.success ? 'success' : 'error'"><v-list-item-title dir="auto">{{ result.fileName }}</v-list-item-title><v-list-item-subtitle>{{ result.success ? t('legacy.uploadSucceeded') : t(result.issue!.reasonKey) }}</v-list-item-subtitle></v-list-item></v-list></v-card-text></v-card>
     </v-col><v-col cols="12" lg="8">
       <v-card v-if="selectedGroup" rounded="xl"><v-card-title class="d-flex flex-wrap align-center ga-3"><span>{{ selectedGroup.name }}</span><v-spacer /><v-btn variant="tonal" prepend-icon="mdi-download-outline" :disabled="!reconciliation" @click="downloadValidationReport">{{ t('legacy.downloadValidationReport') }}</v-btn><v-btn color="primary" prepend-icon="mdi-scale-balance" :loading="busy" @click="reconcile">{{ t('legacy.runReconciliation') }}</v-btn></v-card-title><v-card-text>
         <v-tabs v-model="tab" grow><v-tab value="overview">{{ t('legacy.overview') }}</v-tab><v-tab value="reports">{{ t('legacy.reports') }}</v-tab><v-tab value="reconciliation">{{ t('legacy.reconciliation') }}</v-tab><v-tab value="evidence">{{ t('legacy.evidence') }}</v-tab></v-tabs>

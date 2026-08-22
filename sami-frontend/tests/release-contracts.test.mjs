@@ -195,6 +195,8 @@ test('all forms inherit the shared mobile-first rhythm and persistent labels', (
 test('Legacy Asan upload supports RAR, manifest ZIP, and staged XLSX accounting reports', () => {
   const legacyClient = read('src/api/legacyImports.ts')
   const legacyView = read('src/views/LegacyImportsView.vue')
+  const fa = JSON.parse(read('src/locales/fa.json'))
+  const en = JSON.parse(read('src/locales/en.json'))
 
   assert.match(legacyClient, /new FormData\(\)/)
   assert.match(legacyClient, /headers:\s*\{\s*'Content-Type':\s*'multipart\/form-data'\s*\}/)
@@ -202,6 +204,14 @@ test('Legacy Asan upload supports RAR, manifest ZIP, and staged XLSX accounting 
   assert.match(legacyView, /rawRecordsIncluded:\s*false/)
   assert.match(legacyView, /canonicalWrites:\s*0/)
   assert.match(legacyView, /downloadValidationReport/)
+  assert.match(legacyView, /customerIssue/)
+  assert.match(legacyView, /problemReason/)
+  assert.match(legacyView, /problemSolution/)
+  assert.match(legacyView, /selectedFiles\.value = failed/)
+  for (const code of ['unsupportedFormat', 'unsafeArchive', 'manifestRequired', 'unreadable', 'tooLarge', 'duplicate', 'toolUnavailable']) {
+    assert.ok(fa.legacy.customerErrors[code], `missing Persian customer import error: ${code}`)
+    assert.ok(en.legacy.customerErrors[code], `missing English customer import error: ${code}`)
+  }
 })
 
 test('reverse proxy and backend multipart limits admit verified Asan accounting workbooks', () => {

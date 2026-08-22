@@ -52,7 +52,7 @@ public class GlobalExceptionHandler {
     /** Multipart parsing happens before a controller method is invoked. */
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<ApiResponse<Void>> handleUploadTooLarge(MaxUploadSizeExceededException ex) {
-        return build(ErrorCode.BAD_REQUEST, "The uploaded file exceeds the allowed size", null);
+        return build(ErrorCode.UPLOAD_TOO_LARGE, ErrorCode.UPLOAD_TOO_LARGE.defaultMessage(), null);
     }
 
     /** Do not turn malformed multipart requests into an opaque HTTP 500. */

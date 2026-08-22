@@ -35,8 +35,8 @@ public class LegacyImportService {
 
     @Transactional
     public Map<String,Object> upload(MultipartFile file, Long migrationGroupId) {
-        if (file == null || file.isEmpty()) throw badRequest("A non-empty RAR, ZIP, or XLSX report is required");
-        if (file.getSize() > properties.maxUploadBytes()) throw badRequest("Archive exceeds the configured upload limit");
+        if (file == null || file.isEmpty()) throw legacyError(ErrorCode.LEGACY_IMPORT_FILE_REQUIRED);
+        if (file.getSize() > properties.maxUploadBytes()) throw legacyError(ErrorCode.LEGACY_IMPORT_TOO_LARGE);
         String name = file.getOriginalFilename() == null ? "legacy.rar" : file.getOriginalFilename();
         try {
             byte[] bytes = file.getBytes();
@@ -55,9 +55,9 @@ public class LegacyImportService {
                 return batch(id);
             } catch (DuplicateKeyException ex) {
                 storage.delete(key);
-                throw badRequest("This archive has already been uploaded for the current tenant");
+                throw legacyError(ErrorCode.LEGACY_IMPORT_DUPLICATE);
             }
-        } catch (IOException e) { throw badRequest("Archive upload could not be read"); }
+        } catch (IOException e) { throw legacyError(ErrorCode.LEGACY_IMPORT_UNREADABLE); }
     }
 
     public Map<String,Object> upload(MultipartFile file) { return upload(file, null); }
@@ -85,7 +85,7 @@ public class LegacyImportService {
         Long tenant = tenants.requireTenantId();
         Map<String,Object> batch = batch(id);
         String status = String.valueOf(batch.get("status"));
-        if (!List.of("UPLOADED","READY","FAILED").contains(status)) throw new IllegalStateException("Batch cannot be analyzed in status " + status);
+        if (!List.of("UPLOADED","READY","FAILED").contains(status)) throw legacyError(ErrorCode.LEGACY_IMPORT_INVALID_STATE);
         jdbc.update("UPDATE legacy_import_batches SET status='ANALYZING',started_at=now(),updated_at=now() WHERE tenant_id=? AND id=?", tenant, id);
         try {
             byte[] bytes = storage.load(storageKey(tenant,id)).orElseThrow(() -> new IllegalStateException("Stored archive is unavailable")).content();
@@ -98,14 +98,14 @@ public class LegacyImportService {
             return batch(id);
         } catch (RuntimeException ex) {
             jdbc.update("UPDATE legacy_import_batches SET status='FAILED',error_count=error_count+1,updated_at=now() WHERE tenant_id=? AND id=?",tenant,id);
-            throw ex;
+            throw classifyLegacyFailure(ex);
         }
     }
 
     @Transactional
     public Map<String,Object> execute(Long id) {
         Long tenant = tenants.requireTenantId();
-        if (!"READY".equals(String.valueOf(batch(id).get("status")))) throw new IllegalStateException("Only an analyzed READY batch can be imported");
+        if (!"READY".equals(String.valueOf(batch(id).get("status")))) throw legacyError(ErrorCode.LEGACY_IMPORT_INVALID_STATE);
         jdbc.update("UPDATE legacy_import_batches SET status='IMPORTING',updated_at=now() WHERE tenant_id=? AND id=?",tenant,id);
         try {
             byte[] bytes = storage.load(storageKey(tenant,id)).orElseThrow(() -> new IllegalStateException("Stored archive is unavailable")).content();
@@ -134,7 +134,7 @@ public class LegacyImportService {
             return batch(id);
         } catch (RuntimeException ex) {
             jdbc.update("UPDATE legacy_import_batches SET status='FAILED',error_count=error_count+1,updated_at=now() WHERE tenant_id=? AND id=?",tenant,id);
-            throw ex;
+            throw classifyLegacyFailure(ex);
         }
     }
 
@@ -300,7 +300,7 @@ public class LegacyImportService {
 
     private LegacyImportAdapter selectAdapter(String filename, byte[] bytes) {
         return adapters.stream().filter(candidate -> candidate.supports(filename, bytes)).findFirst()
-                .orElseThrow(() -> badRequest("Only valid Asan RAR archives or manifest-driven ZIP/Excel packages are accepted"));
+                .orElseThrow(() -> legacyError(ErrorCode.LEGACY_IMPORT_UNSUPPORTED_FORMAT));
     }
 
     private BigDecimal amount(Long group, Long tenant, String field) { BigDecimal value=jdbc.queryForObject("SELECT coalesce(sum(coalesce(nullif(r.normalized_record->>?,'')::numeric,0)),0) FROM legacy_records r JOIN legacy_import_batches b ON b.id=r.import_batch_id AND b.tenant_id=r.tenant_id WHERE r.tenant_id=? AND b.migration_group_id=?",BigDecimal.class,field,tenant,group); return value==null?BigDecimal.ZERO:value; }
@@ -372,6 +372,29 @@ public class LegacyImportService {
     }
     private static String extension(String n) { int i=n.lastIndexOf('.'); return i<0?null:n.substring(i+1).toLowerCase(); }
     private static ApiException badRequest(String message) { return new ApiException(ErrorCode.BAD_REQUEST, message); }
+    private static ApiException legacyError(ErrorCode code) { return new ApiException(code); }
+
+    /** Converts parser details into stable, safe codes that the customer UI can localize. */
+    private static RuntimeException classifyLegacyFailure(RuntimeException exception) {
+        if (exception instanceof ApiException) return exception;
+        String message = String.valueOf(exception.getMessage()).toLowerCase(java.util.Locale.ROOT);
+        if (message.contains("manifest")) return legacyError(ErrorCode.LEGACY_IMPORT_MANIFEST_REQUIRED);
+        if (message.contains("unrar is unavailable")) return legacyError(ErrorCode.LEGACY_IMPORT_TOOL_UNAVAILABLE);
+        if (message.contains("limit") || message.contains("too many") || message.contains("expanded size")) {
+            return legacyError(ErrorCode.LEGACY_IMPORT_TOO_LARGE);
+        }
+        if (message.contains("unsafe") || message.contains("traversal") || message.contains("absolute path")
+                || message.contains("duplicate entry") || message.contains("zip structure")) {
+            return legacyError(ErrorCode.LEGACY_IMPORT_UNSAFE_ARCHIVE);
+        }
+        if (message.contains("empty") || message.contains("no readable worksheet")) {
+            return legacyError(ErrorCode.LEGACY_IMPORT_EMPTY);
+        }
+        if (message.contains("only xlsx") || message.contains("only valid") || message.contains("valid zip")) {
+            return legacyError(ErrorCode.LEGACY_IMPORT_UNSUPPORTED_FORMAT);
+        }
+        return legacyError(ErrorCode.LEGACY_IMPORT_UNREADABLE);
+    }
     private static String basename(String n) { String clean=n.replace('\\','/'); return clean.substring(clean.lastIndexOf('/')+1); }
     private static String sha256(byte[] bytes) { try { return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes)); } catch(Exception e){throw new IllegalStateException(e);} }
 }

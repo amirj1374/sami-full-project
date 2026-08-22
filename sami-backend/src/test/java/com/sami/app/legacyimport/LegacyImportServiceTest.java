@@ -61,9 +61,40 @@ class LegacyImportServiceTest {
                 .thenThrow(new DuplicateKeyException("duplicate"));
 
         assertThatThrownBy(() -> service.upload(file)).isInstanceOf(ApiException.class)
-                .satisfies(ex -> assertThat(((ApiException) ex).getErrorCode()).isEqualTo(ErrorCode.BAD_REQUEST))
-                .hasMessageContaining("already been uploaded");
+                .satisfies(ex -> assertThat(((ApiException) ex).getErrorCode()).isEqualTo(ErrorCode.LEGACY_IMPORT_DUPLICATE));
         verify(storage).delete("opaque-key");
+    }
+
+    @Test void oversizedMigrationFileUsesAStableCustomerFacingCode() {
+        MultipartFile file=mock(MultipartFile.class);
+        when(file.isEmpty()).thenReturn(false);
+        when(file.getSize()).thenReturn(2049L);
+        when(properties.maxUploadBytes()).thenReturn(2048L);
+
+        assertThatThrownBy(() -> service.upload(file))
+                .isInstanceOf(ApiException.class)
+                .satisfies(ex -> assertThat(((ApiException) ex).getErrorCode())
+                        .isEqualTo(ErrorCode.LEGACY_IMPORT_TOO_LARGE));
+        verifyNoInteractions(storage);
+    }
+
+    @Test void unsafeParserFailureUsesAStableCustomerFacingCode() {
+        long tenant = 42L;
+        long batchId = 8L;
+        byte[] source = {0x50, 0x4b, 0x03, 0x04};
+        when(tenants.requireTenantId()).thenReturn(tenant);
+        when(jdbc.queryForMap(anyString(), eq(tenant), eq(batchId)))
+                .thenReturn(Map.of("status", "UPLOADED", "original_filename", "unsafe.xlsx"));
+        when(jdbc.queryForObject(contains("SELECT storage_key"), eq(String.class), eq(tenant), eq(batchId))).thenReturn("opaque-key");
+        when(storage.load("opaque-key")).thenReturn(Optional.of(new FileStorage.StoredFile(source, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")));
+        when(adapters.stream()).thenReturn(Stream.of(adapter));
+        when(adapter.supports("unsafe.xlsx", source)).thenReturn(true);
+        when(adapter.analyze("unsafe.xlsx", source, false)).thenThrow(new IllegalArgumentException("Workbook contains an unsafe entry path"));
+
+        assertThatThrownBy(() -> service.analyze(batchId))
+                .isInstanceOf(ApiException.class)
+                .satisfies(ex -> assertThat(((ApiException) ex).getErrorCode())
+                        .isEqualTo(ErrorCode.LEGACY_IMPORT_UNSAFE_ARCHIVE));
     }
 
     @Test void comparisonIsTenantScopedAndUsesOnlyExactCustomerCode() throws Exception {
