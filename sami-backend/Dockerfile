@@ -7,12 +7,25 @@ FROM maven:3.9-eclipse-temurin-21 AS build
 WORKDIR /workspace
 
 COPY pom.xml .
-RUN mvn -q dependency:go-offline -B
+# Cache warming only: Maven Central/plugin metadata can fail transiently even
+# when the authoritative package build can resolve normally. Keep this layer
+# best-effort, but never suppress a failure from the package command below.
+RUN --mount=type=cache,id=sami-maven-m2,target=/root/.m2,sharing=locked \
+    if ! mvn -q -B \
+      -Dmaven.wagon.http.retryHandler.count=3 \
+      -Dmaven.wagon.rto=30000 \
+      dependency:go-offline; then \
+        echo "Maven dependency warm-up failed; continuing to authoritative package build."; \
+    fi
 
 COPY src ./src
 ARG BUILD_BRANCH=unknown
 ARG BUILD_COMMIT=unknown
-RUN mvn -q clean package -DskipTests -B -Dbuild.branch="$BUILD_BRANCH" -Dbuild.commit="$BUILD_COMMIT"
+RUN --mount=type=cache,id=sami-maven-m2,target=/root/.m2,sharing=locked \
+    mvn -q clean package -DskipTests -B \
+      -Dmaven.wagon.http.retryHandler.count=3 \
+      -Dmaven.wagon.rto=30000 \
+      -Dbuild.branch="$BUILD_BRANCH" -Dbuild.commit="$BUILD_COMMIT"
 
 # ---- Stage 2: runtime ----
 # Minimal JRE image, non-root user, only the jar is carried over.
