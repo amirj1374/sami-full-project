@@ -1,6 +1,7 @@
 .idea/
 /.env
 /deployment-artifacts/
+/customer-validation-artifacts/
 /scripts/release-config.ps1
 /scripts/release-config.local.ps1
 .worktrees/

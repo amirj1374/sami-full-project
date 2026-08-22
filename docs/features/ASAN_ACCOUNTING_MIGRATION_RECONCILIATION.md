@@ -61,9 +61,12 @@ separator normalization. It does not replace raw evidence. Monetary fields use
 
 ## Parsing and upload controls
 
-The XLSX adapter uses Apache POI without evaluating formulas. It bounds file
-size and worksheet count, rejects malformed workbooks, preserves row
-classification, and skips repeated headers, totals, footers, and blank rows.
+The XLSX adapter uses Apache POI's SAX event model without evaluating formulas.
+It bounds file size, expanded workbook content and worksheet count, rejects
+malformed workbooks, preserves row classification, and skips repeated headers,
+totals, footers, and blank rows. Analysis retains no source rows; staging
+replays the workbook into configured JDBC chunks and fails the transaction if
+any streamed dataset key or row count differs from the preceding analysis.
 The existing archive traversal, hash, size, extraction, and provenance controls
 remain in effect. Duplicate file hashes are still rejected per tenant.
 
@@ -98,3 +101,15 @@ an approved canonical accounting model. Product, warehouse, inventory,
 customer, bank, and cheque promotion require their respective approved public
 owners and a future final-import authorization. Source files and unsanitized
 rows must never be committed, logged, or used as test fixtures.
+
+The generated 34,000-row streaming regression passes with a 256 MB test heap.
+Acceptance still requires the supplied 33,796-row Daily Journal to be staged
+against isolated PostgreSQL and reconciled to its source totals; that file is
+not available on every development workstation.
+
+When the source files cannot be shared with development, the customer may use
+the isolated validation candidate described in
+[`../release/ASAN_CUSTOMER_VALIDATION_GUIDE_FA.md`](../release/ASAN_CUSTOMER_VALIDATION_GUIDE_FA.md).
+Its downloadable JSON contains aggregate validation evidence and build
+provenance, never raw rows or source filenames. This workflow validates staging
+only and does not enable canonical promotion.

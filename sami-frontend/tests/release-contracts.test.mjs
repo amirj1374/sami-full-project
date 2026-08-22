@@ -199,6 +199,9 @@ test('Legacy Asan upload supports RAR, manifest ZIP, and staged XLSX accounting 
   assert.match(legacyClient, /new FormData\(\)/)
   assert.match(legacyClient, /headers:\s*\{\s*'Content-Type':\s*'multipart\/form-data'\s*\}/)
   assert.match(legacyView, /accept="\.rar,\.zip,\.xlsx"/)
+  assert.match(legacyView, /rawRecordsIncluded:\s*false/)
+  assert.match(legacyView, /canonicalWrites:\s*0/)
+  assert.match(legacyView, /downloadValidationReport/)
 })
 
 test('reverse proxy and backend multipart limits admit verified Asan accounting workbooks', () => {

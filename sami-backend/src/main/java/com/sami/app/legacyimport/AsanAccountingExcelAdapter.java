@@ -1,9 +1,6 @@
 package com.sami.app.legacyimport;
 
 import org.apache.poi.ss.usermodel.DataFormatter;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ooxml.util.SAXHelper;
 import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.xssf.eventusermodel.ReadOnlySharedStringsTable;
@@ -15,22 +12,24 @@ import org.springframework.stereotype.Component;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.HexFormat;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
-import java.util.function.BiConsumer;
 import org.xml.sax.InputSource;
 import org.xml.sax.XMLReader;
 
@@ -44,6 +43,8 @@ public class AsanAccountingExcelAdapter implements LegacyImportAdapter {
     static final String PARSER_VERSION = "asan-accounting-excel-1.0";
     private static final Set<String> LEDGER_HEADERS = Set.of("بدهکار", "بستانکار", "سند", "کد", "تاریخ", "شرح");
     private static final Set<String> CHEQUE_HEADERS = Set.of("شماره", "مبلغ", "وضعیت چک", "سررسید");
+    private static final Set<String> OTHER_DETECTION_HEADERS = Set.of(
+            "نام کالا", "کد کالا", "شماره فاکتور", "مانده پایان دوره بدهکار", "مانده پایان دوره بستانکار");
     private static final Pattern RGB_ATTRIBUTE = Pattern.compile("\\s+rgb=\\\"([^\\\"]*)\\\"");
     private final LegacyImportProperties properties;
 
@@ -71,47 +72,172 @@ public class AsanAccountingExcelAdapter implements LegacyImportAdapter {
             messages.add(new Message(filename, null, "WARNING", "INVALID_STYLE_COLOR_SANITIZED",
                     "Malformed workbook color attributes were normalized in memory only; source data and cells were not changed."));
         }
-        try { stream(filename, sanitized.bytes(), includeRecords ? (key, record) -> { } : null, datasets, messages, includeRecords); } catch (Exception ex) {
+        try {
+            stream(filename, sanitized.bytes(), null, datasets, messages, includeRecords);
+        } catch (Exception ex) {
             throw new IllegalArgumentException("Workbook contents could not be parsed safely", ex);
         }
         if (datasets.isEmpty()) throw new IllegalArgumentException("Workbook has no readable worksheets");
         return new Analysis(List.of(new SourceFile(filename, filename, bytes.length, sha256(bytes), "XLSX", "SUPPORTED", fileMetadata)), datasets, messages);
     }
 
-    @Override public void streamRecords(String filename, byte[] bytes, BiConsumer<String, Record> consumer) {
+    @Override
+    public void streamRecords(String filename, byte[] bytes, BiConsumer<String, Record> consumer) {
+        if (!supports(filename, bytes)) throw new IllegalArgumentException("Only XLSX Asan accounting reports are accepted");
+        if (bytes.length > properties.maxSingleFileBytes()) throw new IllegalArgumentException("Workbook exceeds the configured per-file limit");
+        if (consumer == null) throw new IllegalArgumentException("A streaming record consumer is required");
         SanitizedWorkbook sanitized = sanitizeInvalidStyleColors(bytes);
-        try { stream(filename, sanitized.bytes(), consumer, new ArrayList<>(), new ArrayList<>(), false); }
-        catch (Exception ex) { throw new IllegalArgumentException("Workbook contents could not be streamed safely", ex); }
+        try {
+            stream(filename, sanitized.bytes(), consumer, new ArrayList<>(), new ArrayList<>(), false);
+        } catch (Exception ex) {
+            throw new IllegalArgumentException("Workbook contents could not be streamed safely", ex);
+        }
     }
 
     private void stream(String filename, byte[] bytes, BiConsumer<String, Record> consumer, List<Dataset> datasets, List<Message> messages, boolean retainRecords) throws Exception {
         try (OPCPackage pkg = OPCPackage.open(new ByteArrayInputStream(bytes))) {
-            XSSFReader reader = new XSSFReader(pkg); ReadOnlySharedStringsTable strings = new ReadOnlySharedStringsTable(pkg);
-            XSSFReader.SheetIterator sheets = (XSSFReader.SheetIterator) reader.getSheetsData(); int count = 0;
-            while (sheets.hasNext()) { if (++count > 100) throw new IllegalArgumentException("Workbook contains too many worksheets");
-                try (var input = sheets.next()) { StreamingSheet handler = new StreamingSheet(filename, sheets.getSheetName(), consumer, retainRecords); XMLReader xml = SAXHelper.newXMLReader();
-                    xml.setContentHandler(new XSSFSheetXMLHandler(reader.getStylesTable(), null, strings, handler, new DataFormatter(Locale.ROOT), false)); xml.parse(new InputSource(input));
-                    datasets.add(handler.dataset()); messages.addAll(handler.messages); }
+            XSSFReader reader = new XSSFReader(pkg);
+            ReadOnlySharedStringsTable strings = new ReadOnlySharedStringsTable(pkg);
+            XSSFReader.SheetIterator sheets = (XSSFReader.SheetIterator) reader.getSheetsData();
+            int count = 0;
+            while (sheets.hasNext()) {
+                if (++count > 100) throw new IllegalArgumentException("Workbook contains too many worksheets");
+                try (var input = sheets.next()) {
+                    StreamingSheet handler = new StreamingSheet(filename, sheets.getSheetName(), consumer, retainRecords);
+                    XMLReader xml = SAXHelper.newXMLReader();
+                    xml.setContentHandler(new XSSFSheetXMLHandler(
+                            reader.getStylesTable(), null, strings, handler, new DataFormatter(Locale.ROOT), false));
+                    xml.parse(new InputSource(input));
+                    datasets.add(handler.dataset());
+                    messages.addAll(handler.messages);
+                }
             }
         }
     }
 
     private final class StreamingSheet implements XSSFSheetXMLHandler.SheetContentsHandler {
-        final String filename, sheetName; final BiConsumer<String, Record> consumer; final boolean retain; final List<Message> messages = new ArrayList<>(); final List<String> title = new ArrayList<>(); final List<Record> retained = new ArrayList<>();
-        int rowNumber; int headerRow = -1, skipped, sourceRows; List<String> headers; List<String> row;
-        StreamingSheet(String filename,String sheetName,BiConsumer<String,Record> consumer,boolean retain){this.filename=filename;this.sheetName=sheetName;this.consumer=consumer;this.retain=retain;}
-        public void startRow(int rowNum){rowNumber=rowNum;row=new ArrayList<>();}
-        public void endRow(int rowNum){
-            if(headers==null){ if(rowNum<=40){ title.addAll(row); if(headerScore(row)>=3){ headers=headers(row); headerRow=rowNum; skipped=rowNum+1; }} return; }
-            RowKind kind=classify(row,headers); if(kind!=RowKind.DATA){skipped++;return;} sourceRows++; Record record=record(sheetName,rowNumber,headers,detection().type(),row); if(retain)retained.add(record); if(consumer!=null)consumer.accept(key(),record);
+        private final String filename;
+        private final String sheetName;
+        private final BiConsumer<String, Record> consumer;
+        private final boolean retain;
+        private final List<Message> messages = new ArrayList<>();
+        private final List<String> title = new ArrayList<>();
+        private final List<Record> retained = new ArrayList<>();
+        private int rowNumber;
+        private int headerRow = -1;
+        private int skipped;
+        private int sourceRows;
+        private List<String> headers;
+        private List<String> row;
+        private Detection detection;
+
+        private StreamingSheet(String filename, String sheetName, BiConsumer<String, Record> consumer, boolean retain) {
+            this.filename = filename;
+            this.sheetName = sheetName;
+            this.consumer = consumer;
+            this.retain = retain;
         }
-        public void cell(String ref,String value,XSSFComment comment){int column=column(ref);while(row.size()<=column)row.add("");row.set(column,value==null?"":value.trim());}
-        public void headerFooter(String text,boolean isHeader,String tagName){}
-        Dataset dataset(){ if(headers==null){Dataset d=new Dataset(filename,key(),sheetName,"UNKNOWN","PARTIAL","UTF-8",0,List.of(),Map.of("detectionConfidence","LOW","reason","No verified header signature"),List.of());messages.add(new Message(filename,key(),"WARNING","HEADER_NOT_DETECTED","No supported report header was found."));return d;} Detection d=detection(); Map<String,Object> meta=new LinkedHashMap<>();meta.put("reportType",d.type());meta.put("detectionConfidence",d.confidence());meta.put("headerRow",headerRow+1);meta.put("skippedRows",skipped);meta.put("requiresTypeConfirmation","LOW".equals(d.confidence()));if("LOW".equals(d.confidence()))messages.add(new Message(filename,key(),"WARNING","AMBIGUOUS_REPORT_TYPE","Confirm the account ledger level before acceptance."));return new Dataset(filename,key(),sheetName,d.type(),"UNKNOWN".equals(d.type())?"PARTIAL":"SUPPORTED","UTF-8",sourceRows,dictionary(headers),meta,retained);}
-        String key(){return filename+"#"+sheetName;} Detection detection(){Set<String> normalized=headers.stream().map(LegacyNormalizer::text).collect(java.util.stream.Collectors.toSet());if(normalized.containsAll(CHEQUE_HEADERS))return new Detection(headers.contains("نام صاحب چک")?"CHEQUE_RECEIVABLE":"CHEQUE_PAYABLE","HIGH");if(normalized.contains("مانده پایان دوره بدهکار")&&normalized.contains("مانده پایان دوره بستانکار"))return new Detection("TRIAL_BALANCE","HIGH");if(normalized.contains("نام کالا")&&normalized.contains("کد کالا")&&normalized.contains("شماره فاکتور"))return new Detection("PRODUCT_MOVEMENT","HIGH");if(normalized.containsAll(LEDGER_HEADERS)){boolean daily=title.stream().map(LegacyNormalizer::text).anyMatch(v->v.contains("دفتر روزنامه"));return new Detection(daily?"ACCOUNTING_JOURNAL":"ACCOUNT_LEDGER",daily?"HIGH":"LOW");}return new Detection("UNKNOWN","LOW");}
+
+        @Override
+        public void startRow(int rowNum) {
+            rowNumber = rowNum;
+            row = new ArrayList<>();
+        }
+
+        @Override
+        public void endRow(int rowNum) {
+            if (headers == null) {
+                if (rowNum <= 40) {
+                    title.addAll(row);
+                    if (headerScore(row) >= 3) {
+                        headers = headers(row);
+                        headerRow = rowNum;
+                        skipped = rowNum + 1;
+                        detection = detect(headers, title);
+                    }
+                }
+                return;
+            }
+            RowKind kind = classify(row, headers);
+            if (kind != RowKind.DATA) {
+                skipped++;
+                return;
+            }
+            sourceRows++;
+            Record record = record(sheetName, rowNumber, headers, detection.type(), row);
+            if (retain) retained.add(record);
+            if (consumer != null) consumer.accept(key(), record);
+        }
+
+        @Override
+        public void cell(String ref, String value, XSSFComment comment) {
+            int column = column(ref);
+            while (row.size() <= column) row.add("");
+            row.set(column, value == null ? "" : value.trim());
+        }
+
+        @Override
+        public void headerFooter(String text, boolean isHeader, String tagName) {}
+
+        private Dataset dataset() {
+            if (headers == null) {
+                Dataset dataset = new Dataset(filename, key(), sheetName, "UNKNOWN", "PARTIAL", "UTF-8", 0,
+                        List.of(), Map.of("detectionConfidence", "LOW", "reason", "No verified header signature"), List.of());
+                messages.add(new Message(filename, key(), "WARNING", "HEADER_NOT_DETECTED", "No supported report header was found."));
+                return dataset;
+            }
+            Map<String,Object> metadata = new LinkedHashMap<>();
+            metadata.put("reportType", detection.type());
+            metadata.put("detectionConfidence", detection.confidence());
+            metadata.put("headerRow", headerRow + 1);
+            metadata.put("skippedRows", skipped);
+            metadata.put("rowClassification", "DATA/HEADER/SUBTOTAL/TOTAL/FOOTER/UNKNOWN");
+            metadata.put("requiresTypeConfirmation", "LOW".equals(detection.confidence()));
+            if ("LOW".equals(detection.confidence())) {
+                messages.add(new Message(filename, key(), "WARNING", "AMBIGUOUS_REPORT_TYPE",
+                        "Confirm the account ledger level before acceptance."));
+            }
+            return new Dataset(filename, key(), sheetName, detection.type(),
+                    "UNKNOWN".equals(detection.type()) ? "PARTIAL" : "SUPPORTED", "UTF-8", sourceRows,
+                    dictionary(headers), metadata, retained);
+        }
+
+        private String key() {
+            return filename + "#" + sheetName;
+        }
     }
-    private static int headerScore(List<String> values){return (int)values.stream().map(LegacyNormalizer::text).filter(v->LEDGER_HEADERS.contains(v)||CHEQUE_HEADERS.contains(v)||Set.of("نام کالا","کد کالا","شماره فاکتور","مانده پایان دوره بدهکار","مانده پایان دوره بستانکار").contains(v)).count();}
-    private static int column(String ref){int end=0;while(end<ref.length()&&Character.isLetter(ref.charAt(end)))end++;int value=0;for(int i=0;i<end;i++)value=value*26+(Character.toUpperCase(ref.charAt(i))-'A'+1);return Math.max(0,value-1);}
+
+    private static Detection detect(List<String> headers, List<String> title) {
+        Set<String> normalized = headers.stream().map(LegacyNormalizer::text).collect(java.util.stream.Collectors.toSet());
+        if (normalized.containsAll(CHEQUE_HEADERS)) {
+            return new Detection(normalized.contains("نام صاحب چک") ? "CHEQUE_RECEIVABLE" : "CHEQUE_PAYABLE", "HIGH");
+        }
+        if (normalized.contains("مانده پایان دوره بدهکار") && normalized.contains("مانده پایان دوره بستانکار")) {
+            return new Detection("TRIAL_BALANCE", "HIGH");
+        }
+        if (normalized.contains("نام کالا") && normalized.contains("کد کالا") && normalized.contains("شماره فاکتور")) {
+            return new Detection("PRODUCT_MOVEMENT", "HIGH");
+        }
+        if (normalized.containsAll(LEDGER_HEADERS)) {
+            boolean daily = title.stream().map(LegacyNormalizer::text).anyMatch(value -> value.contains("دفتر روزنامه"));
+            return new Detection(daily ? "ACCOUNTING_JOURNAL" : "ACCOUNT_LEDGER", daily ? "HIGH" : "LOW");
+        }
+        return new Detection("UNKNOWN", "LOW");
+    }
+
+    private static int headerScore(List<String> values) {
+        return (int) values.stream().map(LegacyNormalizer::text)
+                .filter(value -> LEDGER_HEADERS.contains(value) || CHEQUE_HEADERS.contains(value) || OTHER_DETECTION_HEADERS.contains(value))
+                .count();
+    }
+
+    private static int column(String ref) {
+        int end = 0;
+        while (end < ref.length() && Character.isLetter(ref.charAt(end))) end++;
+        int value = 0;
+        for (int i = 0; i < end; i++) value = value * 26 + (Character.toUpperCase(ref.charAt(i)) - 'A' + 1);
+        return Math.max(0, value - 1);
+    }
 
     /**
      * Some Asan exports contain non-OOXML RGB attributes in xl/styles.xml.
@@ -120,92 +246,95 @@ public class AsanAccountingExcelAdapter implements LegacyImportAdapter {
      * color attributes are omitted.  No workbook cell, value, formula, or
      * source archive byte is written back to disk.
      */
-    private static SanitizedWorkbook sanitizeInvalidStyleColors(byte[] bytes) {
-        try (ZipInputStream input = new ZipInputStream(new ByteArrayInputStream(bytes)); ByteArrayOutputStream output = new ByteArrayOutputStream(); ZipOutputStream zip = new ZipOutputStream(output)) {
-            boolean changed = false;
+    private SanitizedWorkbook sanitizeInvalidStyleColors(byte[] bytes) {
+        byte[] originalStyles = null;
+        byte[] repairedStyles = null;
+        try (ZipInputStream input = new ZipInputStream(new ByteArrayInputStream(bytes))) {
+            long[] expandedTotal = {0};
+            Set<String> entryNames = new HashSet<>();
             ZipEntry entry;
             while ((entry = input.getNextEntry()) != null) {
-                byte[] content = input.readAllBytes();
-                if ("xl/styles.xml".equals(entry.getName())) {
-                    String styles = new String(content, StandardCharsets.UTF_8);
-                    Matcher matcher = RGB_ATTRIBUTE.matcher(styles);
-                    StringBuffer repaired = new StringBuffer();
-                    boolean styleChanged = false;
-                    while (matcher.find()) {
-                        String rgb = matcher.group(1);
-                        String replacement;
-                        if (rgb.matches("[0-9A-Fa-f]{8}")) replacement = matcher.group();
-                        else if (rgb.matches("[0-9A-Fa-f]{6}")) replacement = " rgb=\"FF" + rgb + "\"";
-                        else replacement = "";
-                        styleChanged |= !replacement.equals(matcher.group());
-                        matcher.appendReplacement(repaired, Matcher.quoteReplacement(replacement));
-                    }
-                    matcher.appendTail(repaired);
-                    if (styleChanged) { content = repaired.toString().getBytes(StandardCharsets.UTF_8); changed = true; }
+                String safeName = safeEntryName(entry.getName());
+                if (!entryNames.add(safeName.toLowerCase(Locale.ROOT))) {
+                    throw new IllegalArgumentException("Workbook contains duplicate entry names");
                 }
-                ZipEntry copy = new ZipEntry(entry.getName());
-                zip.putNextEntry(copy); zip.write(content); zip.closeEntry();
+                if ("xl/styles.xml".equals(entry.getName())) {
+                    originalStyles = readBounded(input, properties.maxSingleFileBytes(), properties.maxExtractedBytes(), expandedTotal);
+                    repairedStyles = repairStyles(originalStyles);
+                } else {
+                    copyBounded(input, OutputStream.nullOutputStream(), properties.maxExtractedBytes(), properties.maxExtractedBytes(), expandedTotal);
+                }
+            }
+        } catch (IOException exception) {
+            throw new IllegalArgumentException("Workbook ZIP structure could not be read safely", exception);
+        }
+        if (repairedStyles == null) return new SanitizedWorkbook(bytes, false);
+        if (java.util.Arrays.equals(originalStyles, repairedStyles)) return new SanitizedWorkbook(bytes, false);
+
+        try (ZipInputStream input = new ZipInputStream(new ByteArrayInputStream(bytes));
+             ByteArrayOutputStream output = new ByteArrayOutputStream();
+             ZipOutputStream zip = new ZipOutputStream(output)) {
+            long[] expandedTotal = {0};
+            ZipEntry entry;
+            while ((entry = input.getNextEntry()) != null) {
+                zip.putNextEntry(new ZipEntry(entry.getName()));
+                if ("xl/styles.xml".equals(entry.getName())) {
+                    copyBounded(input, OutputStream.nullOutputStream(), properties.maxSingleFileBytes(), properties.maxExtractedBytes(), expandedTotal);
+                    zip.write(repairedStyles);
+                } else {
+                    copyBounded(input, zip, properties.maxExtractedBytes(), properties.maxExtractedBytes(), expandedTotal);
+                }
+                zip.closeEntry();
             }
             zip.finish();
-            return new SanitizedWorkbook(changed ? output.toByteArray() : bytes, changed);
+            return new SanitizedWorkbook(output.toByteArray(), true);
         } catch (IOException exception) {
             throw new IllegalArgumentException("Workbook ZIP structure could not be read safely", exception);
         }
     }
 
-    private ParsedSheet parseSheet(String filename, Sheet sheet, boolean includeRecords, DataFormatter formatter) {
-        int headerIndex = findHeader(sheet, formatter);
-        if (headerIndex < 0) {
-            Dataset dataset = new Dataset(filename, filename + "#" + sheet.getSheetName(), sheet.getSheetName(), "UNKNOWN", "PARTIAL", "UTF-8", 0,
-                    List.of(), Map.of("detectionConfidence", "LOW", "reason", "No verified header signature"), List.of());
-            return new ParsedSheet(dataset, List.of(new Message(filename, dataset.key(), "WARNING", "HEADER_NOT_DETECTED", "No supported report header was found in worksheet '" + sheet.getSheetName() + "'.")));
+    private static byte[] repairStyles(byte[] content) {
+        String styles = new String(content, StandardCharsets.UTF_8);
+        Matcher matcher = RGB_ATTRIBUTE.matcher(styles);
+        StringBuffer repaired = new StringBuffer();
+        while (matcher.find()) {
+            String rgb = matcher.group(1);
+            String replacement;
+            if (rgb.matches("[0-9A-Fa-f]{8}")) replacement = matcher.group();
+            else if (rgb.matches("[0-9A-Fa-f]{6}")) replacement = " rgb=\"FF" + rgb + "\"";
+            else replacement = "";
+            matcher.appendReplacement(repaired, Matcher.quoteReplacement(replacement));
         }
-        List<String> headers = headers(sheet.getRow(headerIndex), formatter);
-        Detection detection = detect(sheet, headerIndex, headers, formatter);
-        List<Record> records = new ArrayList<>();
-        int skipped = headerIndex + 1, sourceRows = 0;
-        for (int i = headerIndex + 1; i <= sheet.getLastRowNum(); i++) {
-            Row row = sheet.getRow(i);
-            List<String> rowValues = values(row, formatter);
-            RowKind kind = classify(rowValues, headers);
-            if (kind != RowKind.DATA) { skipped++; continue; }
-            sourceRows++;
-            if (includeRecords) records.add(record(sheet, row, headers, detection.type(), rowValues));
-        }
-        Map<String,Object> metadata = new LinkedHashMap<>();
-        metadata.put("reportType", detection.type()); metadata.put("detectionConfidence", detection.confidence());
-        metadata.put("headerRow", headerIndex + 1); metadata.put("skippedRows", skipped); metadata.put("rowClassification", "DATA/HEADER/SUBTOTAL/TOTAL/FOOTER/UNKNOWN");
-        metadata.put("requiresTypeConfirmation", "LOW".equals(detection.confidence()));
-        Dataset dataset = new Dataset(filename, filename + "#" + sheet.getSheetName(), sheet.getSheetName(), detection.type(),
-                "UNKNOWN".equals(detection.type()) ? "PARTIAL" : "SUPPORTED", "UTF-8", sourceRows, dictionary(headers), metadata, records);
-        List<Message> messages = new ArrayList<>();
-        if ("LOW".equals(detection.confidence())) messages.add(new Message(filename, dataset.key(), "WARNING", "AMBIGUOUS_REPORT_TYPE", "The worksheet is an account ledger with no safe structural distinction between general, subsidiary, and detailed levels. Confirm its type before acceptance."));
-        return new ParsedSheet(dataset, messages);
+        matcher.appendTail(repaired);
+        return repaired.toString().getBytes(StandardCharsets.UTF_8);
     }
 
-    private Detection detect(Sheet sheet, int headerIndex, List<String> headers, DataFormatter formatter) {
-        Set<String> normalized = headers.stream().map(LegacyNormalizer::text).collect(java.util.stream.Collectors.toSet());
-        if (normalized.containsAll(CHEQUE_HEADERS)) return new Detection(headers.contains("نام صاحب چک") ? "CHEQUE_RECEIVABLE" : "CHEQUE_PAYABLE", "HIGH");
-        if (normalized.contains("مانده پایان دوره بدهکار") && normalized.contains("مانده پایان دوره بستانکار")) return new Detection("TRIAL_BALANCE", "HIGH");
-        if (normalized.contains("نام کالا") && normalized.contains("کد کالا") && normalized.contains("شماره فاکتور")) return new Detection("PRODUCT_MOVEMENT", "HIGH");
-        if (normalized.containsAll(LEDGER_HEADERS)) {
-            boolean daily = false;
-            for (int row = 0; row <= Math.min(headerIndex, 12); row++) {
-                for (String value : values(sheet.getRow(row), formatter)) if (LegacyNormalizer.text(value).contains("دفتر روزنامه")) daily = true;
-            }
-            return daily ? new Detection("ACCOUNTING_JOURNAL", "HIGH") : new Detection("ACCOUNT_LEDGER", "LOW");
+    private static String safeEntryName(String name) {
+        String normalized = name == null ? "" : name.replace('\\', '/');
+        if (normalized.isBlank() || normalized.startsWith("/") || normalized.matches("^[A-Za-z]:.*")
+                || java.util.Arrays.stream(normalized.split("/")).anyMatch(".."::equals)) {
+            throw new IllegalArgumentException("Workbook contains an unsafe entry path");
         }
-        return new Detection("UNKNOWN", "LOW");
+        return normalized;
     }
 
-    private int findHeader(Sheet sheet, DataFormatter formatter) {
-        for (int i = sheet.getFirstRowNum(); i <= Math.min(sheet.getLastRowNum(), 40); i++) {
-            List<String> values = values(sheet.getRow(i), formatter);
-            long score = values.stream().map(LegacyNormalizer::text).filter(v -> LEDGER_HEADERS.contains(v) || CHEQUE_HEADERS.contains(v)
-                    || Set.of("نام کالا", "کد کالا", "شماره فاکتور", "مانده پایان دوره بدهکار", "مانده پایان دوره بستانکار").contains(v)).count();
-            if (score >= 3) return i;
+    private static byte[] readBounded(ZipInputStream input, long entryLimit, long totalLimit, long[] expandedTotal) throws IOException {
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        copyBounded(input, output, entryLimit, totalLimit, expandedTotal);
+        return output.toByteArray();
+    }
+
+    private static void copyBounded(ZipInputStream input, OutputStream output, long entryLimit, long totalLimit, long[] expandedTotal) throws IOException {
+        byte[] buffer = new byte[8192];
+        long entryTotal = 0;
+        int read;
+        while ((read = input.read(buffer)) >= 0) {
+            entryTotal += read;
+            expandedTotal[0] += read;
+            if (entryTotal > entryLimit) throw new IllegalArgumentException("Workbook entry exceeds the configured limit");
+            if (expandedTotal[0] > totalLimit) throw new IllegalArgumentException("Workbook expanded content exceeds the configured limit");
+            output.write(buffer, 0, read);
         }
-        return -1;
     }
 
     private RowKind classify(List<String> values, List<String> headers) {
@@ -217,18 +346,6 @@ public class AsanAccountingExcelAdapter implements LegacyImportAdapter {
         return numericCount(values) > 0 || values.stream().filter(v -> !v.isBlank()).count() >= 3 ? RowKind.DATA : RowKind.UNKNOWN;
     }
 
-    private Record record(Sheet sheet, Row row, List<String> headers, String type, List<String> rowValues) {
-        Map<String,Object> raw = new LinkedHashMap<>(); Map<String,Object> normalized = new LinkedHashMap<>();
-        raw.put("sourceSheet", sheet.getSheetName()); raw.put("sourceRowNumber", row.getRowNum() + 1);
-        for (int i=0;i<headers.size();i++) {
-            String value = i < rowValues.size() ? rowValues.get(i) : ""; if (value.isBlank()) continue;
-            String header = headers.get(i); raw.put(header, value);
-            String target = target(header); if (target != null) normalized.put(target, normalize(target, value));
-        }
-        normalized.put("reportType", type); normalized.put("sourceSheet", sheet.getSheetName()); normalized.put("sourceRowNumber", row.getRowNum() + 1);
-        String code = first(normalized, "documentNumber", "accountCode", "productCode", "chequeNumber", "invoiceNumber");
-        return new Record(sheet.getSheetName() + ":" + (row.getRowNum()+1), code, LegacyNormalizer.code(code), raw, normalized);
-    }
     private Record record(String sheetName, int rowNumber, List<String> headers, String type, List<String> rowValues) {
         Map<String,Object> raw = new LinkedHashMap<>(); Map<String,Object> normalized = new LinkedHashMap<>();
         raw.put("sourceSheet", sheetName); raw.put("sourceRowNumber", rowNumber + 1);
@@ -269,13 +386,19 @@ public class AsanAccountingExcelAdapter implements LegacyImportAdapter {
     private static String date(String value) { String s=LegacyNormalizer.text(value).replace('.', '/'); return s.matches("1[34]\\d{2}/\\d{2}/\\d{2}") ? s : LegacyNormalizer.text(value); }
     private static String first(Map<String,Object> values, String... keys) { for (String key:keys) if (values.get(key)!=null && !String.valueOf(values.get(key)).isBlank()) return String.valueOf(values.get(key)); return null; }
     private static List<Map<String,Object>> dictionary(List<String> headers) { return headers.stream().map(h -> Map.<String,Object>of("sourceField",h,"sourceType","TEXT","meaning", target(h)==null?"UNKNOWN":target(h),"confidence",target(h)==null?"LOW":"HIGH")).toList(); }
-    private static List<String> headers(Row row, DataFormatter formatter) { List<String> result=new ArrayList<>(); Map<String,Integer> seen=new LinkedHashMap<>(); for (String value:values(row, formatter)) { String base=LegacyNormalizer.text(value); int n=seen.merge(base,1,Integer::sum); result.add(n==1?base:base+"#"+n); } return result; }
-    private static List<String> values(Row row, DataFormatter formatter) { if(row==null)return List.of(); List<String> values=new ArrayList<>(); for(int i=0;i<row.getLastCellNum();i++) values.add(cell(row.getCell(i), formatter)); return values; }
-    private static String cell(Cell cell, DataFormatter formatter) { return cell==null?"":formatter.formatCellValue(cell).trim(); }
-    private static long numericCount(List<String> values) { return values.stream().filter(v -> { try { money(v); return !v.isBlank(); } catch (RuntimeException ignored) { return false; }}).count(); }
+    private static List<String> headers(List<String> values) {
+        List<String> result = new ArrayList<>();
+        Map<String,Integer> seen = new LinkedHashMap<>();
+        for (String value : values) {
+            String base = LegacyNormalizer.text(value);
+            int occurrence = seen.merge(base, 1, Integer::sum);
+            result.add(occurrence == 1 ? base : base + "#" + occurrence);
+        }
+        return result;
+    }
+    private static long numericCount(List<String> values) { return values.stream().filter(value -> money(value) != null).count(); }
     private static String sha256(byte[] bytes) { try { return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes)); } catch(Exception e){ throw new IllegalStateException(e); } }
     private record Detection(String type, String confidence) {}
     private record SanitizedWorkbook(byte[] bytes, boolean changed) {}
-    private record ParsedSheet(Dataset dataset, List<Message> messages) {}
     private enum RowKind { DATA, HEADER, SUBHEADER, SUBTOTAL, TOTAL, FOOTER, UNKNOWN }
 }

@@ -76,8 +76,18 @@ added.
   frontend health checks: passed in disposable Compose validation.
 - Trial Balance staging persisted 32 rows in `legacy_records`; canonical ERP
   tables were not mutated.
-- **Open P0 defect:** the real 33,796-row Daily Journal exhausts heap in the
-  Apache POI/XSSF `DataFormatter` path during staging. The transaction rolls
-  back and leaves the batch `READY`, so no partial staging records are kept.
-  A streaming XLSX reader is required before migration acceptance testing.
+- **P0 implementation checkpoint (2026-08-22):** the staging path now uses the
+  Apache POI SAX event model and writes records in bounded JDBC chunks instead
+  of materializing the workbook and every staged record in heap. Analysis and
+  streaming dataset keys/counts must match before completion, and per-dataset
+  imported counts are updated transactionally. A 34,000-row generated Daily
+  Journal passed with a 256 MB test heap. The supplied 33,796-row source file
+  is not present on this workstation, so its database-backed smoke and rollback
+  evidence remain pending rather than reported as passed.
+- **Customer-validation candidate:** the reconciliation response now exposes
+  its stored aggregate summary to the UI, and the UI can download a sanitized
+  JSON evidence report containing build provenance, counts, totals, checks and
+  statuses without raw records or source filenames. A local Docker runner and
+  Persian customer guide use the existing production Compose with generated
+  local-only secrets; Final Import remains unavailable.
 - Do not treat this revision as release-ready or migration-acceptance-ready.

@@ -115,9 +115,12 @@ public class LegacyImportService {
             Map<String, Long> datasetIds = replaceAnalysis(tenant,id,analysis,false);
             long count;
             if (adapter.supportsStreamingRecords()) {
-                StreamingRecordWriter writer = new StreamingRecordWriter(tenant, id, datasetIds);
+                Map<String, Long> expectedCounts = analysis.datasets().stream().collect(java.util.stream.Collectors.toMap(
+                        LegacyImportAdapter.Dataset::key, LegacyImportAdapter.Dataset::sourceCount,
+                        (left, right) -> left, LinkedHashMap::new));
+                StreamingRecordWriter writer = new StreamingRecordWriter(tenant, id, datasetIds, expectedCounts);
                 adapter.streamRecords(String.valueOf(current.get("original_filename")), bytes, writer::accept);
-                count = writer.flush();
+                count = writer.finish();
             } else {
                 LegacyImportAdapter.Analysis records = adapter.analyze(String.valueOf(current.get("original_filename")), bytes, true);
                 replaceAnalysis(tenant,id,records,true);
@@ -170,6 +173,18 @@ public class LegacyImportService {
 
     public Map<String,Object> reconciliation(Long groupId) {
         Long tenant=tenants.requireTenantId(); Map<String,Object> group=group(groupId); Map<String,Object> result=new LinkedHashMap<>(group);
+        Object metadata = group.get("metadata");
+        if (metadata instanceof Map<?,?> summary) {
+            summary.forEach((key, value) -> result.put(String.valueOf(key), value));
+        } else if (metadata != null && !String.valueOf(metadata).isBlank()) {
+            try {
+                @SuppressWarnings("unchecked")
+                Map<String,Object> summary = json.readValue(String.valueOf(metadata), Map.class);
+                result.putAll(summary);
+            } catch (JsonProcessingException exception) {
+                throw new IllegalStateException("Stored migration reconciliation summary is invalid", exception);
+            }
+        }
         result.put("checks", jdbc.queryForList("SELECT id,check_code,status,evidence,reviewed_at FROM legacy_migration_acceptance_checks WHERE tenant_id=? AND migration_group_id=? ORDER BY check_code",tenant,groupId));
         result.put("exceptions", jdbc.queryForList("SELECT id,domain,source_key,classification,legacy_value,sami_value,difference_value,explanation,source_evidence,approval_status,reviewed_at FROM legacy_reconciliation_exceptions WHERE tenant_id=? AND migration_group_id=? ORDER BY domain,source_key",tenant,groupId));
         result.put("batches", jdbc.queryForList("SELECT id,original_filename,evidence_type,status,record_count,warning_count,error_count FROM legacy_import_batches WHERE tenant_id=? AND migration_group_id=? ORDER BY created_at",tenant,groupId));
@@ -312,16 +327,48 @@ public class LegacyImportService {
         if (!chunk.isEmpty()) jdbc.batchUpdate(sql, chunk);
     }
     private final class StreamingRecordWriter {
-        private final Long tenant; private final Long batchId; private final Map<String, Long> datasetIds;
-        private final List<Object[]> chunk = new ArrayList<>(properties.importChunkSize()); private long count;
-        private StreamingRecordWriter(Long tenant, Long batchId, Map<String, Long> datasetIds) { this.tenant=tenant; this.batchId=batchId; this.datasetIds=datasetIds; }
+        private final Long tenant;
+        private final Long batchId;
+        private final Map<String, Long> datasetIds;
+        private final Map<String, Long> expectedCounts;
+        private final Map<String, Long> actualCounts = new LinkedHashMap<>();
+        private final List<Object[]> chunk = new ArrayList<>(properties.importChunkSize());
+        private long count;
+
+        private StreamingRecordWriter(Long tenant, Long batchId, Map<String, Long> datasetIds, Map<String, Long> expectedCounts) {
+            this.tenant = tenant;
+            this.batchId = batchId;
+            this.datasetIds = datasetIds;
+            this.expectedCounts = expectedCounts;
+        }
+
         private void accept(String datasetKey, LegacyImportAdapter.Record record) {
-            Long datasetId = datasetIds.get(datasetKey); if (datasetId == null) throw new IllegalStateException("Streamed row has no analyzed dataset");
-            chunk.add(new Object[]{tenant,batchId,datasetId,record.sourceId(),record.legacyCode(),record.normalizedKey(),json(record.raw()),json(record.normalized())}); count++;
+            Long datasetId = datasetIds.get(datasetKey);
+            if (datasetId == null) throw new IllegalStateException("Streamed row has no analyzed dataset");
+            chunk.add(new Object[]{tenant,batchId,datasetId,record.sourceId(),record.legacyCode(),record.normalizedKey(),json(record.raw()),json(record.normalized())});
+            actualCounts.merge(datasetKey, 1L, Long::sum);
+            count++;
             if (chunk.size() >= properties.importChunkSize()) flushChunk();
         }
-        private long flush() { flushChunk(); return count; }
-        private void flushChunk() { if (chunk.isEmpty()) return; jdbc.batchUpdate("INSERT INTO legacy_records(tenant_id,import_batch_id,dataset_id,source_record_id,legacy_code,normalized_key,raw_record,normalized_record) VALUES (?,?,?,?,?,?,cast(? as jsonb),cast(? as jsonb))",chunk); chunk.clear(); }
+
+        private long finish() {
+            flushChunk();
+            for (Map.Entry<String, Long> expected : expectedCounts.entrySet()) {
+                long actual = actualCounts.getOrDefault(expected.getKey(), 0L);
+                if (actual != expected.getValue()) {
+                    throw new IllegalStateException("Streamed row count does not match analyzed dataset " + expected.getKey());
+                }
+                jdbc.update("UPDATE legacy_datasets SET imported_record_count=?,updated_at=now() WHERE tenant_id=? AND import_batch_id=? AND id=?",
+                        actual, tenant, batchId, datasetIds.get(expected.getKey()));
+            }
+            return count;
+        }
+
+        private void flushChunk() {
+            if (chunk.isEmpty()) return;
+            jdbc.batchUpdate("INSERT INTO legacy_records(tenant_id,import_batch_id,dataset_id,source_record_id,legacy_code,normalized_key,raw_record,normalized_record) VALUES (?,?,?,?,?,?,cast(? as jsonb),cast(? as jsonb))",chunk);
+            chunk.clear();
+        }
     }
     private static String extension(String n) { int i=n.lastIndexOf('.'); return i<0?null:n.substring(i+1).toLowerCase(); }
     private static ApiException badRequest(String message) { return new ApiException(ErrorCode.BAD_REQUEST, message); }

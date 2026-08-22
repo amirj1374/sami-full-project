@@ -14,8 +14,11 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -80,5 +83,83 @@ class LegacyImportServiceTest {
         assertThat(result.get("matchingPolicy")).asString().contains("Exact tenant-scoped customer/supplier codes");
         verify(jdbc).queryForList(contains("c.tenant_id=r.tenant_id"),eq(73L),eq(8L));
         verify(jdbc,never()).update(contains("UPDATE customers"),any(Object[].class));
+    }
+
+    @Test void reconciliationExposesStoredSummaryForTheCustomerUi() throws Exception {
+        when(tenants.requireTenantId()).thenReturn(42L);
+        when(jdbc.queryForMap(anyString(), eq(42L), eq(7L))).thenReturn(Map.of(
+                "id", 7L,
+                "status", "READY_FOR_ACCEPTANCE",
+                "acceptance_status", "BLOCKED",
+                "metadata", "{\"journalRows\":33796,\"trialBalanceRows\":32,\"chequeRows\":599,\"stagingOnly\":true}"));
+        when(json.readValue(anyString(), eq(Map.class))).thenReturn(Map.of(
+                "journalRows", 33796,
+                "trialBalanceRows", 32,
+                "chequeRows", 599,
+                "stagingOnly", true));
+        when(jdbc.queryForList(anyString(), eq(42L), eq(7L))).thenReturn(List.of());
+
+        Map<String,Object> result = service.reconciliation(7L);
+
+        assertThat(result).containsEntry("journalRows", 33796)
+                .containsEntry("trialBalanceRows", 32)
+                .containsEntry("chequeRows", 599)
+                .containsEntry("stagingOnly", true);
+    }
+
+    @Test void executeStreamsAccountingRowsInConfiguredChunksWithoutMaterializingRecords() throws Exception {
+        long tenant = 42L;
+        long batchId = 8L;
+        byte[] source = {0x50, 0x4b, 0x03, 0x04};
+        String filename = "daily.xlsx";
+        String datasetKey = filename + "#دفتر روزنامه";
+        var analysis = new LegacyImportAdapter.Analysis(
+                List.of(new LegacyImportAdapter.SourceFile(filename, filename, source.length, "hash", "XLSX", "SUPPORTED", Map.of())),
+                List.of(new LegacyImportAdapter.Dataset(filename, datasetKey, "دفتر روزنامه", "ACCOUNTING_JOURNAL",
+                        "SUPPORTED", "UTF-8", 3, List.of(), Map.of(), List.of())),
+                List.of());
+
+        when(tenants.requireTenantId()).thenReturn(tenant);
+        when(jdbc.queryForMap(anyString(), eq(tenant), eq(batchId)))
+                .thenReturn(Map.of("status", "READY", "original_filename", filename));
+        when(jdbc.queryForObject(contains("SELECT storage_key"), eq(String.class), eq(tenant), eq(batchId))).thenReturn("opaque-key");
+        when(storage.load("opaque-key")).thenReturn(Optional.of(new FileStorage.StoredFile(
+                source, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")));
+        when(adapters.stream()).thenReturn(Stream.of(adapter));
+        when(adapter.supports(filename, source)).thenReturn(true);
+        when(adapter.supportsStreamingRecords()).thenReturn(true);
+        when(adapter.analyze(filename, source, false)).thenReturn(analysis);
+        when(jdbc.queryForObject(contains("INSERT INTO legacy_import_files"), eq(Long.class), any(Object[].class))).thenReturn(101L);
+        when(jdbc.queryForObject(contains("INSERT INTO legacy_datasets"), eq(Long.class), any(Object[].class))).thenReturn(201L);
+        when(properties.importChunkSize()).thenReturn(2);
+        when(json.writeValueAsString(any())).thenReturn("{}");
+        List<Integer> chunkSizes = new ArrayList<>();
+        when(jdbc.batchUpdate(anyString(), anyList())).thenAnswer(invocation -> {
+            int size = ((List<?>) invocation.getArgument(1)).size();
+            chunkSizes.add(size);
+            return new int[size];
+        });
+        doAnswer(invocation -> {
+            @SuppressWarnings("unchecked")
+            BiConsumer<String, LegacyImportAdapter.Record> consumer = invocation.getArgument(2);
+            for (int index = 1; index <= 3; index++) {
+                consumer.accept(datasetKey, new LegacyImportAdapter.Record(
+                        "دفتر روزنامه:" + index, String.valueOf(index), String.valueOf(index),
+                        Map.of("sourceRowNumber", index), Map.of("debit", index)));
+            }
+            return null;
+        }).when(adapter).streamRecords(eq(filename), same(source), any());
+
+        Map<String,Object> result = service.execute(batchId);
+
+        assertThat(result).containsEntry("status", "READY");
+        assertThat(chunkSizes).containsExactly(2, 1);
+        verify(adapter).analyze(filename, source, false);
+        verify(adapter, never()).analyze(filename, source, true);
+        verify(adapter).streamRecords(eq(filename), same(source), any());
+        verify(jdbc).update(contains("UPDATE legacy_datasets SET imported_record_count"),
+                eq(3L), eq(tenant), eq(batchId), eq(201L));
+        verify(jdbc, never()).update(contains("UPDATE customers"), any(Object[].class));
+        verify(jdbc, never()).update(contains("UPDATE products"), any(Object[].class));
     }
 }

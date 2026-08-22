@@ -48,8 +48,13 @@ export interface LegacyReconciliation {
   exceptions: LegacyReconciliationException[]
   batches: LegacyBatch[]
   journalRows?: number
+  journalDebit?: number | string
+  journalCredit?: number | string
+  journalDifference?: number | string
   trialBalanceRows?: number
   chequeRows?: number
+  canonicalAccountingAvailable?: boolean
+  stagingOnly?: boolean
 }
 
 export interface LegacyDataset {

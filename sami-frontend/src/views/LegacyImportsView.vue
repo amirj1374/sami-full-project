@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { legacyImportsApi } from '@/api/legacyImports'
+import { buildInfo } from '@/buildInfo'
 import { useServerLabel } from '@/composables/useServerLabel'
 import type { LegacyBatch, LegacyDataset, LegacyMigrationGroup, LegacyReconciliation } from '@/types/legacyImports'
 
@@ -34,6 +35,60 @@ async function stage(batch: LegacyBatch) { await action(async () => { await lega
 async function reconcile() { if (selectedGroup.value) await action(async () => { reconciliation.value = await legacyImportsApi.reconcile(selectedGroup.value!.id) }) }
 async function confirmType(dataset: LegacyDataset, reportType: string) { if (selected.value) await action(async () => { await legacyImportsApi.confirmReportType(selected.value!.id, dataset.id, reportType); await select(selected.value!) }) }
 async function explain(exceptionId: number) { if (selectedGroup.value) await action(() => legacyImportsApi.reviewException(selectedGroup.value!.id, exceptionId, 'EXPLAINED', 'Reviewed migration evidence.')) }
+function downloadValidationReport() {
+  if (!selectedGroup.value || !reconciliation.value) return
+  const source = reconciliation.value
+  const report = {
+    schemaVersion: '1.0',
+    generatedAt: new Date().toISOString(),
+    build: buildInfo,
+    safety: {
+      stagingOnly: source.stagingOnly !== false,
+      canonicalWrites: 0,
+      finalImportAvailable: source.canonicalAccountingAvailable === true,
+      rawRecordsIncluded: false,
+      sourceFilenamesIncluded: false,
+    },
+    migrationGroup: {
+      id: selectedGroup.value.id,
+      name: selectedGroup.value.name,
+      status: source.status,
+      acceptanceStatus: source.acceptance_status,
+    },
+    summary: {
+      journalRows: source.journalRows ?? null,
+      journalDebit: source.journalDebit ?? null,
+      journalCredit: source.journalCredit ?? null,
+      journalDifference: source.journalDifference ?? null,
+      trialBalanceRows: source.trialBalanceRows ?? null,
+      chequeRows: source.chequeRows ?? null,
+    },
+    checks: source.checks,
+    exceptions: source.exceptions.map(item => ({
+      domain: item.domain,
+      classification: item.classification,
+      approvalStatus: item.approval_status,
+      difference: item.difference_value,
+      explanation: item.explanation ?? null,
+    })),
+    batches: source.batches.map(batch => ({
+      id: batch.id,
+      evidenceType: batch.evidence_type,
+      status: batch.status,
+      recordCount: batch.record_count,
+      warningCount: batch.warning_count,
+      errorCount: batch.error_count,
+    })),
+  }
+  const url = URL.createObjectURL(new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' }))
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `asan-customer-validation-${selectedGroup.value.id}.json`
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  URL.revokeObjectURL(url)
+}
 onMounted(() => load().catch(e => { error.value = e instanceof Error ? e.message : t('legacy.error') }))
 </script>
 
@@ -46,7 +101,7 @@ onMounted(() => load().catch(e => { error.value = e instanceof Error ? e.message
       <v-card rounded="xl" class="mb-4"><v-card-title>{{ t('legacy.migrationBatches') }}</v-card-title><v-list lines="two"><v-list-item v-for="group in groups" :key="group.id" :active="selectedGroup?.id === group.id" @click="selectGroup(group)"><template #prepend><v-avatar color="primary" variant="tonal"><v-icon>mdi-clipboard-check-outline</v-icon></v-avatar></template><v-list-item-title>{{ group.name }}</v-list-item-title><v-list-item-subtitle><v-chip :color="statusColor(group.acceptance_status)" size="x-small">{{ enumLabel(group.acceptance_status) }}</v-chip></v-list-item-subtitle></v-list-item><v-list-item v-if="!groups.length" :title="t('legacy.emptyMigrationBatches')" /></v-list></v-card>
       <v-card rounded="xl" :disabled="!selectedGroup"><v-card-title>{{ t('legacy.addReports') }}</v-card-title><v-card-text><v-file-input v-model="selectedFiles" multiple accept=".rar,.zip,.xlsx" prepend-icon="mdi-file-excel-outline" :label="t('legacy.chooseReports')" :hint="t('legacy.reportUploadHint')" persistent-hint /><v-btn block color="primary" class="mt-4" :disabled="!selectedFiles.length" :loading="busy" @click="upload">{{ t('legacy.uploadReports') }}</v-btn></v-card-text></v-card>
     </v-col><v-col cols="12" lg="8">
-      <v-card v-if="selectedGroup" rounded="xl"><v-card-title class="d-flex flex-wrap align-center ga-3"><span>{{ selectedGroup.name }}</span><v-spacer /><v-btn color="primary" prepend-icon="mdi-scale-balance" :loading="busy" @click="reconcile">{{ t('legacy.runReconciliation') }}</v-btn></v-card-title><v-card-text>
+      <v-card v-if="selectedGroup" rounded="xl"><v-card-title class="d-flex flex-wrap align-center ga-3"><span>{{ selectedGroup.name }}</span><v-spacer /><v-btn variant="tonal" prepend-icon="mdi-download-outline" :disabled="!reconciliation" @click="downloadValidationReport">{{ t('legacy.downloadValidationReport') }}</v-btn><v-btn color="primary" prepend-icon="mdi-scale-balance" :loading="busy" @click="reconcile">{{ t('legacy.runReconciliation') }}</v-btn></v-card-title><v-card-text>
         <v-tabs v-model="tab" grow><v-tab value="overview">{{ t('legacy.overview') }}</v-tab><v-tab value="reports">{{ t('legacy.reports') }}</v-tab><v-tab value="reconciliation">{{ t('legacy.reconciliation') }}</v-tab><v-tab value="evidence">{{ t('legacy.evidence') }}</v-tab></v-tabs>
         <v-window v-model="tab" class="mt-4">
           <v-window-item value="overview"><v-row><v-col v-for="metric in ['journalRows','trialBalanceRows','chequeRows']" :key="metric" cols="6" md="3"><div class="metric pa-3"><div class="text-h6">{{ reconciliation?.[metric as keyof LegacyReconciliation] ?? '—' }}</div><div class="text-caption">{{ t(`legacy.${metric}`) }}</div></div></v-col></v-row><v-alert v-if="hasLowConfidenceDataset" type="warning" variant="tonal" class="mt-4">{{ t('legacy.confirmLowConfidence') }}</v-alert></v-window-item>

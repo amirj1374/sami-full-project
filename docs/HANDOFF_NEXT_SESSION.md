@@ -143,11 +143,13 @@ Acceptance requires fresh-volume Flyway V1→V42, backend integration/schema val
 - V46 adds migration groups and staging-only reconciliation. A disposable
   PostgreSQL 16 stack proved Flyway V1–V46, Hibernate startup and health
   checks. Trial Balance staged 32 rows without canonical writes.
-- **Blocker:** staging the supplied 33,796-row Daily Journal fails with
-  `OutOfMemoryError` in Apache POI XSSF/DataFormatter. The transaction rolls
-  back, leaving the batch `READY`; no partial legacy records or canonical data
-  are written. Continue by replacing only the XLSX adapter's large-workbook
-  read path with streaming/SAX processing, then rerun the real-file smoke.
+- The bounded XLSX checkpoint is on `codex/wip-asan-xlsx-streaming`. It replaces
+  the Apache POI object-model staging path with SAX parsing and bounded JDBC
+  chunks, validates analyzed versus streamed dataset counts, and updates
+  per-dataset imported counts in the same transaction. A generated 34,000-row
+  journal passes with a 256 MB heap. Before merging, rerun the supplied
+  33,796-row Daily Journal against isolated PostgreSQL, verify exact staged row
+  counts/totals and prove rollback on a forced mid-stream failure.
 - The named `sami-asan-qa-20260821` Compose stack is disposable and must be
   cleaned up. Never commit user spreadsheets, test credentials, or temporary
   smoke scripts.
