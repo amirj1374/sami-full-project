@@ -277,6 +277,8 @@ test('0912 investment module is migration-backed, importable, localized, and mob
   assert.match(api, /new FormData\(\)/)
   assert.match(api, /multipart\/form-data/)
   assert.match(view, /AppMobileRecordCard/)
+  assert.match(view, /<v-form @submit\.prevent="applyFilters">/)
+  assert.match(view, /sim-investment-import-fields/)
   assert.match(view, /accept="\.csv,\.xlsx/)
   assert.match(view, /sim-investment:import/)
   assert.match(router, /permission: 'sim-investment:view'/)
