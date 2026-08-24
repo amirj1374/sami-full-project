@@ -1493,8 +1493,7 @@
     "keyboard": {
       "title": "Keyboard shortcuts",
       "enabled": "Show and enable action shortcuts",
-      "hint": "Buttons, links, menu actions and tabs receive two-character badges. Use Alt plus the first character, then the second; use Tab and Shift+Tab for fields, Enter or Space to activate, Esc to close, and Ctrl+K or Command+K for fast navigation.",
-      "sequence": "Alt+{prefix} · enter the second character"
+      "hint": "Press Shift together with the key shown on an action to run it directly; for example, ⇧1 means Shift+1. Shortcuts stay inactive while typing in fields. Use Tab and Shift+Tab for fields, Enter or Space to activate, Esc to close, and Ctrl+K or Command+K for fast navigation."
     }
   },
   "notifications": {

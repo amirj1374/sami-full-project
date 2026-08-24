@@ -1,9 +1,7 @@
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { nextTick, onBeforeUnmount, onMounted, watch } from 'vue'
 
 const props = defineProps<{ enabled: boolean }>()
-const { t } = useI18n()
 
 const TARGET_CLASS = 'app-shortcut-target'
 const POSITIONED_CLASS = 'app-shortcut-target--positioned'
@@ -16,27 +14,26 @@ const ACTION_SELECTOR = [
   '[role="tab"]',
   '.v-list-item[tabindex]',
 ].join(', ')
-const GROUP_KEYS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-const VALUE_KEYS = '1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+const SHORTCUT_KEYS = [
+  ...'1234567890'.split('').map((label) => ({ code: `Digit${label}`, label })),
+  ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map((label) => ({ code: `Key${label}`, label })),
+  ...Array.from({ length: 12 }, (_, index) => ({ code: `F${index + 1}`, label: `F${index + 1}` })),
+  { code: 'Minus', label: '-' },
+  { code: 'Equal', label: '=' },
+  { code: 'BracketLeft', label: '[' },
+  { code: 'BracketRight', label: ']' },
+  { code: 'Backslash', label: '\\' },
+  { code: 'Semicolon', label: ';' },
+  { code: 'Quote', label: "'" },
+  { code: 'Comma', label: ',' },
+  { code: 'Period', label: '.' },
+  { code: 'Slash', label: '/' },
+  { code: 'Backquote', label: '`' },
+] as const
 
-const activePrefix = ref('')
 const targets = new Map<string, HTMLElement>()
 let observer: MutationObserver | null = null
 let refreshFrame: number | null = null
-let prefixTimer: number | null = null
-
-function shortcutCode(index: number): string | null {
-  const group = Math.floor(index / VALUE_KEYS.length)
-  if (group >= GROUP_KEYS.length) return null
-  return `${GROUP_KEYS[group]}${VALUE_KEYS[index % VALUE_KEYS.length]}`
-}
-
-function physicalKey(event: KeyboardEvent): string | null {
-  if (/^Key[A-Z]$/.test(event.code)) return event.code.slice(3)
-  if (/^Digit[0-9]$/.test(event.code)) return event.code.slice(5)
-  if (/^Numpad[0-9]$/.test(event.code)) return event.code.slice(6)
-  return null
-}
 
 function isVisible(element: HTMLElement): boolean {
   if (!element.isConnected || element.closest('[inert], [aria-hidden="true"]')) return false
@@ -56,6 +53,7 @@ function clearBadges(): void {
     element.classList.remove(TARGET_CLASS)
     element.classList.remove(POSITIONED_CLASS)
     delete element.dataset.samiShortcut
+    element.removeAttribute('aria-keyshortcuts')
   })
   document.querySelectorAll<HTMLElement>(`.${BADGE_CLASS}`).forEach((badge) => badge.remove())
   targets.clear()
@@ -66,26 +64,44 @@ function activeScope(): ParentNode {
   return dialogs.at(-1) ?? document
 }
 
+function orderedCandidates(): HTMLElement[] {
+  const scope = activeScope()
+  const regions: ParentNode[] = []
+  if (scope === document) {
+    for (const selector of ['main', 'header', 'nav']) {
+      const region = document.querySelector(selector)
+      if (region) regions.push(region)
+    }
+    regions.push(document)
+  } else {
+    regions.push(scope)
+  }
+
+  return Array.from(new Set(
+    regions.flatMap((region) => Array.from(region.querySelectorAll<HTMLElement>(ACTION_SELECTOR))),
+  )).filter(isActionable)
+}
+
 function refreshTargets(): void {
   refreshFrame = null
   clearBadges()
   if (!props.enabled) return
 
-  const candidates = Array.from(new Set(activeScope().querySelectorAll<HTMLElement>(ACTION_SELECTOR)))
-    .filter(isActionable)
+  const candidates = orderedCandidates()
 
   candidates.forEach((element, index) => {
-    const code = shortcutCode(index)
-    if (!code) return
+    const shortcut = SHORTCUT_KEYS[index]
+    if (!shortcut) return
     const badge = document.createElement('kbd')
     badge.className = BADGE_CLASS
     badge.ariaHidden = 'true'
-    badge.textContent = code
+    badge.textContent = `⇧${shortcut.label}`
     element.classList.add(TARGET_CLASS)
     if (window.getComputedStyle(element).position === 'static') element.classList.add(POSITIONED_CLASS)
-    element.dataset.samiShortcut = code
+    element.dataset.samiShortcut = `Shift+${shortcut.label}`
+    element.setAttribute('aria-keyshortcuts', `Shift+${shortcut.label}`)
     element.append(badge)
-    targets.set(code, element)
+    targets.set(shortcut.code, element)
   })
 }
 
@@ -94,47 +110,21 @@ function scheduleRefresh(): void {
   refreshFrame = window.requestAnimationFrame(refreshTargets)
 }
 
-function clearPrefix(): void {
-  activePrefix.value = ''
-  if (prefixTimer != null) window.clearTimeout(prefixTimer)
-  prefixTimer = null
-}
-
-function startPrefix(prefix: string): void {
-  activePrefix.value = prefix
-  if (prefixTimer != null) window.clearTimeout(prefixTimer)
-  prefixTimer = window.setTimeout(clearPrefix, 1400)
+function isTypingTarget(target: EventTarget | null): boolean {
+  return target instanceof HTMLElement
+    && (target.matches('input, textarea, select') || target.isContentEditable)
 }
 
 function onKeydown(event: KeyboardEvent): void {
   if (!props.enabled || event.isComposing || event.repeat) return
-  if (event.key === 'Escape' && activePrefix.value) {
-    event.preventDefault()
-    clearPrefix()
-    return
-  }
-
-  const key = physicalKey(event)
-  if (!key) return
-
-  if (activePrefix.value) {
-    event.preventDefault()
-    event.stopPropagation()
-    const target = targets.get(`${activePrefix.value}${key}`)
-    clearPrefix()
-    if (target && isActionable(target)) {
-      target.focus({ preventScroll: true })
-      target.click()
-      scheduleRefresh()
-    }
-    return
-  }
-
-  if (!event.altKey || event.ctrlKey || event.metaKey) return
-  if (![...targets.keys()].some((code) => code.startsWith(key))) return
+  if (!event.shiftKey || event.altKey || event.ctrlKey || event.metaKey || isTypingTarget(event.target)) return
+  const target = targets.get(event.code)
+  if (!target || !isActionable(target)) return
   event.preventDefault()
   event.stopPropagation()
-  startPrefix(key)
+  target.focus({ preventScroll: true })
+  target.click()
+  scheduleRefresh()
 }
 
 function mutationNeedsRefresh(mutations: MutationRecord[]): boolean {
@@ -162,7 +152,6 @@ onMounted(async () => {
 })
 
 watch(() => props.enabled, async () => {
-  clearPrefix()
   await nextTick()
   scheduleRefresh()
 })
@@ -173,21 +162,9 @@ onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeydown, true)
   window.removeEventListener('resize', scheduleRefresh)
   if (refreshFrame != null) window.cancelAnimationFrame(refreshFrame)
-  clearPrefix()
   clearBadges()
 })
 </script>
-
-<template>
-  <div
-    v-if="activePrefix"
-    class="app-shortcut-sequence"
-    role="status"
-    aria-live="polite"
-  >
-    {{ t('settings.keyboard.sequence', { prefix: activePrefix }) }}
-  </div>
-</template>
 
 <style>
 .app-shortcut-target--positioned {
@@ -215,23 +192,6 @@ onBeforeUnmount(() => {
   font-weight: 800;
   line-height: 1;
   letter-spacing: -0.04em;
-  pointer-events: none;
-}
-.app-shortcut-sequence {
-  position: fixed;
-  z-index: 3000;
-  inset-inline-start: 50%;
-  inset-block-end: max(24px, env(safe-area-inset-bottom));
-  transform: translateX(-50%);
-  padding: 8px 14px;
-  border: 1px solid rgba(var(--v-border-color), 0.18);
-  border-radius: 999px;
-  background: rgb(var(--v-theme-inverse-surface));
-  color: rgb(var(--v-theme-inverse-on-surface));
-  box-shadow: var(--app-shadow-lg);
-  direction: ltr;
-  font-size: 0.78rem;
-  font-weight: 700;
   pointer-events: none;
 }
 @media (prefers-reduced-motion: no-preference) {

@@ -33,6 +33,7 @@ const rail = ref(localStorage.getItem(RAIL_KEY) === '1')
 const navQuery = ref('')
 const paletteOpen = ref(false)
 const changePasswordOpen = ref(false)
+const commandShortcutLabel = /Mac|iPhone|iPad|iPod/.test(navigator.platform) ? '⌘K' : 'Ctrl+K'
 let initialRouteHandled = false
 let routeFocusTimer: number | null = null
 
@@ -197,6 +198,7 @@ async function logout(): Promise<void> {
   <button
     type="button"
     class="app-skip-link"
+    data-sami-shortcut-skip
     @click="focusMain"
     @keydown.enter.prevent="focusMain"
     @keydown.space.prevent="focusMain"
@@ -368,7 +370,7 @@ async function logout(): Promise<void> {
     >
       <v-icon icon="mdi-magnify" size="18" class="me-2 text-medium-emphasis" />
       <span class="text-medium-emphasis">{{ t('shell.searchEverything') }}</span>
-      <v-chip size="x-small" variant="tonal" label class="ms-3">⌘K</v-chip>
+      <v-chip size="x-small" variant="tonal" label class="ms-3">{{ commandShortcutLabel }}</v-chip>
     </v-btn>
     <v-btn
       icon="mdi-magnify"
