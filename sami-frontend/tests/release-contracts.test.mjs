@@ -176,6 +176,16 @@ test('keyboard shortcuts cover dynamic buttons and remain a persisted user prefe
   assert.match(migration, /keyboard_shortcuts_enabled BOOLEAN NOT NULL DEFAULT TRUE/)
 })
 
+test('SAMI brand links consistently navigate to the dashboard', () => {
+  const shell = read('src/layouts/DefaultLayout.vue')
+  const authShell = read('src/layouts/AuthLayout.vue')
+
+  for (const layout of [shell, authShell]) {
+    assert.match(layout, /<router-link[\s\S]*?:to="\{ name: 'dashboard' \}"[\s\S]*?class="[^"]*(?:app-brand|auth-layout__brand)/)
+    assert.match(layout, /(?:app-brand|auth-layout__brand):focus-visible/)
+  }
+})
+
 test('all forms inherit the shared mobile-first rhythm and persistent labels', () => {
   const vuetify = read('src/plugins/vuetify.ts')
   const styles = read('src/styles/global.css')

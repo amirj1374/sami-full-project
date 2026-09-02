@@ -12,7 +12,11 @@ const { isDark, apply } = useThemeMode()
     <div class="auth-layout__glow auth-layout__glow--accent" />
 
     <header class="auth-layout__header">
-      <div class="auth-layout__brand">
+      <router-link
+        :to="{ name: 'dashboard' }"
+        class="auth-layout__brand"
+        :aria-label="$t('dashboard.title')"
+      >
         <v-avatar rounded="lg" color="primary" size="42" class="auth-layout__logo">
           <span class="text-h6 font-weight-bold">S</span>
         </v-avatar>
@@ -20,7 +24,7 @@ const { isDark, apply } = useThemeMode()
           <div class="text-subtitle-1 font-weight-bold">{{ $t('common.appName') }}</div>
           <div class="text-caption text-medium-emphasis">{{ $t('shell.tagline') }}</div>
         </div>
-      </div>
+      </router-link>
       <div class="d-flex align-center ga-1">
         <v-btn
           :icon="isDark ? 'mdi-weather-night' : 'mdi-white-balance-sunny'"
@@ -122,6 +126,13 @@ const { isDark, apply } = useThemeMode()
   display: flex;
   align-items: center;
   gap: 12px;
+  border-radius: var(--app-radius-sm);
+  color: inherit;
+  text-decoration: none;
+}
+.auth-layout__brand:focus-visible {
+  outline: 2px solid rgb(var(--v-theme-primary));
+  outline-offset: 4px;
 }
 .auth-layout__logo {
   box-shadow: 0 8px 20px rgba(var(--v-theme-primary), 0.24);

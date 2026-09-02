@@ -213,7 +213,12 @@ async function logout(): Promise<void> {
     theme="dark"
   >
     <!-- Brand -->
-    <div class="app-brand d-flex align-center px-4" :class="rail && !mobile ? 'justify-center' : 'ga-3'">
+    <router-link
+      :to="{ name: 'dashboard' }"
+      class="app-brand d-flex align-center px-4"
+      :class="rail && !mobile ? 'justify-center' : 'ga-3'"
+      :aria-label="t('dashboard.title')"
+    >
       <v-avatar rounded="lg" size="40" class="app-brand__logo">
         <img src="/icons/sami-app-icon.svg" alt="" width="40" height="40" />
       </v-avatar>
@@ -403,7 +408,7 @@ async function logout(): Promise<void> {
     <!-- Notifications -->
     <div class="app-mobile-notifications">
       <StaffNotificationMenu />
-    </div>
+    </router-link>
 
     <!-- Theme switch -->
     <v-menu v-if="!mobile" location="bottom end">
@@ -522,6 +527,12 @@ async function logout(): Promise<void> {
   height: 72px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.07);
   margin-bottom: 10px;
+  color: inherit;
+  text-decoration: none;
+}
+.app-brand:focus-visible {
+  outline: 2px solid rgb(var(--v-theme-accent));
+  outline-offset: -3px;
 }
 .app-brand__logo {
   background: #fff;
