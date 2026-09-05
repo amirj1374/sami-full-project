@@ -3,8 +3,10 @@
 ## Current model
 
 Tenant is the intended isolation root. Company, branch, and store represent
-organizational and operational subdivisions beneath that root. Their exact
-business permissions and cross-company sharing rules remain open decisions.
+organizational and operational subdivisions beneath that root. The approved
+platform hierarchy is Tenant -> Company -> Branch. Current Product Owner
+business scope is one operating company; do not introduce active Intercompany
+workflow now. The technical hierarchy must remain future-compatible.
 
 `common/tenancy/TenantContext` is the trusted request authority for new
 tenant-scoped code. It derives ownership exclusively from the authenticated,
@@ -24,6 +26,8 @@ enforced across those older modules.
 - Never infer company/branch/store access from record existence.
 - Cross-tenant administration must be explicit, privileged, and audited.
 - Do not copy the default-tenant bridge into a new module as final design.
+- Do not treat future multi-company/intercompany scenarios as a current business
+  requirement merely because Company/Branch structures exist technically.
 
 ## Remaining enforcement work
 

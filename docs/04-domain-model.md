@@ -7,8 +7,8 @@
 | Tenant | `licensing`, `common.tenancy` | Trusted isolation root resolved from the authenticated server-side principal |
 | Company / Branch / Store | organization migrations and shared mappings | Organizational hierarchy; lifecycle corrections exist in V26 |
 | Staff User / Role / Permission | `user`, `authz`, `security` | Database-driven RBAC; super-admin bypass |
-| Customer | `crm` | Lifecycle, notes, relations, segments, imports and duplicate handling |
-| Supplier | `supplier` | Lifecycle, categories, ratings, documents and payment terms |
+| Counterparty | Approved business model | One Natural Person or Legal Entity/Company/Store identity with one unified business-facing financial account; current source still stores Customer/Supplier separately |
+| Customer / Supplier roles | `crm` / `supplier` current source | Commercial roles may coexist on the same approved Counterparty; they must not create contradictory separate balances |
 | Product | `product` | Catalog owner; legacy integer stock is an Inventory compatibility projection |
 | Purchase | `purchasing` | Items, approvals, receiving, IMEI/serial capture, returns, logs; receipt/return stock posts to Inventory |
 | Inventory | `inventory` | Warehouses, locations, balances, append-only movements, serials, reservations, transfers, counts, valuation and audit |
@@ -16,6 +16,12 @@
 | Dashboard / KPI / Widget | `dashboard` | Configurable dashboard and calculation infrastructure |
 | Managed file | `files` | Versioning, metadata, scans, derivatives, retention and quota |
 | Scheduled job | `common.scheduler` | Handler registry, polling, locking, executions and timeout |
+
+## Current implementation relationships
+
+The following diagram records the current source relationships. It is not a
+claim that the approved unified Counterparty financial-account model has already
+been implemented.
 
 ```mermaid
 erDiagram
@@ -50,6 +56,7 @@ erDiagram
 
 ## Undefined future ownership
 
-Pricing and accounting require
-explicit bounded contexts and integration contracts. Their proposed models
-must not be inserted into documentation as current implementation.
+Sales owns approved price-list/price-resolution policy; current source does not
+yet implement the approved model. Accounting still requires explicit bounded
+context and integration contracts before it can own canonical journals and
+financial statements.

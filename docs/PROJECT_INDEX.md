@@ -11,8 +11,11 @@ historical reports.
 | `docs/PROJECT_INDEX.md` | Documentation map and trust hierarchy |
 | `.agents/SAMI_PROJECT_CONTEXT.md` | Concise reusable Codex technical context |
 | `docs/HANDOFF_NEXT_SESSION.md` | Current development handoff and immediate priorities |
+| `docs/25-overnight-handoff.md` | Pre-freeze overnight continuation handoff |
 | `END_OF_DAY_HANDOFF_REPORT.md` | Latest session consolidation, validation and push evidence |
 | `docs/05-module-catalog.md` | Current module capability/status catalog |
+| `docs/SAMI_ERP_ARCHITECTURE_CONSTITUTION.md` | Approved architecture ownership, boundaries and Architecture Freeze status |
+| `docs/SAMI_ERP_BUSINESS_RULES.md` | Approved business behavior and stable rule identifiers |
 | `docs/15-testing-and-quality.md` | Current validation commands and required gates |
 | `docs/16-configuration-and-environments.md` | Configuration groups, ports and environment topology |
 | `PROJECT_SETUP_AND_DEPLOYMENT.md` | Local startup and deployment topology |
@@ -25,6 +28,7 @@ historical reports.
 - `AGENTS.md` — mandatory repository policy.
 - `.agents/SAMI_PROJECT_CONTEXT.md` — fast technical context.
 - `docs/HANDOFF_NEXT_SESSION.md` — current state and next actions.
+- `docs/25-overnight-handoff.md` — current pre-freeze Product Owner decision handoff.
 - `docs/21-ai-agent-guide.md` — mandatory AI development workflow.
 - `docs/00-project-overview.md` and `docs/02-repository-map.md` — product and monorepo orientation.
 - `docs/NEW_WORKSTATION_SETUP.md` — Windows prerequisites and verification.
@@ -33,6 +37,8 @@ historical reports.
 
 - `docs/03-system-architecture.md` — system boundaries and dependency direction.
 - `docs/04-domain-model.md` — domain concepts and ownership.
+- `docs/SAMI_ERP_ARCHITECTURE_CONSTITUTION.md` — authoritative architecture constitution and freeze blockers.
+- `docs/SAMI_ERP_BUSINESS_RULES.md` — authoritative approved business rules.
 - `docs/08-api-and-integrations.md` — API conventions and integration seams.
 - `docs/09-authentication-and-authorization.md` and `docs/18-security.md` — authentication, RBAC and security.
 - `docs/10-multi-tenancy-and-organization.md` — tenant and organization scope.

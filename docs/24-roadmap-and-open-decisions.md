@@ -1,39 +1,45 @@
-# Roadmap and open decisions
+# Roadmap and Open Decisions
 
-This is a dependency-oriented decision register, not a delivery commitment.
+This register contains unresolved Product Owner and cross-cutting decisions.
+Approved business behavior is in
+[`SAMI_ERP_BUSINESS_RULES.md`](SAMI_ERP_BUSINESS_RULES.md); architecture
+boundaries are in
+[`SAMI_ERP_ARCHITECTURE_CONSTITUTION.md`](SAMI_ERP_ARCHITECTURE_CONSTITUTION.md).
 
-## Cross-cutting decisions
+## P0 — Architecture Freeze blockers (`STILL_OPEN`)
 
-1. Final tenant/company/branch/store context and cross-scope administration.
-2. Staff authentication storage, CSRF and token revocation model.
-3. General event durability, ordering and idempotent consumption.
-4. Canonical file ownership and object-storage strategy.
-5. Testcontainers/CI quality gate and frontend test toolchain.
-6. Observability, backup, recovery and production secret management.
+1. **Sales invoice recognition timing:** when invoice and physical delivery are
+   separate, when does the Counterparty debt arise?
+2. **Purchase obligation recognition timing:** when supplier invoice and Goods
+   Receipt are separate, when does company debt arise?
+3. **Received-cheque settlement timing:** does customer cheque settle debt on
+   receipt or only after clearance?
+4. **Accounting and tax policy:** chart of accounts, fiscal periods, official
+   invoice/statements, tax/exemption/withholding, currency, and rounding policy.
 
-## Before Inventory
+## P1 — Business-policy configuration (`STILL_OPEN`)
 
-Define warehouse/store/location boundaries, immutable stock ledger, serialized
-versus quantity stock, reservations, valuation, purchasing receipt contract,
-concurrency, stock count, returns and accounting events.
+1. Expense/income type catalog, approval thresholds, and approval timing.
+2. Customer-score weights, inactivity baseline, and advisory suggestion policy.
+3. Manager delegation policy for approvals.
+4. Common approval-policy semantics where needed.
+5. Canonical file storage strategy, official Market Sync contracts, and Web Push
+   provider/delivery policy.
 
-## Before Sales
+## P2 — Deferred product scope (`STILL_OPEN`)
 
-Define order lifecycle, customer/branch scope, pricing snapshot, reservation
-contract, fulfillment, cancellation/return, invoice ownership and idempotency.
+1. Repairs and Warranty.
+2. Installments.
+3. Payroll, leave, and expanded attendance integrations.
+4. Expanded Customer Portal workflows.
 
-## Before Pricing
+## Resolved or superseded
 
-Define price-list ownership, currency/tax/rounding, customer segmentation,
-promotion priority/stacking, cost integration and historical explanation.
-
-## Before Payments
-
-Define payment intent/attempt/refund states, provider ownership, reconciliation,
-PCI boundary, webhook authentication, idempotency and sales/accounting links.
-
-## Before Accounting
-
-Define chart of accounts, fiscal periods, double-entry journal ownership,
-posting rules, reversals, valuation method, currency/tax policy and immutable
-links to source documents.
+- **SUPERSEDED:** Active Intercompany workflow is not a current Architecture Freeze blocker;
+  current business scope is one operating company.
+- **RESOLVED:** Sales Order may have partial Fulfillments and multiple Sales Invoices; final
+  single invoice remains valid.
+- **RESOLVED:** Customer/supplier advances are allowed and affect unified Counterparty account.
+- **RESOLVED:** Return and refund are separate traceable events.
+- **RESOLVED:** Party matching uses authoritative Iranian identifiers; uncertain identity never
+  merges automatically.
