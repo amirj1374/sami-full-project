@@ -1,6 +1,45 @@
 # SAMI ERP — Next Session Handoff
 
-Updated: 2026-08-08 (Asia/Tehran)
+Updated: 2026-09-05 (Asia/Tehran)
+
+## 2026-09-05 workstation transfer checkpoint
+
+- Authoritative branch: `development`; no secondary worktree or stash contains unique work.
+- Starting revision: `af75486ec3c7cbed10e335ecfef903144cece578`. The final pushed revision is the documentation commit containing this checkpoint; resolve it with `git rev-parse HEAD` after pulling.
+- Schema: contiguous Flyway V1-V50. V48 adds tenant-scoped company management, V49 adds Treasury, and V50 adds Purchase Payment Requests.
+- Treasury is implemented end to end at `/treasury`: accounts, transactions, immutable movements, reversals, cheques, daily closing, audit, permissions, bilingual responsive UI, and Rial amounts.
+- Purchase Payment Requests are implemented at `/purchase-payments`: employee submission, manager decision, partial/multiple payments, daily limits, Treasury posting, audit, permissions, reminders, and bilingual responsive UI.
+- Automation `notify` actions now write idempotent, tenant-scoped entries through the existing Notification Center rather than only logging.
+- Market Sync now has a bounded `STRUCTURED_JSON_V1` adapter for authorized public HTTPS JSON endpoints. Credentials are referenced by environment-variable name and are never persisted or returned. The two Rond sources remain disabled until official contracts are supplied; scraping was not introduced.
+- Company management is available at `/organization`. The same integrated change set also includes the previously completed deployment hardening and shared frontend usability/localization corrections present in the starting worktree.
+- Real Docker smoke on PostgreSQL 16 passed Flyway V1-V50, Hibernate startup, database/backend/frontend health, nginx `/`, authenticated login/menu, Treasury payment persistence, Automation notification persistence, and structured Market Sync source safety. The tested payment request reached `PAID`, created one receipt and one Treasury movement, and reduced the disposable account balance consistently.
+- Browser-control limitation: the in-app browser rendered the Persian RTL login UI, but its client blocked `/api` requests with `ERR_BLOCKED_BY_CLIENT`; direct requests through the same nginx endpoint passed. It also forced an effective 465 px viewport, so exact 360/375/390/412/430 screenshots were not produced. Treat authenticated browser and exact-width visual checks as pending tooling follow-up, not product failures.
+- Validation on the final working tree: frontend 33/33 tests, type-check and production build pass; deployment automation 11/11 tests pass; `git diff --check` and the sensitive-file scan pass. A repeat local Maven run was unavailable because `mvn` is not installed on PATH; the prior Docker Maven gate passed 272/272 tests after the final backend defect fix was covered by focused tests.
+- No deployment was performed. Disposable validation containers, network, and explicitly temporary volumes were removed; validated images were retained locally only.
+
+### First commands on the new workstation
+
+```powershell
+git fetch origin
+git switch development
+git pull --ff-only origin development
+git status --short --branch
+git log -1 --oneline
+docker version
+Set-Location sami-frontend
+npm ci
+npm test
+npm run type-check
+npm run build
+Set-Location ../sami-backend
+mvn clean verify -B
+```
+
+### Next priorities
+
+1. Re-run authenticated desktop/mobile browser journeys with a browser runner that permits localhost API calls and exact viewport emulation.
+2. Obtain official endpoint/schema/auth/rate-limit authorization for the Rond sources before enabling them.
+3. Continue only approved module work; canonical accounting promotion and destructive final import remain separately governed.
 
 ## Current authoritative state
 
@@ -8,7 +47,7 @@ Updated: 2026-08-08 (Asia/Tehran)
 - End-of-day revision: resolve with `git rev-parse HEAD`; it is the pushed end-of-day documentation commit.
 - Remote: `origin/development` must match after the push verification recorded in `END_OF_DAY_HANDOFF_REPORT.md`.
 - Expected worktree: clean; one worktree; no stash.
-- Schema: contiguous Flyway V1–V42. Today added V38–V42 only; V1–V37 were not edited.
+- Historical checkpoint schema: Flyway V1-V42. See the newer transfer checkpoint above for V50.
 - No deployment was performed.
 
 ## Completed today

@@ -89,6 +89,7 @@ historical reports.
 - `INVENTORY_RELEASE_REPORT.md` — Inventory release evidence.
 - `PURCHASING_RELEASE_REPORT.md` — supplier Purchasing release evidence.
 - `AUTOMATION_RELEASE_REPORT.md` — Automation release evidence.
+- `TREASURY_PAYMENT_AUTOMATION_MARKET_SYNC_REPORT.md` — Treasury, Purchase Payment, Automation notification and authorized Market Sync delivery/validation evidence.
 - `LICENSING_RELEASE_REPORT.md` — Licensing release evidence.
 - `PWA_IMPLEMENTATION_REPORT.md` and `SETTINGS_MOBILE_NAVIGATION_NOTIFICATION_REPORT.md` — PWA/Settings evidence.
 - `ASAN_LEGACY_IMPORT_IMPLEMENTATION_REPORT.md`, `docs/features/LEGACY_ASAN_IMPORT_AND_COMPARISON.md`, and `docs/features/ASAN_ACCOUNTING_MIGRATION_RECONCILIATION.md` — secure legacy staging, Asan accounting Excel evidence, reconciliation, acceptance, and final-import safety boundaries.

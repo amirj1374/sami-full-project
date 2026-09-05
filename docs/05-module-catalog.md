@@ -29,6 +29,8 @@ alone.
 | Legacy Asan Import and Comparison | ACTIVE | `legacyimport`; `LegacyImportsView.vue`; V40, V45, V46 | Tenant-safe Asan archive and accounting-XLSX staging, reconciliation, acceptance evidence, and explained differences. Canonical final import remains intentionally blocked pending an approved accounting owner. |
 | HAMTA activation codes | COMPLETE | `hamta`; `HamtaView.vue`; Purchasing/Inventory/Sales integration; V41 | Implementation/source/fixture gates pass; fresh PostgreSQL/Flyway, container stack and live bilingual smoke remain blocked |
 | Market Sync and Auto Pricing | PARTIAL | `marketsync`; `MarketSyncView.vue`; Product/Inventory/Sales/Scheduler integration; V42 | Local implementation gates pass; authorized Rond contracts, real website connector, fresh Flyway and container/live validation remain missing |
+| Treasury | COMPLETE | `treasury`; `TreasuryView.vue`; V49 | Tenant-scoped accounts, immutable movements, reversals, cheques, daily closing, audit, permissions and real PostgreSQL/Docker smoke passed |
+| Purchase Payment Requests | COMPLETE | `purchasepayment`; `PurchasePaymentsView.vue`; Treasury/Scheduler/Notification integration; V50 | Employee submission, decision, partial/multiple receipts, daily capacity and real persisted payment smoke passed |
 | Automation | COMPLETE | `automation`; `AutomationsView.vue`; V29 | Events are process-local; timeout cancellation is cooperative |
 | Licensing | COMPLETE | `licensing`; `LicensingView.vue`; V30 | External signing/billing providers remain deployment-specific |
 | Background Scheduler | COMPLETE | `common.scheduler`; `SchedulerView.vue`; V24 | Timeout does not guarantee termination of a non-cooperative handler |
@@ -39,7 +41,7 @@ alone.
 | Appointments and Resources | PARTIAL | `scheduling`, `calendar`; typed client and `AppointmentsView.vue`; V24 | V35 disables navigation; only a focused booking surface exists and release validation is incomplete |
 | Knowledge | PARTIAL | `knowledge`; V20 | V35 disables navigation; backend API exists but no production UI workflow |
 | Customer Portal | PARTIAL | `portal`; V21 | V35 disables navigation; provider/UI completion is missing |
-| Organization | PARTIAL | shared organization mappings; V22/V26 | V35 disables navigation; runtime scope and management UI remain incomplete |
+| Organization | PARTIAL | tenant-scoped company management; V22/V26/V48 | Company list, create and edit are available with RBAC and audit; branch management, active-company selection and cross-company policy remain separately scoped |
 | Communication | PARTIAL | `comm`; V27 | V35 disables navigation; concrete provider delivery is absent |
 | PWA and Settings | COMPLETE | service worker, `usePwa`, `ProfileView`, user preferences | Source font/PWA configuration exists; physical-device font behavior is not yet proven |
 | Reports | PARTIAL | Dashboard and module-specific reports | No canonical general reporting module or unified analytics workflow |
