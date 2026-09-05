@@ -1,9 +1,10 @@
 <#
 .SYNOPSIS
-Builds, exports, uploads, deploys, rolls back, or cleans SAMI release artifacts.
+Builds, validates, exports, uploads, deploys, rolls back, or cleans SAMI release artifacts.
 
 .DESCRIPTION
-The default Build mode is local-only. Full mode builds reproducible linux/amd64
+The default Build mode is local-only. Validate runs the local release gate against
+a disposable production-like stack. Full mode validates reproducible linux/amd64
 images from a clean development branch, exports and verifies them, uploads them
 under temporary names, deploys backend then frontend, and automatically rolls
 back application images if health verification fails. PostgreSQL and named
@@ -15,7 +16,7 @@ Use -AllowInteractiveAuth only for an explicitly supervised setup/emergency run;
 the script never accepts or passes a password.
 
 .PARAMETER Mode
-Build, Export, Upload, Deploy, Full, Rollback, or Cleanup. Default: Build.
+Build, Validate, Export, Upload, Deploy, Full, Rollback, or Cleanup. Default: Build.
 
 .PARAMETER ConfigFile
 Optional local PowerShell file returning a hashtable of non-secret settings.
@@ -43,7 +44,7 @@ cleaning, or connecting to the VPS.
 #requires -Version 5.1
 [CmdletBinding()]
 param(
-    [ValidateSet('Build', 'Export', 'Upload', 'Deploy', 'Full', 'Rollback', 'Cleanup')]
+    [ValidateSet('Build', 'Validate', 'Export', 'Upload', 'Deploy', 'Full', 'Rollback', 'Cleanup')]
     [string]$Mode = 'Build',
     [string]$ConfigFile,
     [string]$SshHost = '87.248.131.157',
@@ -282,6 +283,10 @@ function Initialize-RepositoryState {
 
 function Initialize-Docker {
     $script:DockerExecutable = Resolve-Executable $DockerCommand 'Docker'
+    if ($DryRun) {
+        Write-RunLog PLAN 'Would verify the Docker daemon and buildx before executing a non-dry-run Docker phase.'
+        return
+    }
     $serverPlatform = Invoke-CapturedNative $script:DockerExecutable @('version', '--format', '{{.Server.Os}}/{{.Server.Arch}}') 'Docker daemon check'
     if ($serverPlatform -ne 'linux/amd64') {
         throw "Docker daemon platform must be linux/amd64; detected '$serverPlatform'."
@@ -455,6 +460,227 @@ function Invoke-BuildPhase {
     $script:FrontendImage = Get-ImageMetadata $FrontendImageTag 'Frontend'
     Write-RunLog SUCCESS "Backend image verified: $($script:BackendImage.Id), linux/amd64."
     Write-RunLog SUCCESS "Frontend image verified: $($script:FrontendImage.Id), linux/amd64."
+}
+
+function New-LocalValidationSecret {
+    # A disposable stack must never use an operator's credentials or tracked
+    # development placeholders. This value is held only in the temporary env file.
+    return ('sami-validation-' + [Guid]::NewGuid().ToString('N'))
+}
+
+function Get-AvailableLoopbackPort {
+    $listener = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, 0)
+    try {
+        $listener.Start()
+        return ([System.Net.IPEndPoint]$listener.LocalEndpoint).Port
+    }
+    finally {
+        $listener.Stop()
+    }
+}
+
+function Wait-LocalComposeService {
+    param(
+        [string]$ProjectName,
+        [string]$EnvironmentPath,
+        [string]$ComposePath,
+        [string]$Service
+    )
+    $deadline = (Get-Date).AddSeconds($HealthTimeoutSeconds)
+    while ((Get-Date) -lt $deadline) {
+        $containerId = Invoke-CapturedNative $script:DockerExecutable @(
+            'compose', '--project-name', $ProjectName, '--env-file', $EnvironmentPath,
+            '-f', $ComposePath, 'ps', '-q', $Service
+        ) "Local validation $Service container lookup"
+        if ($containerId) {
+            $status = Invoke-CapturedNative $script:DockerExecutable @(
+                'inspect', '--format', '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}', $containerId
+            ) "Local validation $Service health inspection"
+            if ($status -eq 'healthy' -or $status -eq 'running') {
+                Write-RunLog SUCCESS "Local validation $Service is $status."
+                return
+            }
+            if ($status -in @('unhealthy', 'exited', 'dead')) {
+                throw "Local validation $Service entered terminal state '$status'."
+            }
+        }
+        Start-Sleep -Seconds 3
+    }
+    throw "Local validation timed out waiting for $Service after $HealthTimeoutSeconds seconds."
+}
+
+function Invoke-LocalHttpCheck {
+    param([string]$Uri, [string]$Description)
+    try {
+        $response = Invoke-WebRequest -UseBasicParsing -Uri $Uri -TimeoutSec 15
+    }
+    catch {
+        throw "$Description failed: $($_.Exception.Message)"
+    }
+    if ($response.StatusCode -lt 200 -or $response.StatusCode -ge 300) {
+        throw "$Description returned HTTP $($response.StatusCode)."
+    }
+    return $response
+}
+
+function Invoke-LocalBackendVerify {
+    $backendContext = Join-Path $script:RepositoryRoot 'sami-backend'
+    $nativeMaven = Get-Command -Name 'mvn' -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($nativeMaven) {
+        Push-Location $backendContext
+        try {
+            Invoke-Native $nativeMaven.Source @('-U', '-B', '--no-transfer-progress', 'clean', 'verify') 'Running backend Maven clean verify.'
+        }
+        finally {
+            Pop-Location
+        }
+        return
+    }
+
+    # Docker is already mandatory for a release. The one-shot container and its
+    # explicitly named Maven cache are removed in finally, so this fallback does
+    # not leave test containers, networks, or volumes behind on Windows hosts.
+    $nonce = [Guid]::NewGuid().ToString('N')
+    $cacheVolume = "sami-release-validation-m2-$nonce"
+    $containerName = "sami-release-validation-maven-$nonce"
+    Invoke-Native $script:DockerExecutable @('volume', 'create', $cacheVolume) 'Creating disposable Maven validation cache volume.'
+    try {
+        Invoke-Native $script:DockerExecutable @(
+            'run', '--rm', '--name', $containerName,
+            '--mount', "type=bind,source=$backendContext,target=/workspace",
+            '--mount', "type=volume,source=$cacheVolume,target=/root/.m2",
+            '--workdir', '/workspace',
+            'maven:3.9-eclipse-temurin-21', 'mvn', '-U', '-B', '--no-transfer-progress', 'clean', 'verify'
+        ) 'Running backend Maven clean verify in a disposable container.'
+    }
+    finally {
+        & $script:DockerExecutable volume rm $cacheVolume 2>$null | Out-Null
+        if ($LASTEXITCODE -eq 0) {
+            Write-RunLog INFO "Removed temporary Maven validation volume $cacheVolume."
+        }
+        else {
+            Write-RunLog WARN "Could not remove temporary Maven validation volume $cacheVolume; inspect it before the next validation run."
+        }
+    }
+}
+
+function Invoke-LocalFrontendVerify {
+    $frontendContext = Join-Path $script:RepositoryRoot 'sami-frontend'
+    $npm = Resolve-Executable 'npm' 'npm'
+    Push-Location $frontendContext
+    try {
+        Invoke-Native $npm @('ci') 'Installing locked frontend dependencies.'
+        Invoke-Native $npm @('test') 'Running frontend tests.'
+        Invoke-Native $npm @('run', 'type-check') 'Running frontend type check.'
+        Invoke-Native $npm @('run', 'build') 'Running frontend production build.'
+    }
+    finally {
+        Pop-Location
+    }
+}
+
+function Invoke-LocalComposeSmoke {
+    $nonce = [Guid]::NewGuid().ToString('N')
+    $projectName = "sami-release-validation-$($script:ShortCommitSha)-$nonce"
+    if ($projectName.Length -gt 63) { $projectName = $projectName.Substring(0, 63) }
+    $temporaryRoot = Join-Path ([IO.Path]::GetTempPath()) $projectName
+    $environmentPath = Join-Path $temporaryRoot '.env'
+    $composePath = Join-Path $script:RepositoryRoot 'sami-backend/docker-compose.prod.yml'
+    $frontendPort = Get-AvailableLoopbackPort
+    $baseUrl = "http://127.0.0.1:$frontendPort"
+    $started = $false
+    New-Item -ItemType Directory -Path $temporaryRoot -Force | Out-Null
+    $temporarySecret = New-LocalValidationSecret
+    $envLines = @(
+        'POSTGRES_DB=sami_validation',
+        'POSTGRES_USER=sami_validation',
+        "POSTGRES_PASSWORD=$temporarySecret",
+        "JWT_SECRET=$(New-LocalValidationSecret)",
+        "PORTAL_JWT_SECRET=$(New-LocalValidationSecret)",
+        'BOOTSTRAP_ADMIN_ENABLED=true',
+        'BOOTSTRAP_ADMIN_EMAIL=admin@sami.local',
+        "BOOTSTRAP_ADMIN_PASSWORD=$temporarySecret",
+        'BOOTSTRAP_ADMIN_NAME=SAMI Release Validation',
+        "CORS_ALLOWED_ORIGINS=$baseUrl",
+        "FRONTEND_PORT=$frontendPort",
+        "BACKEND_IMAGE=$BackendImageTag",
+        "FRONTEND_IMAGE=$FrontendImageTag",
+        "BUILD_BRANCH=$($script:Branch)",
+        "BUILD_COMMIT=$($script:CommitSha)",
+        "APP_VERSION=$ApplicationVersion",
+        "VITE_API_BASE_URL=$FrontendApiBaseUrl",
+        'DEMO_HOURLY_NOTIFICATION_ENABLED=false'
+    )
+    [IO.File]::WriteAllLines($environmentPath, $envLines, [Text.UTF8Encoding]::new($false))
+    try {
+        Invoke-Native $script:DockerExecutable @(
+            'compose', '--project-name', $projectName, '--env-file', $environmentPath,
+            '-f', $composePath, 'config', '--quiet'
+        ) 'Validating disposable production-like Compose configuration.'
+        # Mark cleanup as required before Compose starts; Compose can create a
+        # subset of resources before reporting a startup failure.
+        $started = $true
+        Invoke-Native $script:DockerExecutable @(
+            'compose', '--project-name', $projectName, '--env-file', $environmentPath,
+            '-f', $composePath, 'up', '--detach', '--no-build', '--remove-orphans'
+        ) 'Starting disposable production-like release stack.'
+        foreach ($service in @('db', 'backend', 'frontend')) {
+            Wait-LocalComposeService $projectName $environmentPath $composePath $service
+        }
+        $null = Invoke-LocalHttpCheck "$baseUrl/" 'SPA root smoke check'
+        $null = Invoke-LocalHttpCheck "$baseUrl/health" 'Backend health through nginx smoke check'
+        foreach ($route in @('/auth/login', '/sales', '/automations', '/licensing')) {
+            $null = Invoke-LocalHttpCheck "$baseUrl$route" "SPA route smoke check $route"
+        }
+        $manifest = Invoke-LocalHttpCheck "$baseUrl/manifest.webmanifest" 'PWA manifest smoke check'
+        if ($manifest.Headers['Content-Type'] -notmatch 'application/manifest\+json') {
+            throw "PWA manifest content type is '$($manifest.Headers['Content-Type'])', expected application/manifest+json."
+        }
+        $loginBody = @{ email = 'admin@sami.local'; password = $temporarySecret } | ConvertTo-Json -Compress
+        try {
+            $login = Invoke-RestMethod -UseBasicParsing -Uri "$baseUrl/api/v1/auth/login" -Method Post -ContentType 'application/json' -Body $loginBody -TimeoutSec 15
+        }
+        catch {
+            throw "Disposable bootstrap-admin login smoke check failed: $($_.Exception.Message)"
+        }
+        $accessToken = Get-ObjectPropertyValue (Get-ObjectPropertyValue $login 'data') 'accessToken'
+        if (-not $accessToken) { throw 'Disposable bootstrap-admin login response did not contain an access token.' }
+        try {
+            $inventory = Invoke-WebRequest -UseBasicParsing -Uri "$baseUrl/api/v1/inventory/warehouses" -Headers @{ Authorization = "Bearer $accessToken" } -TimeoutSec 15
+        }
+        catch {
+            throw "Authenticated inventory smoke check failed: $($_.Exception.Message)"
+        }
+        if ($inventory.StatusCode -ne 200) { throw "Authenticated inventory smoke check returned HTTP $($inventory.StatusCode)." }
+        Write-RunLog SUCCESS 'Disposable production-like Compose, nginx, authentication, and protected API smoke checks passed.'
+    }
+    finally {
+        if ($started) {
+            & $script:DockerExecutable compose --project-name $projectName --env-file $environmentPath -f $composePath down --remove-orphans --volumes 2>$null | Out-Null
+            if ($LASTEXITCODE -eq 0) {
+                Write-RunLog INFO "Removed disposable validation containers, network, and named volumes for $projectName."
+            }
+            else {
+                Write-RunLog WARN "Could not fully clean disposable validation resources for $projectName; inspect this project before another run."
+            }
+        }
+        Remove-Item -LiteralPath $temporaryRoot -Recurse -Force -ErrorAction SilentlyContinue
+        Write-RunLog INFO 'Preserved all pre-existing Docker containers, networks, volumes, images, and deployment artifacts.'
+    }
+}
+
+function Invoke-ValidationPhase {
+    Write-RunLog INFO 'PHASE: Run the local release gate before artifact export or deployment.'
+    if ($DryRun) {
+        Write-RunLog PLAN 'Would run backend clean verify, frontend locked tests/type-check/build, build verified linux/amd64 images, start a disposable PostgreSQL/Compose stack, smoke nginx/authenticated API/PWA endpoints, then remove all temporary containers, network, and volumes.'
+        Invoke-BuildPhase
+        return
+    }
+    Invoke-LocalBackendVerify
+    Invoke-LocalFrontendVerify
+    Invoke-BuildPhase
+    Invoke-LocalComposeSmoke
+    Write-RunLog SUCCESS 'Local release gate passed.'
 }
 
 function Publish-AtomicFile {
@@ -855,15 +1081,18 @@ function Invoke-CleanupPhase {
             Where-Object { $_.LastWriteTime -lt $cutoff -and $_.FullName -ne $script:LogFile }
     )
     $runningRefs = @()
-    try {
-        $runningOutput = Invoke-CapturedNative $script:DockerExecutable @('ps', '--format', '{{.Image}}') 'Running image reference check'
-        $runningRefs = @($runningOutput -split "`r?`n" | Where-Object { $_ })
-    }
-    catch {
-        $runningRefs = @()
-    }
     $imageCandidates = New-Object System.Collections.Generic.List[string]
-    $imageLines = Invoke-CapturedNative $script:DockerExecutable @('image', 'ls', '--format', '{{.Repository}}|{{.Tag}}') 'Local SAMI image cleanup inventory'
+    $imageLines = ''
+    if (-not $DryRun) {
+        try {
+            $runningOutput = Invoke-CapturedNative $script:DockerExecutable @('ps', '--format', '{{.Image}}') 'Running image reference check'
+            $runningRefs = @($runningOutput -split "`r?`n" | Where-Object { $_ })
+        }
+        catch {
+            $runningRefs = @()
+        }
+        $imageLines = Invoke-CapturedNative $script:DockerExecutable @('image', 'ls', '--format', '{{.Repository}}|{{.Tag}}') 'Local SAMI image cleanup inventory'
+    }
     foreach ($line in @($imageLines -split "`r?`n")) {
         $parts = $line -split '\|', 2
         if ($parts.Count -eq 2 -and @('sami-backend', 'sami-frontend') -contains $parts[0] -and $parts[1] -like 'build-check-*') {
@@ -916,16 +1145,17 @@ try {
     Write-RunLog INFO "Starting SAMI deployment automation in $Mode mode$(if ($DryRun) { ' (dry run)' } else { '' })."
     Initialize-RepositoryState
 
-    if (@('Build', 'Export', 'Full', 'Cleanup') -contains $Mode) { Initialize-Docker }
+    if (@('Build', 'Validate', 'Export', 'Full', 'Cleanup') -contains $Mode) { Initialize-Docker }
     if (@('Upload', 'Deploy', 'Full', 'Rollback') -contains $Mode) { Initialize-SshTools }
 
     switch ($Mode) {
         'Build' { Invoke-BuildPhase }
+        'Validate' { Invoke-ValidationPhase }
         'Export' { Invoke-ExportPhase }
         'Upload' { Invoke-UploadPhase }
         'Deploy' { Invoke-DeployPhase }
         'Full' {
-            Invoke-BuildPhase
+            Invoke-ValidationPhase
             Invoke-ExportPhase
             if (-not $SkipUpload) { Invoke-UploadPhase } else { Write-RunLog WARN 'Upload skipped by explicit request; remote artifacts must already match the local manifest.' }
             Invoke-DeployPhase

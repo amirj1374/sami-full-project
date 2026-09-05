@@ -11,8 +11,10 @@ COPY pom.xml .
 # when the authoritative package build can resolve normally. Keep this layer
 # best-effort, but never suppress a failure from the package command below.
 RUN --mount=type=cache,id=sami-maven-m2,target=/root/.m2,sharing=locked \
-    if ! mvn -q -B \
+    if ! mvn -q -U -B \
       -Dmaven.wagon.http.retryHandler.count=3 \
+      -Dmaven.resolver.transport.http.retryHandler.count=5 \
+      -Daether.connector.http.retryHandler.count=5 \
       -Dmaven.wagon.rto=30000 \
       dependency:go-offline; then \
         echo "Maven dependency warm-up failed; continuing to authoritative package build."; \
@@ -21,11 +23,20 @@ RUN --mount=type=cache,id=sami-maven-m2,target=/root/.m2,sharing=locked \
 COPY src ./src
 ARG BUILD_BRANCH=unknown
 ARG BUILD_COMMIT=unknown
+# Maven Resolver may see transient connection resets from a remote repository.
+# Retrying the complete authoritative package command lets its shared cache
+# retain successful downloads, but the third failure exits the image build.
 RUN --mount=type=cache,id=sami-maven-m2,target=/root/.m2,sharing=locked \
-    mvn -q clean package -DskipTests -B \
-      -Dmaven.wagon.http.retryHandler.count=3 \
-      -Dmaven.wagon.rto=30000 \
-      -Dbuild.branch="$BUILD_BRANCH" -Dbuild.commit="$BUILD_COMMIT"
+    for attempt in 1 2 3; do \
+      if mvn -q -U clean package -DskipTests -B \
+        -Dmaven.wagon.http.retryHandler.count=3 \
+        -Dmaven.resolver.transport.http.retryHandler.count=5 \
+        -Daether.connector.http.retryHandler.count=5 \
+        -Dmaven.wagon.rto=30000 \
+        -Dbuild.branch="$BUILD_BRANCH" -Dbuild.commit="$BUILD_COMMIT"; then break; fi; \
+      if [ "$attempt" = 3 ]; then exit 1; fi; \
+      echo "Authoritative Maven package failed; retrying ($attempt/3)..."; sleep 10; \
+    done
 
 # ---- Stage 2: runtime ----
 # Minimal JRE image, non-root user, only the jar is carried over.
@@ -36,11 +47,12 @@ LABEL org.opencontainers.image.revision=$BUILD_COMMIT \
       org.opencontainers.image.version=$APP_VERSION
 WORKDIR /app
 
+# The Temurin JRE image already provides curl for the health check. Avoid an
+# unnecessary apt transaction so runtime image creation stays independent of
+# transient Ubuntu archive availability.
 # Run as an unprivileged user. The uploads directory is created here so the
 # named volume mounted over it inherits spring's ownership on first use.
-RUN apt-get update && apt-get install --yes --no-install-recommends curl \
-    && rm -rf /var/lib/apt/lists/* \
-    && groupadd --system spring && useradd --system --gid spring spring \
+RUN groupadd --system spring && useradd --system --gid spring spring \
     && mkdir -p /app/data/uploads /app/data/files /app/data/files-staging \
     && chown -R spring:spring /app/data
 USER spring:spring

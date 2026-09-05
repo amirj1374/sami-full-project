@@ -69,7 +69,7 @@ Assert-Test 'PowerShell syntax parses without errors' {
 
 Assert-Test 'Comment-based help is available' {
     $help = Get-Help $deployScript -Full | Out-String
-    if ($help -notmatch 'Build, Export, Upload, Deploy') { throw 'Expected mode help was not found.' }
+    if ($help -notmatch 'Build, Validate, Export, Upload, Deploy') { throw 'Expected mode help was not found.' }
     if ($help -notmatch 'IdentityFile') { throw 'IdentityFile help was not found.' }
 }
 
@@ -144,12 +144,25 @@ Assert-Test 'Invalid Mode is rejected by parameter validation' {
     if ($result.ExitCode -eq 0) { throw 'Invalid mode unexpectedly succeeded.' }
 }
 
+Assert-Test 'Validate DryRun plans the disposable local release gate without SSH' {
+    $artifactDir = New-TestDirectory
+    try {
+        $result = Invoke-DeployProcess @('-Mode', 'Validate', '-DryRun', '-AllowDirtyWorkingTree', '-ArtifactDirectory', $artifactDir)
+        if ($result.ExitCode -ne 0) { throw $result.Output }
+        foreach ($expected in @('backend clean verify', 'disposable PostgreSQL/Compose stack', 'temporary containers, network, and volumes')) {
+            if ($result.Output -notmatch [regex]::Escape($expected)) { throw "Missing Validate DryRun plan text: $expected" }
+        }
+        if ($result.Output -match 'SSH connectivity passed') { throw 'Validate DryRun connected to SSH unexpectedly.' }
+    }
+    finally { Remove-Item -LiteralPath $artifactDir -Recurse -Force -ErrorAction SilentlyContinue }
+}
+
 Assert-Test 'Full DryRun plans every phase without remote connectivity' {
     $artifactDir = New-TestDirectory
     try {
         $result = Invoke-DeployProcess @('-Mode', 'Full', '-DryRun', '-AllowDirtyWorkingTree', '-ArtifactDirectory', $artifactDir)
         if ($result.ExitCode -ne 0) { throw $result.Output }
-        foreach ($expected in @('Would build', 'atomically export', 'atomically rename', 'guarded deployment')) {
+        foreach ($expected in @('backend clean verify', 'Would build', 'atomically export', 'atomically rename', 'guarded deployment')) {
             if ($result.Output -notmatch [regex]::Escape($expected)) { throw "Missing DryRun plan text: $expected" }
         }
         if ($result.Output -match 'SSH connectivity passed') { throw 'DryRun connected to SSH unexpectedly.' }

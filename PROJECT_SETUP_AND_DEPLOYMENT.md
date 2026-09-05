@@ -327,6 +327,19 @@ docker build --build-arg VITE_API_BASE_URL=/api -t sami-frontend:<version> .
 The backend Dockerfile packages with tests skipped, so run `mvn clean verify`
 separately before building a release image.
 
+For the supported Windows release workflow, use the local gate before exporting
+or deploying an image. It runs the backend/frontend checks and a disposable
+production-like PostgreSQL, backend and nginx smoke stack, then removes only
+the resources it created:
+
+```powershell
+.\scripts\deploy.ps1 -Mode Validate
+```
+
+`Full` runs this same gate automatically before it creates artifacts or opens
+an SSH connection. See [`DEPLOYMENT_AUTOMATION_GUIDE.md`](DEPLOYMENT_AUTOMATION_GUIDE.md)
+for the authoritative workflow and cleanup behavior.
+
 ### Verified-JAR runtime image
 
 `sami-backend/Dockerfile.runtime-only` is an intentional release packaging

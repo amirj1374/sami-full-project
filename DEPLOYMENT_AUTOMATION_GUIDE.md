@@ -3,7 +3,8 @@
 This runbook is the canonical guide for building verified SAMI images on
 Windows and deploying those exact images to the Linux VPS. The default command
 is local-only `Build`; nothing connects to the server unless `Upload`, `Deploy`,
-`Full`, or `Rollback` is selected.
+`Full`, or `Rollback` is selected. `Validate` is also local-only: it runs the
+release gate against a disposable production-like Compose stack.
 
 ## Safety model
 
@@ -24,6 +25,10 @@ is local-only `Build`; nothing connects to the server unless `Upload`, `Deploy`,
   backend/frontend images when both still exist.
 - Logs never intentionally contain passwords, JWT secrets, `.env` contents, or
   private-key contents. Remote failure output passes through secret redaction.
+- `Validate` uses generated, non-persistent validation credentials and a unique
+  Compose project. It always removes its temporary containers, network, named
+  volumes, temporary Maven cache volume, and temporary environment file while
+  preserving pre-existing Docker resources and the verified images.
 
 ## Prerequisites
 
@@ -178,6 +183,20 @@ Force a clean layer build:
 .\scripts\deploy.ps1 -Mode Build -NoCache
 ```
 
+Run the local release gate before producing any deployment artifacts:
+
+```powershell
+.\scripts\deploy.ps1 -Mode Validate
+```
+
+`Validate` runs backend `mvn clean verify` (using a disposable Maven container
+when Maven is not installed locally), frontend `npm ci`, tests, type-check and
+production build, builds the exact `linux/amd64` images, then starts PostgreSQL,
+backend and nginx in a unique disposable Compose project. It verifies health,
+SPA history routes, manifest MIME type, bootstrap-admin login and one protected
+API request. It does not contact the VPS and removes its own Docker resources
+in a `finally` cleanup path even when a gate fails.
+
 Export already verified current-HEAD images and create the manifest:
 
 ```powershell
@@ -196,11 +215,16 @@ Deploy artifacts already present both locally and remotely:
 .\scripts\deploy.ps1 -Mode Deploy -IdentityFile "$HOME\.ssh\sami_vps_ed25519"
 ```
 
-Build, export, upload, checksum, deploy, and verify end to end:
+Validate locally, then build/export, upload, checksum, deploy, and verify end
+to end:
 
 ```powershell
 .\scripts\deploy.ps1 -Mode Full -IdentityFile "$HOME\.ssh\sami_vps_ed25519"
 ```
+
+`Full` runs the same mandatory local `Validate` gate first. A local test,
+image-metadata, Compose, authentication or proxy failure prevents artifact
+export and any VPS connection.
 
 Skip SCP only when the exact manifest/TARs have already been safely uploaded:
 
