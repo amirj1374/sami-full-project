@@ -487,7 +487,7 @@ function statusColor(status: CustomerStatus): string {
         @update:options="loadItems"
       >
         <template #[`item.displayName`]="{ item }">
-          <button type="button" class="app-inline-action text-primary" @click="openProfile(item)">{{ item.displayName }}</button>
+          <button type="button" class="app-inline-action text-primary" data-sami-shortcut-skip @click="openProfile(item)">{{ item.displayName }}</button>
           <div v-if="item.companyName" class="text-caption text-medium-emphasis">
             {{ item.companyName }}
           </div>

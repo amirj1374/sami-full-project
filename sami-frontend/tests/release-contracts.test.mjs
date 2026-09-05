@@ -318,10 +318,29 @@ test('Persian date, locale, dark theme, and form rhythm are centralized', () => 
   assert.match(themeMode, /\? v : 'dark'/)
   assert.match(styles, /--app-form-field-gap: 20px/)
   assert.match(picker, /u-ca-persian/)
+  assert.match(picker, /function moveYear/)
+  assert.match(picker, /previousYear/)
+  assert.match(picker, /nextYear/)
   assert.doesNotMatch(frontendSource, /type=["']date["']/)
 })
 
-test('money fields use the shared Toman formatter and mobile-safe input rhythm', () => {
+test('organization company management is a tenant-scoped routed workflow', () => {
+  const migration = read('../sami-backend/src/main/resources/db/migration/V48__organization_company_management.sql')
+  const controller = read('../sami-backend/src/main/java/com/sami/app/organization/web/CompanyController.java')
+  const service = read('../sami-backend/src/main/java/com/sami/app/organization/service/CompanyService.java')
+  const api = read('src/api/organization.ts')
+  const view = read('src/views/OrganizationView.vue')
+  const router = read('src/router/index.ts')
+  assert.match(migration, /organization_audit_logs/)
+  assert.match(migration, /organization:view/)
+  assert.match(controller, /@RequestMapping\("\/api\/v1\/organization\/companies"\)/)
+  assert.match(service, /tenantContext\.requireTenantId\(\)/)
+  assert.match(api, /\/v1\/organization\/companies/)
+  assert.match(view, /AppMobileRecordCard/)
+  assert.match(router, /permission: 'organization:view'/)
+})
+
+test('money fields use the shared Rial formatter and mobile-safe input rhythm', () => {
   const field = read('src/components/AppMoneyField.vue')
   const formatter = read('src/composables/useFormat.ts')
   const styles = read('src/styles/global.css')
@@ -332,12 +351,29 @@ test('money fields use the shared Toman formatter and mobile-safe input rhythm',
   assert.match(field, /\[٬,\\s\]/)
   assert.match(field, /t\('common\.currency'\)/)
   assert.match(formatter, /function formatMoney/)
-  assert.match(formatter, /تومان/)
+  assert.match(formatter, /ریال/)
   assert.match(i18n, /locale: 'fa'/)
   assert.match(i18n, /stored : 'fa'/)
   assert.match(vuetify, /defaultTheme: 'dark'/)
   assert.match(styles, /--app-form-field-gap: 24px/)
   assert.match(styles, /\.app-form-section__body > \.v-row/)
+})
+
+test('numeric-only identity fields request mobile numeric keyboards without losing leading zeroes', () => {
+  const sales = read('src/views/SalesView.vue')
+  const hamta = read('src/views/HamtaView.vue')
+  const receiving = read('src/components/PurchaseDetailDialog.vue')
+  const customers = read('src/components/CustomerFormDialog.vue')
+  const suppliers = read('src/components/SupplierFormDialog.vue')
+  const users = read('src/components/UserFormDialog.vue')
+
+  assert.match(sales, /inputmode="numeric"/)
+  assert.match(sales, /pattern="\[0-9\]\*"/)
+  assert.match(hamta, /inputmode="numeric"/)
+  assert.match(receiving, /idType\.satisfiesImei \? 'numeric'/)
+  assert.match(customers, /form\.nationalCode[\s\S]*inputmode="numeric"/)
+  assert.match(suppliers, /form\.nationalId[\s\S]*inputmode="numeric"/)
+  assert.match(users, /profile\.nationalCode[\s\S]*inputmode="numeric"/)
 })
 
 test('primary ERP lists use direction-aware expandable mobile record cards', () => {

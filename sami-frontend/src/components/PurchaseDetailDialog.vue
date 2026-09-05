@@ -644,6 +644,10 @@ const status = computed(() => detail.value?.purchase.status)
                   :key="idType.id"
                   v-model="unit.identifiers[idType.id]"
                   :label="idType.name"
+                  :inputmode="idType.satisfiesImei ? 'numeric' : undefined"
+                  :pattern="idType.satisfiesImei ? '[0-9]*' : undefined"
+                  :maxlength="idType.satisfiesImei ? 15 : undefined"
+                  :dir="idType.satisfiesImei ? 'ltr' : undefined"
                   density="compact"
                   hide-details
                   style="max-width: 200px"

@@ -337,7 +337,7 @@ onMounted(load)
                 <v-text-field v-model="form.jobTitle" :label="t('attendance.jobTitle')" />
               </v-col>
               <v-col cols="12" sm="6">
-                <v-text-field v-model="form.mobile" :label="t('attendance.mobile')" />
+                <v-text-field v-model="form.mobile" :label="t('attendance.mobile')" type="tel" inputmode="numeric" dir="ltr" />
               </v-col>
               <v-col cols="12" sm="6">
                 <AppPersianDatePicker v-model="form.hireDate" clearable :label="t('attendance.hireDate')" />

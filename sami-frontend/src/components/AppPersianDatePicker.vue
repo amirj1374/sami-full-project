@@ -92,6 +92,10 @@ function moveMonth(delta: number) {
   view.value = { year, month, day: 1 }
 }
 
+function moveYear(delta: number) {
+  view.value = { ...view.value, year: view.value.year + delta, day: 1 }
+}
+
 function select(cell: CalendarCell) {
   emit('update:modelValue', cell.iso)
   menu.value = false
@@ -118,9 +122,15 @@ function selectToday() {
     </template>
     <v-card class="app-persian-calendar" min-width="300" max-width="340">
       <v-card-title class="app-persian-calendar__header">
-        <v-btn icon="mdi-chevron-right" size="small" variant="text" :aria-label="t('common.persianDate.previousMonth')" @click="moveMonth(-1)" />
+        <div class="d-flex align-center">
+          <v-btn icon="mdi-chevron-double-right" size="small" variant="text" :aria-label="t('common.persianDate.previousYear')" @click="moveYear(-1)" />
+          <v-btn icon="mdi-chevron-right" size="small" variant="text" :aria-label="t('common.persianDate.previousMonth')" @click="moveMonth(-1)" />
+        </div>
         <span>{{ monthNames[view.month - 1] }} {{ numberFormatter.format(view.year) }}</span>
-        <v-btn icon="mdi-chevron-left" size="small" variant="text" :aria-label="t('common.persianDate.nextMonth')" @click="moveMonth(1)" />
+        <div class="d-flex align-center">
+          <v-btn icon="mdi-chevron-left" size="small" variant="text" :aria-label="t('common.persianDate.nextMonth')" @click="moveMonth(1)" />
+          <v-btn icon="mdi-chevron-double-left" size="small" variant="text" :aria-label="t('common.persianDate.nextYear')" @click="moveYear(1)" />
+        </div>
       </v-card-title>
       <v-card-text class="pt-2">
         <div class="app-persian-calendar__grid app-persian-calendar__weekdays">

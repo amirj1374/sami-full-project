@@ -39,7 +39,7 @@ export function useFormat() {
   function formatMoney(value: number | string | null | undefined): string {
     const formatted = formatNumber(value, { maximumFractionDigits: 2 })
     if (!formatted) return ''
-    return `${formatted} ${locale.value === 'fa' ? 'تومان' : 'Toman'}`
+    return `${formatted} ${locale.value === 'fa' ? 'ریال' : 'Rial'}`
   }
 
   return { formatDate, formatDateTime, formatNumber, formatMoney }

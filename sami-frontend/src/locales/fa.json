@@ -53,10 +53,12 @@
     "inactive": "غیرفعال",
     "type": "نوع",
     "yes": "بله",
-    "currency": "تومان",
+    "currency": "ریال",
     "persianDate": {
       "previousMonth": "ماه قبل",
       "nextMonth": "ماه بعد",
+      "previousYear": "سال قبل",
+      "nextYear": "سال بعد",
       "today": "امروز"
     }
   },
@@ -171,7 +173,7 @@
     "registered": "ثبت‌شده",
     "activePartners": "همکاران فعال",
     "activeCount": "{n} فعال",
-    "currencyUnit": "تومان",
+    "currencyUnit": "ریال",
     "last12Months": "۱۲ ماه گذشته",
     "recentPurchases": "خریدهای اخیر",
     "viewAll": "مشاهده همه",
@@ -430,6 +432,39 @@
     "byActor": "توسط {actor}",
     "bulkProcessed": "{count} مورد انجام شد",
     "bulkSkipped": "{count} مورد رد شد"
+  },
+  "organization": {
+    "languages": {
+      "fa": "فارسی",
+      "en": "انگلیسی"
+    },
+    "title": "سازمان",
+    "subtitle": "مدیریت شرکت‌های ثبت‌شده در این کسب‌وکار",
+    "addCompany": "افزودن شرکت",
+    "editCompany": "ویرایش شرکت",
+    "defaultCompany": "پیش‌فرض",
+    "fields": {
+      "code": "کد شرکت",
+      "name": "نام شرکت",
+      "legalName": "نام حقوقی",
+      "taxNumber": "شماره اقتصادی",
+      "registrationNumber": "شماره ثبت",
+      "currencyCode": "کد ارز",
+      "fiscalMonth": "ماه آغاز سال مالی",
+      "timezone": "منطقه زمانی",
+      "locale": "زبان پیش‌فرض",
+      "email": "ایمیل",
+      "phone": "تلفن",
+      "address": "نشانی",
+      "city": "شهر",
+      "state": "استان",
+      "postalCode": "کد پستی",
+      "displayOrder": "ترتیب نمایش"
+    },
+    "empty": {
+      "title": "شرکتی ثبت نشده است",
+      "description": "برای شروع، اولین شرکت را اضافه کنید."
+    }
   },
   "customers": {
     "title": "مشتریان",
@@ -1164,7 +1199,9 @@
       "hamta": "مدیریت کدهای فعال‌سازی همتا",
       "market-sync": "همگام‌سازی بازار",
       "sim-investment": "سرمایه‌گذاری 0912",
-      "attendance": "کارکنان و حضور و غیاب"
+      "attendance": "کارکنان و حضور و غیاب",
+      "treasury": "خزانه‌داری",
+      "purchase-payments": "درخواست پرداخت خرید"
     },
     "action": {
       "view": "مشاهده",
@@ -1497,6 +1534,8 @@
     }
   },
   "notifications": {
+    "automation": { "title": "اتوماسیون", "message": "یک اقدام خودکار نیازمند توجه شماست." },
+    "purchasePayment": { "title": "پرداخت خرید", "reminder": "یک درخواست پرداخت خرید نیازمند توجه شماست.", "overdue": "مهلت یک درخواست پرداخت خرید گذشته است." },
     "markAllRead": "خواندن همه",
     "demo": {
       "title": "یک پیام دوستانه از سامی",
@@ -1829,7 +1868,7 @@
     }
   },
   "marketSync": {
-    "title":"همگام‌سازی بازار","subtitle":"همگام‌سازی موجودی سیم‌کارت، محاسبه قیمت و کنترل انتشار در وب‌سایت.","failSafe":"انتشار ایمن و محافظه‌کارانه","tabs":{"overview":"نمای کلی","sources":"منابع","pricing":"پروفایل‌های قیمت","rules":"قوانین انتشار","runs":"تاریخچه همگام‌سازی","history":"تاریخچه قیمت","errors":"خطاها","health":"سلامت"},"sources":"منابع","activeProducts":"کالاهای فعال","priceChanges":"تغییرات قیمت","errors":"خطاها","sourceHealth":"سلامت منابع","neverSynced":"هنوز همگام نشده","source":"منبع","status":"وضعیت","fetched":"دریافت‌شده","newProducts":"کالاهای جدید","startedAt":"شروع","addSource":"افزودن منبع","syncNow":"همگام‌سازی اکنون","addProfile":"افزودن پروفایل قیمت","rounding":"گرد کردن","addRule":"افزودن قانون","rulePrecedence":"فهرست سیاه همیشه مقدم است. در صورت وجود فهرست سفید، کالای نامنطبق منتشر نمی‌شود.","healthContract":"قرارداد وضعیت سلامت","healthHint":"سلامت بر اساس تلاش‌ها، اجرای موفق، هشدارها و خطاهای واقعی محاسبه می‌شود.","code":"کد","provider":"آداپتور منبع","endpoint":"نشانی HTTPS ساخت‌یافته","profile":"پروفایل قیمت","schedule":"زمان‌بندی Cron","enabled":"فعال","sourceContractWarning":"منابع HTML روند تا زمان ارائه قرارداد API ساخت‌یافته و مجاز غیرفعال می‌مانند. اطلاعات محرمانه اینجا ذخیره نمی‌شود.","percentageAdjustment":"درصد افزایش/کاهش","fixedAdjustment":"مبلغ ثابت افزایش/کاهش","minimumProfit":"حداقل سود","roundingStep":"گام گرد کردن","minPublicationPrice":"حداقل قیمت انتشار","maxPublicationPrice":"حداکثر قیمت انتشار","roundingMode":"روش گرد کردن","previewSourcePrice":"قیمت منبع برای پیش‌نمایش","acquisitionCost":"بهای تحصیل","calculate":"محاسبه پیش‌نمایش","finalPrice":"قیمت نهایی","publicationRule":"قانون انتشار","listType":"نوع فهرست","matchType":"نوع تطبیق","matchValue":"کد کالا یا پیشوند","error":"انجام درخواست همگام‌سازی بازار ممکن نشد.","health":{"HEALTHY":"سالم","DEGRADED":"کاهش‌یافته","FAILING":"ناموفق","DISABLED":"غیرفعال"}
+    "title":"همگام‌سازی بازار","subtitle":"همگام‌سازی موجودی سیم‌کارت، محاسبه قیمت و کنترل انتشار در وب‌سایت.","failSafe":"انتشار ایمن و محافظه‌کارانه","tabs":{"overview":"نمای کلی","sources":"منابع","pricing":"پروفایل‌های قیمت","rules":"قوانین انتشار","runs":"تاریخچه همگام‌سازی","history":"تاریخچه قیمت","errors":"خطاها","health":"سلامت"},"sources":"منابع","activeProducts":"کالاهای فعال","priceChanges":"تغییرات قیمت","errors":"خطاها","sourceHealth":"سلامت منابع","neverSynced":"هنوز همگام نشده","source":"منبع","status":"وضعیت","fetched":"دریافت‌شده","newProducts":"کالاهای جدید","startedAt":"شروع","addSource":"افزودن منبع","syncNow":"همگام‌سازی اکنون","addProfile":"افزودن پروفایل قیمت","rounding":"گرد کردن","addRule":"افزودن قانون","rulePrecedence":"فهرست سیاه همیشه مقدم است. در صورت وجود فهرست سفید، کالای نامنطبق منتشر نمی‌شود.","healthContract":"قرارداد وضعیت سلامت","healthHint":"سلامت بر اساس تلاش‌ها، اجرای موفق، هشدارها و خطاهای واقعی محاسبه می‌شود.","code":"کد","provider":"آداپتور منبع","endpoint":"نشانی HTTPS ساخت‌یافته","authEnv":"متغیر محیطی اطلاعات دسترسی","authEnvHint":"فقط نام متغیر را وارد کنید؛ مقدار محرمانه در محیط سرور می‌ماند.","authHeader":"هدر احراز هویت","profile":"پروفایل قیمت","schedule":"زمان‌بندی Cron","enabled":"فعال","sourceContractWarning":"منابع HTML روند تا زمان ارائه قرارداد API ساخت‌یافته و مجاز غیرفعال می‌مانند. اطلاعات محرمانه اینجا ذخیره نمی‌شود.","percentageAdjustment":"درصد افزایش/کاهش","fixedAdjustment":"مبلغ ثابت افزایش/کاهش","minimumProfit":"حداقل سود","roundingStep":"گام گرد کردن","minPublicationPrice":"حداقل قیمت انتشار","maxPublicationPrice":"حداکثر قیمت انتشار","roundingMode":"روش گرد کردن","previewSourcePrice":"قیمت منبع برای پیش‌نمایش","acquisitionCost":"بهای تحصیل","calculate":"محاسبه پیش‌نمایش","finalPrice":"قیمت نهایی","publicationRule":"قانون انتشار","listType":"نوع فهرست","matchType":"نوع تطبیق","matchValue":"کد کالا یا پیشوند","error":"انجام درخواست همگام‌سازی بازار ممکن نشد.","health":{"HEALTHY":"سالم","DEGRADED":"کاهش‌یافته","FAILING":"ناموفق","DISABLED":"غیرفعال"}
   },
   "attendance": {
     "required": "تکمیل این فیلد الزامی است",
@@ -1851,6 +1890,13 @@
     "rowsImported": "ردیف معتبر", "messages": "پیام‌ها", "noImports": "هنوز فایل بازاری وارد نشده است", "rowMessage": "ردیف {row} فایل", "patterns": "الگوهای رُندی", "block": "بلوک پشت‌سرهم", "noCertainPrice": "به‌دلیل کمبود نمونه، قیمت‌های این شماره فقط راهنما هستند و نباید قطعی تلقی شوند.",
     "fields": { "number_class": "کلاس", "rondi_score": "امتیاز رُندی", "investment_score": "امتیاز سرمایه‌گذاری", "confidence": "اطمینان", "liquidity": "نقدشوندگی", "sample_count": "تعداد نمونه", "best_buy_price": "بهترین قیمت هدف خرید", "normal_buy_price": "قیمت خرید عادی", "normal_sell_price": "قیمت فروش عادی", "best_sell_price": "بهترین قیمت هدف فروش", "actual_buy_price": "قیمت واقعی خرید", "actual_sell_price": "قیمت واقعی فروش", "potential_profit": "سود بالقوه" },
     "values": { "ORDINARY": "معمولی", "SEMI_ROUND": "نیمه‌رُند", "ROUND": "رُند", "SPECIAL": "خاص", "VIP": "VIP", "LOW": "کم", "MEDIUM": "متوسط", "HIGH": "زیاد", "COMPLETED": "تکمیل‌شده", "COMPLETED_WITH_WARNINGS": "تکمیل با هشدار", "FAILED": "ناموفق", "PROCESSING": "در حال پردازش", "PAIR_REPEAT": "جفت تکراری", "TRIPLE_REPEAT": "سه‌تایی", "FOUR_OR_MORE_REPEAT": "چهارتایی یا بیشتر", "ABAB": "الگوی ABAB", "AABB": "الگوی AABB", "ABBA": "الگوی ABBA", "SEQUENCE": "توالی", "SYMMETRY": "تقارن", "SPECIAL_ENDING": "پایان خاص", "LOW_DIGIT_VARIETY": "تنوع رقم کم", "DUPLICATE_ROW": "ردیف تکراری", "CONFLICTING_DUPLICATE": "تکرار ناسازگار", "ZERO_PRICE": "قیمت صفر", "INVALID_ROW": "ردیف نامعتبر", "کارکرده": "کارکرده", "در حدصفر": "در حد صفر" }
+  },
+  "treasury": {
+    "title":"خزانه", "subtitle":"کنترل صندوق، حساب‌های بانکی، چرخه چک و جریان نقدی عملیاتی.", "accounts":"حساب‌ها", "transactions":"تراکنش‌ها", "cheques":"چک‌ها", "newAccount":"حساب جدید", "newTransaction":"تراکنش جدید", "newCheque":"چک جدید", "balance":"مانده", "openingBalance":"مانده آغازین", "accountType":"نوع حساب", "type":"نوع تراکنش", "source":"حساب مبدأ", "destination":"حساب مقصد", "amount":"مبلغ", "date":"تاریخ", "status":"وضعیت", "number":"شماره", "bank":"بانک", "direction":"جهت", "received":"دریافتی", "issued":"پرداختی", "complete":"تکمیل", "approve":"تأیید", "submit":"ارسال برای تأیید", "cancel":"لغو", "empty":"هنوز رکوردی در خزانه ثبت نشده است.", "saved":"رکورد خزانه با موفقیت ثبت شد.", "error":"درخواست خزانه کامل نشد."
+  },
+  "purchasePayments": {
+    "title":"درخواست‌های پرداخت خرید","subtitle":"ثبت، تأیید و پرداخت کنترل‌شده از حساب‌های خزانه.","limit":"سقف پرداخت روزانه","limitAmount":"مبلغ سقف","date":"تاریخ پرداخت","new":"درخواست پرداخت جدید","number":"شماره درخواست","supplier":"تأمین‌کننده / فروشنده","amount":"مبلغ","paid":"پرداخت‌شده","purpose":"بابت","document":"شماره فاکتور / سند","rejectionReason":"دلیل رد درخواست","pay":"ثبت پرداخت","account":"حساب خزانه","method":"روش پرداخت","reference":"شماره پیگیری","completePartial":"بستن درخواست با همین مبلغ پرداختی","record":"ثبت رسید",
+    "status":{"DRAFT":"پیش‌نویس","WAITING_MANAGER":"منتظر مدیر","APPROVED":"تأییدشده","WAITING_PAYMENT":"منتظر پرداخت","PARTIALLY_PAID":"بخشی پرداخت‌شده","PAID":"پرداخت‌شده","REJECTED":"ردشده","OVERDUE":"دارای تأخیر","CANCELLED":"لغوشده"}
   },
   "legacy": {
     "title": "ورود و مقایسه داده‌های قدیمی", "subtitle": "آرشیوهای آسان یا بسته‌های Excel مبتنی بر Manifest را بررسی کنید، رکوردهای تأییدشده را در ناحیه واسط نگه دارید و بدون تغییر داده‌های عملیاتی با سامی مقایسه کنید.", "accountingSubtitle": "بسته شواهد مهاجرت حسابداری آسان را به‌صورت مجزا برای هر مستأجر بسازید، تطبیق دهید و تا تأیید رسمی، ورود نهایی را مسدود نگه دارید.", "stagingOnly": "فقط ناحیه واسط — بدون تغییر داده اصلی", "finalImportBlocked": "ورود نهایی حسابداری عمداً مسدود است؛ هنوز مالک رسمی انتقال حسابداری، بانک و چک در SAMI تأیید نشده است.", "migrationBatch": "بسته مهاجرت", "migrationBatchName": "نام بسته مهاجرت", "createMigrationBatch": "ایجاد بسته مهاجرت", "migrationBatches": "بسته‌های مهاجرت", "emptyMigrationBatches": "هنوز بسته مهاجرتی وجود ندارد", "selectMigrationBatch": "بسته مهاجرت را انتخاب کنید", "selectMigrationBatchHint": "برای افزودن گزارش‌های شواهد و اجرای تطبیق، یک بسته را ایجاد یا انتخاب کنید.", "addReports": "افزودن گزارش‌های شواهد", "chooseReports": "انتخاب گزارش‌های آسان", "reportUploadHint": "RAR، ZIP دارای Manifest یا گزارش XLSX مستقل. شواهد خام فقط در ناحیه واسط می‌مانند.", "uploadReports": "بارگذاری گزارش‌ها", "overview": "نمای کلی", "reports": "گزارش‌ها", "reconciliation": "تطبیق", "evidence": "شواهد", "runReconciliation": "اجرای تطبیق", "downloadValidationReport": "دریافت گزارش اعتبارسنجی", "journalRows": "ردیف‌های روزنامه", "trialBalanceRows": "ردیف‌های تراز آزمایشی", "chequeRows": "ردیف‌های چک", "confirmLowConfidence": "سطح دفتر حساب باید پیش از پذیرش تأیید شود؛ نام فایل به‌عنوان شاهد استفاده نمی‌شود.", "confirmReportType": "تأیید سطح دفتر", "noReconciliation": "هنوز تطبیقی اجرا نشده است", "noEvidence": "مغایرت تطبیقی وجود ندارد", "noExplanation": "توضیحی ثبت نشده است", "explainDifference": "ثبت به‌عنوان اختلاف توضیح‌داده‌شده", "newImport": "ورود جدید آسان", "chooseArchive": "انتخاب بسته RAR یا ZIP", "archiveHint": "آرشیو RAR یا بسته ZIP شامل Manifest و فایل‌های XLSX/XLS در فضای موقت ایزوله اعتبارسنجی می‌شود.", "upload": "بارگذاری آرشیو", "history": "تاریخچه ورود", "empty": "هنوز ورودی وجود ندارد", "selectBatch": "یک بسته ورود را انتخاب کنید", "selectBatchHint": "برای مشاهده شواهد، رکوردها و پیام‌های اعتبارسنجی یک بسته را انتخاب کنید.", "analyze": "تحلیل", "importStaging": "ثبت در ناحیه واسط", "compare": "اجرای مقایسه", "comparisonPolicy": "فقط کد دقیق و هم‌مستأجر مشتری/تأمین‌کننده و SKU کالا خودکار تطبیق داده می‌شود؛ جمع‌های حسابداری و موجودی تا تأیید نگاشت فقط شواهد ناحیه واسط هستند.", "mappingEvidence": "شواهد نگاشت و تطبیق", "datasets": "مجموعه‌داده‌ها", "files": "فایل‌ها", "records": "رکوردها", "messages": "پیام‌ها", "warnings": "هشدارها", "errors": "خطاها", "sourceField": "فیلد مبدأ", "type": "نوع", "meaning": "معنا", "confidence": "اطمینان", "error": "درخواست ورود داده قدیمی تکمیل نشد."

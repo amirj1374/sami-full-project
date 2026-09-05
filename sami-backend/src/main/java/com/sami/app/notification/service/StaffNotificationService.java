@@ -19,6 +19,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -62,6 +63,32 @@ public class StaffNotificationService {
     @Transactional
     public int markAllRead(Long userId) {
         return notificationRepository.markAllRead(tenantContext.requireTenantId(), userId, Instant.now());
+    }
+
+    /** Central Notification Center entry point for infrastructure integrations such as Automation. */
+    @Transactional
+    public StaffNotificationResponse createSystem(Long userId, String type, String titleKey,
+                                                   String messageKey, String route, String idempotencyKey) {
+        Long tenantId = tenantContext.requireTenantId();
+        if (idempotencyKey != null && !idempotencyKey.isBlank()) {
+            var existing = notificationRepository.findByTenantIdAndUserIdAndIdempotencyKey(
+                    tenantId, userId, idempotencyKey);
+            if (existing.isPresent()) return StaffNotificationResponse.from(existing.get());
+        }
+        User recipient = userRepository.findById(userId)
+                .filter(User::isLoginAllowed)
+                .filter(user -> tenantId.equals(user.getTenantId()))
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND,
+                        "Notification recipient not found"));
+        StaffNotification notification = StaffNotification.builder()
+                .tenantId(tenantId).userId(recipient.getId())
+                .type(type == null || type.isBlank() ? "SYSTEM" : type)
+                .titleKey(titleKey).messageKey(messageKey)
+                .route(route == null || route.isBlank() ? "/" : route)
+                .idempotencyKey(idempotencyKey == null || idempotencyKey.isBlank()
+                        ? "system:" + UUID.randomUUID() : idempotencyKey)
+                .build();
+        return StaffNotificationResponse.from(notificationRepository.save(notification));
     }
 
     /** Called only by the shared scheduler handler inside its persisted tenant scope. */

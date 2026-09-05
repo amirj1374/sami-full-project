@@ -17,6 +17,7 @@ public interface StaffNotificationRepository extends JpaRepository<StaffNotifica
             Long tenantId, Long userId, Pageable pageable);
 
     Optional<StaffNotification> findByIdAndTenantIdAndUserId(Long id, Long tenantId, Long userId);
+    Optional<StaffNotification> findByTenantIdAndUserIdAndIdempotencyKey(Long tenantId, Long userId, String idempotencyKey);
 
     long countByTenantIdAndUserIdAndReadAtIsNull(Long tenantId, Long userId);
 

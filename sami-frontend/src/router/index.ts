@@ -83,10 +83,28 @@ const routes: RouteRecordRaw[] = [
         meta: { requiresAuth: true, permission: 'sales:view' },
       },
       {
+        path: 'treasury',
+        name: 'treasury',
+        component: () => import('@/views/TreasuryView.vue'),
+        meta: { requiresAuth: true, permission: 'treasury:view' },
+      },
+      {
+        path: 'purchase-payments',
+        name: 'purchase-payments',
+        component: () => import('@/views/PurchasePaymentsView.vue'),
+        meta: { requiresAuth: true, anyPermission: ['purchase-payments:view-own', 'purchase-payments:view-all'] },
+      },
+      {
         path: 'customers',
         name: 'customers',
         component: () => import('@/views/CustomersView.vue'),
         meta: { requiresAuth: true, permission: 'customers:view' },
+      },
+      {
+        path: 'organization',
+        name: 'organization',
+        component: () => import('@/views/OrganizationView.vue'),
+        meta: { requiresAuth: true, permission: 'organization:view' },
       },
       {
         path: 'automation',

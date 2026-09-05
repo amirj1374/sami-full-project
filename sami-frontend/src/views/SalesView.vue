@@ -555,7 +555,12 @@ onMounted(load);
               ><v-col cols="6" md="2"
                 ><v-text-field
                   v-model="line.imei"
-                  :label="t('sales.imei')" /></v-col
+                  :label="t('sales.imei')"
+                  inputmode="numeric"
+                  pattern="[0-9]*"
+                  maxlength="15"
+                  autocomplete="off"
+                  dir="ltr" /></v-col
               ><v-col cols="6" md="2" class="d-flex"
                 ><v-btn
                   color="error"

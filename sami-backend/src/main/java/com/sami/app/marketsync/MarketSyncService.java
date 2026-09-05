@@ -1,5 +1,7 @@
 package com.sami.app.marketsync;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sami.app.common.exception.ApiException;
 import com.sami.app.common.exception.ErrorCode;
 import com.sami.app.common.tenancy.TenantContext;
@@ -21,6 +23,7 @@ import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
+import java.net.URI;
 import java.util.*;
 
 @Service
@@ -34,10 +37,14 @@ public class MarketSyncService {
     private final MarketPublicationGateway publication;
     private final PlatformTransactionManager transactionManager;
     private final JobService jobs;
+    private final ObjectMapper objectMapper;
 
     @Transactional(readOnly = true)
     public List<Map<String,Object>> sources() { return jdbc.queryForList("""
-            select s.*,p.name pricing_profile_name from market_sources s left join market_pricing_profiles p on p.id=s.pricing_profile_id
+            select s.id,s.tenant_id,s.code,s.name,s.enabled,s.provider_key,s.endpoint_url,s.schedule_cron,s.pricing_profile_id,
+                   s.health_state,s.last_attempted_sync,s.last_successful_sync,s.created_at,s.updated_at,s.version,
+                   s.source_config->>'authEnv' auth_env,s.source_config->>'authHeader' auth_header,p.name pricing_profile_name
+              from market_sources s left join market_pricing_profiles p on p.id=s.pricing_profile_id
             where s.tenant_id=? order by s.name
             """, tenants.requireTenantId()); }
 
@@ -49,16 +56,21 @@ public class MarketSyncService {
         boolean enabled = Boolean.TRUE.equals(request.get("enabled")); Long profile = number(request.get("pricingProfileId"));
         if (enabled && "ROND_CONTRACT_PENDING".equals(provider)) throw new ApiException(ErrorCode.OPERATION_NOT_ALLOWED,
                 "Rond source cannot be enabled until an authorized structured contract is configured");
+        if (enabled) validateEndpoint(endpoint);
+        Map<String,Object> sourceConfig = sourceConfig(request.get("sourceConfig"));
+        rejectEmbeddedSecrets(sourceConfig);
+        String sourceConfigJson;
+        try { sourceConfigJson=objectMapper.writeValueAsString(sourceConfig); } catch(Exception ex){throw new ApiException(ErrorCode.VALIDATION_FAILED,"Invalid source configuration");}
         Long sourceId;
         if (id == null) sourceId = jdbc.queryForObject("""
-                insert into market_sources(tenant_id,code,name,enabled,provider_key,endpoint_url,schedule_cron,pricing_profile_id,health_state)
-                values(?,?,?,?,?,?,?,?,?) returning id
-                """, Long.class, tenant,code,name,enabled,provider,endpoint,cron,profile,enabled?"DEGRADED":"DISABLED");
+                insert into market_sources(tenant_id,code,name,enabled,provider_key,endpoint_url,schedule_cron,pricing_profile_id,health_state,source_config)
+                values(?,?,?,?,?,?,?,?,?,cast(? as jsonb)) returning id
+                """, Long.class, tenant,code,name,enabled,provider,endpoint,cron,profile,enabled?"DEGRADED":"DISABLED",sourceConfigJson);
         else {
             int changed=jdbc.update("""
-                    update market_sources set code=?,name=?,enabled=?,provider_key=?,endpoint_url=?,schedule_cron=?,pricing_profile_id=?,
+                    update market_sources set code=?,name=?,enabled=?,provider_key=?,endpoint_url=?,schedule_cron=?,pricing_profile_id=?,source_config=cast(? as jsonb),
                     health_state=case when ? then health_state else 'DISABLED' end,updated_at=now(),version=version+1 where tenant_id=? and id=?
-                    """,code,name,enabled,provider,endpoint,cron,profile,enabled,tenant,id);
+                    """,code,name,enabled,provider,endpoint,cron,profile,sourceConfigJson,enabled,tenant,id);
             if(changed==0) throw new ApiException(ErrorCode.RESOURCE_NOT_FOUND,"Market source not found"); sourceId=id;
         }
         synchronizeJob(sourceId,name,cron,enabled);
@@ -106,7 +118,7 @@ public class MarketSyncService {
         jdbc.update("update market_sources set last_attempted_sync=now(),updated_at=now() where tenant_id=? and id=?",tenant,sourceId);
         try {
             MarketSourceAdapter adapter=adapters.require(String.valueOf(source.get("provider_key")));
-            MarketSourceAdapter.FetchResult fetched=adapter.fetch(new MarketSourceAdapter.SourceConfig(sourceId,String.valueOf(source.get("code")),nullable(source.get("endpoint_url")),Map.of()));
+            MarketSourceAdapter.FetchResult fetched=adapter.fetch(new MarketSourceAdapter.SourceConfig(sourceId,String.valueOf(source.get("code")),nullable(source.get("endpoint_url")),sourceConfig(source.get("source_config"))));
             Counters counters=new Counters(); Set<String> seen=new HashSet<>(); TransactionTemplate tx=new TransactionTemplate(transactionManager);
             for(MarketSourceAdapter.SourceItem item:fetched.items()) tx.executeWithoutResult(s -> process(tenant,source,runId,item,seen,counters));
             fetched.warnings().forEach(w->message(tenant,runId,sourceId,"WARNING","SOURCE_WARNING",w,null)); counters.warnings+=fetched.warnings().size();
@@ -213,6 +225,9 @@ public class MarketSyncService {
     private Long id(Map<String,Object>m){return ((Number)m.get("id")).longValue();} private Long number(Object v){return v instanceof Number n?n.longValue():v==null||String.valueOf(v).isBlank()?null:Long.valueOf(String.valueOf(v));}
     private BigDecimal decimal(Object v){return v instanceof BigDecimal b?b:v==null||String.valueOf(v).isBlank()?null:new BigDecimal(String.valueOf(v));} private BigDecimal zero(Object v){return Optional.ofNullable(decimal(v)).orElse(BigDecimal.ZERO);} private BigDecimal positive(Object v){BigDecimal b=decimal(v);return b==null||b.signum()<=0?BigDecimal.ONE:b;}
     private String text(Map<String,Object>m,String k){String v=nullable(m.get(k));if(v==null)throw new ApiException(ErrorCode.VALIDATION_FAILED,k+" is required");return v;} private String optional(Map<String,Object>m,String k,String d){return Optional.ofNullable(nullable(m.get(k))).orElse(d);} private String nullable(Object v){return v==null||String.valueOf(v).isBlank()?null:String.valueOf(v).trim();}
+    private Map<String,Object> sourceConfig(Object value){if(value==null)return Map.of();if(value instanceof Map<?,?> map){Map<String,Object>result=new LinkedHashMap<>();map.forEach((k,v)->result.put(String.valueOf(k),v));return result;}try{return objectMapper.readValue(String.valueOf(value),new TypeReference<>(){});}catch(Exception ex){throw new ApiException(ErrorCode.VALIDATION_FAILED,"Invalid source configuration");}}
+    private void rejectEmbeddedSecrets(Map<String,Object> config){for(String key:config.keySet()){String k=key.toLowerCase(Locale.ROOT);if(k.equals("password")||k.equals("token")||k.equals("apikey")||k.equals("secret"))throw new ApiException(ErrorCode.VALIDATION_FAILED,"Store only an environment-variable reference, never source credentials");}String env=nullable(config.get("authEnv"));if(env!=null&&!env.matches("[A-Z][A-Z0-9_]{2,100}"))throw new ApiException(ErrorCode.VALIDATION_FAILED,"authEnv must be an environment variable name");}
+    private void validateEndpoint(String endpoint){if(endpoint==null)throw new ApiException(ErrorCode.VALIDATION_FAILED,"Enabled source requires an HTTPS endpoint");try{URI uri=URI.create(endpoint);String host=uri.getHost();if(!"https".equalsIgnoreCase(uri.getScheme())||host==null||host.equalsIgnoreCase("localhost")||host.equals("127.0.0.1")||host.equals("::1"))throw new IllegalArgumentException();}catch(Exception ex){throw new ApiException(ErrorCode.VALIDATION_FAILED,"A public HTTPS source endpoint is required");}}
     private boolean equalMoney(Object a,BigDecimal b){BigDecimal x=decimal(a);return x==null?b==null:b!=null&&x.compareTo(b)==0;} private String safe(String s){return s==null?"Market sync failed":s.substring(0,Math.min(1000,s.length()));}
     private static final class Counters{int created,updated,priceChanges,published,unpublished,warnings,errors;}
 }

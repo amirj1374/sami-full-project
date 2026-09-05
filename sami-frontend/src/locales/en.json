@@ -53,10 +53,12 @@
     "inactive": "Inactive",
     "type": "Type",
     "yes": "Yes",
-    "currency": "Toman",
+    "currency": "Rial",
     "persianDate": {
       "previousMonth": "Previous Persian month",
       "nextMonth": "Next Persian month",
+      "previousYear": "Previous Persian year",
+      "nextYear": "Next Persian year",
       "today": "Today"
     }
   },
@@ -171,7 +173,7 @@
     "registered": "Registered",
     "activePartners": "Active partners",
     "activeCount": "{n} active",
-    "currencyUnit": "Toman",
+    "currencyUnit": "Rial",
     "last12Months": "Last 12 months",
     "recentPurchases": "Recent Purchases",
     "viewAll": "View all",
@@ -430,6 +432,39 @@
     "byActor": "by {actor}",
     "bulkProcessed": "{count} processed",
     "bulkSkipped": "{count} skipped"
+  },
+  "organization": {
+    "languages": {
+      "fa": "Persian",
+      "en": "English"
+    },
+    "title": "Organisation",
+    "subtitle": "Manage companies registered for this business",
+    "addCompany": "Add company",
+    "editCompany": "Edit company",
+    "defaultCompany": "Default",
+    "fields": {
+      "code": "Company code",
+      "name": "Company name",
+      "legalName": "Legal name",
+      "taxNumber": "Tax number",
+      "registrationNumber": "Registration number",
+      "currencyCode": "Currency code",
+      "fiscalMonth": "Fiscal year start month",
+      "timezone": "Timezone",
+      "locale": "Default language",
+      "email": "Email",
+      "phone": "Phone",
+      "address": "Address",
+      "city": "City",
+      "state": "State",
+      "postalCode": "Postal code",
+      "displayOrder": "Display order"
+    },
+    "empty": {
+      "title": "No companies yet",
+      "description": "Add the first company to get started."
+    }
   },
   "customers": {
     "title": "Customers",
@@ -1164,7 +1199,9 @@
       "hamta": "HAMTA Activation Codes",
       "market-sync": "Market Sync",
       "sim-investment": "0912 Investment",
-      "attendance": "Employees & Attendance"
+      "attendance": "Employees & Attendance",
+      "treasury": "Treasury",
+      "purchase-payments": "Purchase Payments"
     },
     "action": {
       "view": "View",
@@ -1497,6 +1534,8 @@
     }
   },
   "notifications": {
+    "automation": { "title": "Automation", "message": "An automated action requires your attention." },
+    "purchasePayment": { "title": "Purchase payment", "reminder": "A purchase payment request requires your attention.", "overdue": "A purchase payment request is overdue." },
     "markAllRead": "Mark all as read",
     "demo": {
       "title": "A friendly note from SAMI",
@@ -1829,7 +1868,7 @@
     }
   },
   "marketSync": {
-    "title":"Market Sync","subtitle":"Synchronize SIM inventory, calculate prices, and control website publication.","failSafe":"Fail-safe publication","tabs":{"overview":"Overview","sources":"Sources","pricing":"Pricing profiles","rules":"Publication rules","runs":"Sync history","history":"Price history","errors":"Errors","health":"Health"},"sources":"Sources","activeProducts":"Active products","priceChanges":"Price changes","errors":"Errors","sourceHealth":"Source health","neverSynced":"Never synchronized","source":"Source","status":"Status","fetched":"Fetched","newProducts":"New products","startedAt":"Started","addSource":"Add source","syncNow":"Sync now","addProfile":"Add pricing profile","rounding":"Rounding","addRule":"Add rule","rulePrecedence":"Blacklist always wins. When any whitelist rule exists, unmatched products are not published.","healthContract":"Health status contract","healthHint":"Health is computed from actual attempts, successful runs, warnings, and failures.","code":"Code","provider":"Provider adapter","endpoint":"Structured HTTPS endpoint","profile":"Pricing profile","schedule":"Cron schedule","enabled":"Enabled","sourceContractWarning":"Rond HTML sources remain disabled until an authorized structured API contract is supplied. Credentials are never stored here.","percentageAdjustment":"Percentage adjustment","fixedAdjustment":"Fixed adjustment","minimumProfit":"Minimum profit","roundingStep":"Rounding step","minPublicationPrice":"Minimum publication price","maxPublicationPrice":"Maximum publication price","roundingMode":"Rounding mode","previewSourcePrice":"Preview source price","acquisitionCost":"Acquisition cost","calculate":"Calculate preview","finalPrice":"Final price","publicationRule":"Publication rule","listType":"List type","matchType":"Match type","matchValue":"Product code or prefix","error":"The Market Sync request could not be completed.","health":{"HEALTHY":"Healthy","DEGRADED":"Degraded","FAILING":"Failing","DISABLED":"Disabled"}
+    "title":"Market Sync","subtitle":"Synchronize SIM inventory, calculate prices, and control website publication.","failSafe":"Fail-safe publication","tabs":{"overview":"Overview","sources":"Sources","pricing":"Pricing profiles","rules":"Publication rules","runs":"Sync history","history":"Price history","errors":"Errors","health":"Health"},"sources":"Sources","activeProducts":"Active products","priceChanges":"Price changes","errors":"Errors","sourceHealth":"Source health","neverSynced":"Never synchronized","source":"Source","status":"Status","fetched":"Fetched","newProducts":"New products","startedAt":"Started","addSource":"Add source","syncNow":"Sync now","addProfile":"Add pricing profile","rounding":"Rounding","addRule":"Add rule","rulePrecedence":"Blacklist always wins. When any whitelist rule exists, unmatched products are not published.","healthContract":"Health status contract","healthHint":"Health is computed from actual attempts, successful runs, warnings, and failures.","code":"Code","provider":"Provider adapter","endpoint":"Structured HTTPS endpoint","authEnv":"Credential environment variable","authEnvHint":"Store only the variable name; the credential remains in the server environment.","authHeader":"Authentication header","profile":"Pricing profile","schedule":"Cron schedule","enabled":"Enabled","sourceContractWarning":"Rond HTML sources remain disabled until an authorized structured API contract is supplied. Credentials are never stored here.","percentageAdjustment":"Percentage adjustment","fixedAdjustment":"Fixed adjustment","minimumProfit":"Minimum profit","roundingStep":"Rounding step","minPublicationPrice":"Minimum publication price","maxPublicationPrice":"Maximum publication price","roundingMode":"Rounding mode","previewSourcePrice":"Preview source price","acquisitionCost":"Acquisition cost","calculate":"Calculate preview","finalPrice":"Final price","publicationRule":"Publication rule","listType":"List type","matchType":"Match type","matchValue":"Product code or prefix","error":"The Market Sync request could not be completed.","health":{"HEALTHY":"Healthy","DEGRADED":"Degraded","FAILING":"Failing","DISABLED":"Disabled"}
   },
   "attendance": {
     "required": "This field is required",
@@ -1851,6 +1890,13 @@
     "rowsImported": "valid rows", "messages": "Messages", "noImports": "No market file has been imported yet", "rowMessage": "File row {row}", "patterns": "Round-number patterns", "block": "Consecutive block", "noCertainPrice": "Because comparable samples are limited, these prices are guidance only and must not be treated as conclusive.",
     "fields": { "number_class": "Class", "rondi_score": "Roundness score", "investment_score": "Investment score", "confidence": "Confidence", "liquidity": "Liquidity", "sample_count": "Sample count", "best_buy_price": "Best target buy", "normal_buy_price": "Normal buy", "normal_sell_price": "Normal sell", "best_sell_price": "Best target sell", "actual_buy_price": "Actual buy", "actual_sell_price": "Actual sell", "potential_profit": "Potential profit" },
     "values": { "ORDINARY": "Ordinary", "SEMI_ROUND": "Semi-round", "ROUND": "Round", "SPECIAL": "Special", "VIP": "VIP", "LOW": "Low", "MEDIUM": "Medium", "HIGH": "High", "COMPLETED": "Completed", "COMPLETED_WITH_WARNINGS": "Completed with warnings", "FAILED": "Failed", "PROCESSING": "Processing", "PAIR_REPEAT": "Repeated pair", "TRIPLE_REPEAT": "Triple", "FOUR_OR_MORE_REPEAT": "Four or more repeats", "ABAB": "ABAB pattern", "AABB": "AABB pattern", "ABBA": "ABBA pattern", "SEQUENCE": "Sequence", "SYMMETRY": "Symmetry", "SPECIAL_ENDING": "Special ending", "LOW_DIGIT_VARIETY": "Low digit variety", "DUPLICATE_ROW": "Duplicate row", "CONFLICTING_DUPLICATE": "Conflicting duplicate", "ZERO_PRICE": "Zero price", "INVALID_ROW": "Invalid row", "کارکرده": "Used", "در حدصفر": "Like new" }
+  },
+  "treasury": {
+    "title":"Treasury", "subtitle":"Control cash, bank accounts, cheque lifecycle and operational cash flow.", "accounts":"Accounts", "transactions":"Transactions", "cheques":"Cheques", "newAccount":"New account", "newTransaction":"New transaction", "newCheque":"New cheque", "balance":"Balance", "openingBalance":"Opening balance", "accountType":"Account type", "type":"Transaction type", "source":"Source account", "destination":"Destination account", "amount":"Amount", "date":"Date", "status":"Status", "number":"Number", "bank":"Bank", "direction":"Direction", "received":"Received", "issued":"Issued", "complete":"Complete", "approve":"Approve", "submit":"Submit", "cancel":"Cancel", "empty":"No treasury records yet.", "saved":"Treasury record saved successfully.", "error":"The treasury request could not be completed."
+  },
+  "purchasePayments": {
+    "title":"Purchase payment requests","subtitle":"Request, approve and record controlled treasury payments.","limit":"Daily payment limit","limitAmount":"Limit amount","date":"Payment date","new":"New payment request","number":"Request no.","supplier":"Supplier / seller","amount":"Amount","paid":"Paid","purpose":"Purpose","document":"Invoice / document reference","rejectionReason":"Rejection reason","pay":"Record payment","account":"Treasury account","method":"Payment method","reference":"Payment reference","completePartial":"Close the request with this partial amount","record":"Record receipt",
+    "status":{"DRAFT":"Draft","WAITING_MANAGER":"Waiting for manager","APPROVED":"Approved","WAITING_PAYMENT":"Waiting for payment","PARTIALLY_PAID":"Partially paid","PAID":"Paid","REJECTED":"Rejected","OVERDUE":"Overdue","CANCELLED":"Cancelled"}
   },
   "legacy": {
     "title": "Legacy data import & comparison", "subtitle": "Inspect Asan archives or manifest-driven Excel packages, stage verified records, and compare them with SAMI without changing operational data.", "accountingSubtitle": "Build a tenant-isolated Asan accounting migration evidence pack, reconcile it, and keep final import safely blocked until approval.", "stagingOnly": "Staging only — no canonical writes", "finalImportBlocked": "Final accounting import is intentionally blocked: SAMI has no approved canonical accounting, bank, or cheque migration owner yet.", "migrationBatch": "Migration batch", "migrationBatchName": "Migration batch name", "createMigrationBatch": "Create migration batch", "migrationBatches": "Migration batches", "emptyMigrationBatches": "No migration batches yet", "selectMigrationBatch": "Select a migration batch", "selectMigrationBatchHint": "Create or select a batch to add evidence reports and run reconciliation.", "addReports": "Add evidence reports", "chooseReports": "Select Asan reports", "reportUploadHint": "RAR, manifest ZIP, or individual XLSX report. Raw evidence stays in staging.", "uploadReports": "Upload reports", "overview": "Overview", "reports": "Reports", "reconciliation": "Reconciliation", "evidence": "Evidence", "runReconciliation": "Run reconciliation", "downloadValidationReport": "Download validation report", "journalRows": "Journal rows", "trialBalanceRows": "Trial-balance rows", "chequeRows": "Cheque rows", "confirmLowConfidence": "An account ledger needs a confirmed level before acceptance; filenames are not used as evidence.", "confirmReportType": "Confirm ledger level", "noReconciliation": "No reconciliation has run", "noEvidence": "No reconciliation exceptions", "noExplanation": "No explanation recorded", "explainDifference": "Mark explained", "newImport": "New Asan import", "chooseArchive": "Choose RAR or ZIP package", "archiveHint": "RAR archives and ZIP packages containing the migration manifest and XLSX/XLS sources are validated in an isolated temporary workspace.", "upload": "Upload archive", "history": "Import history", "empty": "No imports yet", "selectBatch": "Select an import batch", "selectBatchHint": "Choose a batch to inspect its evidence, records, and validation messages.", "analyze": "Analyze", "importStaging": "Stage report", "compare": "Run comparison", "comparisonPolicy": "Only exact tenant-scoped customer/supplier codes and product SKUs are matched automatically. Accounting and inventory totals remain staging evidence until mappings are approved.", "mappingEvidence": "Mapping and reconciliation evidence", "datasets": "Datasets", "files": "Files", "records": "Records", "messages": "Messages", "warnings": "Warnings", "errors": "Errors", "sourceField": "Source field", "type": "Type", "meaning": "Meaning", "confidence": "Confidence", "error": "The legacy import request could not be completed."

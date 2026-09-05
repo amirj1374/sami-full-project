@@ -498,6 +498,7 @@ public class DemoSeeder {
             boolean approvedOrLater = status == approved || status == completed;
 
             Purchase p = Purchase.builder()
+                    .tenantId(resolveTenantId())
                     .purchaseNumber(type.getNumberPrefix() + "-" + year + "-" + String.format("%06d", seq))
                     .type(type)
                     .status(status)

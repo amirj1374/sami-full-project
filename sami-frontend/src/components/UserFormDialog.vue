@@ -327,7 +327,7 @@ const genderItems = computed(() => [
                   <v-select v-model="profile.gender" :label="t('users.genderLabel')" :items="genderItems" clearable />
                 </v-col>
                 <v-col cols="12" sm="6">
-                  <v-text-field v-model="profile.phoneNumber" :label="t('users.phoneNumber')" maxlength="32" />
+                  <v-text-field v-model="profile.phoneNumber" :label="t('users.phoneNumber')" type="tel" inputmode="numeric" maxlength="32" dir="ltr" />
                 </v-col>
                 <v-col cols="12" sm="6">
                   <AppPersianDatePicker
@@ -340,7 +340,7 @@ const genderItems = computed(() => [
                   <v-text-field v-model="profile.employeeCode" :label="t('users.employeeCode')" maxlength="32" />
                 </v-col>
                 <v-col cols="12" sm="6">
-                  <v-text-field v-model="profile.nationalCode" :label="t('users.nationalCode')" maxlength="32" />
+                  <v-text-field v-model="profile.nationalCode" :label="t('users.nationalCode')" inputmode="numeric" pattern="[0-9]*" maxlength="32" dir="ltr" />
                 </v-col>
                 <v-col cols="12">
                   <v-text-field v-model="profile.address" :label="t('users.address')" maxlength="500" />

@@ -51,7 +51,7 @@ onMounted(load)
           <v-btn v-if="can('hamta:settings-update')" block color="primary" class="mt-3" :loading="busy" @click="saveSetting">{{ t('common.save') }}</v-btn>
         </v-card-text></v-card>
         <v-card v-if="can('hamta:edit')" rounded="xl"><v-card-title>{{ t('hamta.correctCode') }}</v-card-title><v-card-text>
-          <v-text-field v-model="imei" label="IMEI" inputmode="numeric" maxlength="15" />
+          <v-text-field v-model="imei" label="IMEI" inputmode="numeric" pattern="[0-9]*" maxlength="15" autocomplete="off" dir="ltr" />
           <v-text-field v-model="activationCode" :label="t('hamta.activationCode')" maxlength="128" autocomplete="off" />
           <v-btn block color="primary" :disabled="!imei || !activationCode" @click="saveCode">{{ t('common.save') }}</v-btn>
         </v-card-text></v-card>

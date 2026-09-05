@@ -13,6 +13,7 @@ import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /** Opt-in adapter for an authorized JSON contract: {items:[{number,price,cost?}]}. */
 @Component
@@ -26,8 +27,12 @@ public class StructuredJsonMarketSourceAdapter implements MarketSourceAdapter {
         try {
             SimpleClientHttpRequestFactory requests = new SimpleClientHttpRequestFactory();
             requests.setConnectTimeout(Duration.ofSeconds(5)); requests.setReadTimeout(Duration.ofSeconds(15));
-            String body = RestClient.builder().requestFactory(requests).build()
-                    .get().uri(source.endpointUrl()).retrieve().body(String.class);
+            RestClient client=RestClient.builder().requestFactory(requests).build();
+            String authEnv=text(source.config(),"authEnv"),authHeader=text(source.config(),"authHeader");
+            String credential=authEnv==null?null:System.getenv(authEnv);
+            if(authEnv!=null&&(credential==null||credential.isBlank()))throw new ApiException(ErrorCode.OPERATION_NOT_ALLOWED,"Configured market source credential is unavailable");
+            String body = client.get().uri(source.endpointUrl()).headers(h->{if(credential!=null)h.set(authHeader==null?"Authorization":authHeader,credential);}).retrieve().body(String.class);
+            if(body!=null&&body.length()>10_000_000)throw new ApiException(ErrorCode.BAD_REQUEST,"Market source response exceeds 10 MB");
             JsonNode root = mapper.readTree(body); JsonNode items = root.path("items");
             if (!items.isArray()) throw new IllegalArgumentException("items array missing");
             List<SourceItem> parsed = new ArrayList<>(); List<String> warnings = new ArrayList<>();
@@ -39,4 +44,5 @@ public class StructuredJsonMarketSourceAdapter implements MarketSourceAdapter {
             return new FetchResult(parsed, warnings);
         } catch (Exception ex) { throw new ApiException(ErrorCode.BAD_REQUEST, "Market source fetch failed: " + ex.getMessage()); }
     }
+    private String text(Map<String,Object> values,String key){Object value=values.get(key);return value==null||String.valueOf(value).isBlank()?null:String.valueOf(value);}
 }

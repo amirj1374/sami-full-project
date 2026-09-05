@@ -55,6 +55,8 @@ const TITLE_KEYS: Record<string, string> = {
   sales: 'sales.title',
   customers: 'customers.title',
   automations: 'automation.title',
+  treasury: 'treasury.title',
+  'purchase-payments': 'purchasePayments.title',
   scheduler: 'scheduler.title',
   'data-quality': 'dataQuality.title',
   profile: 'profile.title',
@@ -226,7 +228,7 @@ async function logout(): Promise<void> {
         <span class="text-subtitle-1 font-weight-bold app-brand__name">{{ t('common.appName') }}</span>
         <span class="text-caption text-medium-emphasis">{{ t('shell.tagline') }}</span>
       </div>
-    </div>
+    </router-link>
 
     <!-- Sidebar search -->
     <div v-if="!(rail && !mobile)" class="px-3 pb-2">
@@ -408,7 +410,7 @@ async function logout(): Promise<void> {
     <!-- Notifications -->
     <div class="app-mobile-notifications">
       <StaffNotificationMenu />
-    </router-link>
+    </div>
 
     <!-- Theme switch -->
     <v-menu v-if="!mobile" location="bottom end">

@@ -3,6 +3,8 @@ package com.sami.app.automation.provider;
 import com.sami.app.automation.spi.ActionContext;
 import com.sami.app.automation.spi.ActionProvider;
 import com.sami.app.automation.spi.ActionResult;
+import com.sami.app.notification.service.StaffNotificationService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -16,8 +18,9 @@ import java.util.Map;
  * or engine change. Config: {@code {"channel","recipient","subject","body"}}.
  */
 @Slf4j
-@Component
+@Component @RequiredArgsConstructor
 public class NotificationActionProvider implements ActionProvider {
+    private final StaffNotificationService notifications;
 
     @Override
     public String type() {
@@ -31,15 +34,19 @@ public class NotificationActionProvider implements ActionProvider {
 
     @Override
     public ActionResult execute(ActionContext context) {
-        String channel = context.config().getOrDefault("channel", "log").toString();
         String recipient = context.configString("recipient");
-        String subject = context.configString("subject");
-        if (recipient == null || recipient.isBlank()) {
-            return ActionResult.fail("notify: 'recipient' is required");
-        }
-        log.info("[automation] notify via {} → {} : {}", channel, recipient, subject);
-        return ActionResult.ok("Notification queued",
-                Map.of("channel", channel, "recipient", recipient));
+        Long userId = "actor".equalsIgnoreCase(recipient) ? context.trigger().actorId() : parseUserId(recipient);
+        if (userId == null) return ActionResult.fail("notify: recipient must be 'actor' or a user id");
+        String titleKey = value(context, "titleKey", "notifications.automation.title");
+        String messageKey = value(context, "messageKey", "notifications.automation.message");
+        String route = value(context, "route", "/");
+        String source = context.trigger().triggerType() + ":" + context.trigger().entityType() + ":"
+                + context.trigger().entityId() + ":" + context.trigger().occurredAt();
+        notifications.createSystem(userId, "AUTOMATION", titleKey, messageKey, route,
+                "automation:" + Integer.toUnsignedString(source.hashCode()) + ":" + userId + ":" + messageKey);
+        log.info("[automation] notification center → user {}", userId);
+        return ActionResult.ok("Notification created",
+                Map.of("channel", "notification-center", "userId", userId));
     }
 
     @Override
@@ -47,5 +54,15 @@ public class NotificationActionProvider implements ActionProvider {
         Object recipient = config.get("recipient");
         return (recipient == null || recipient.toString().isBlank())
                 ? "notify: 'recipient' is required" : null;
+    }
+
+    private String value(ActionContext context, String key, String fallback) {
+        String value = context.configString(key);
+        return value == null || value.isBlank() ? fallback : value;
+    }
+
+    private Long parseUserId(String value) {
+        if (value == null) return null;
+        try { return Long.valueOf(value); } catch (NumberFormatException ignored) { return null; }
     }
 }

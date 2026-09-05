@@ -4,6 +4,7 @@ import { useDisplay } from 'vuetify'
 import { useI18n } from 'vue-i18n'
 import { customersApi } from '@/api/customers'
 import { useApiError } from '@/composables/useApiError'
+import { useServerLabel } from '@/composables/useServerLabel'
 import type {
   CustomerAddress,
   CustomerContact,
@@ -36,6 +37,7 @@ const props = defineProps<{
 const emit = defineEmits<{ 'update:modelValue': [boolean]; saved: [customer: CustomerDetail] }>()
 
 const { t } = useI18n()
+const { text: srvLabel } = useServerLabel()
 const { smAndDown } = useDisplay()
 
 const open = computed({
@@ -296,7 +298,7 @@ async function submit(ignoreDuplicates = false) {
                   v-model="form.typeId"
                   :label="t('customers.form.fields.type')"
                   :items="types.filter((ct) => ct.active)"
-                  item-title="name"
+                  :item-title="(item: CustomerType) => srvLabel(item.name)"
                   item-value="id"
                   :error-messages="typeError"
                 />
@@ -327,7 +329,7 @@ async function submit(ignoreDuplicates = false) {
                 />
               </v-col>
               <v-col cols="12" sm="6">
-                <v-text-field v-model="form.nationalCode" :label="t('customers.form.fields.nationalCode')" maxlength="32" />
+                <v-text-field v-model="form.nationalCode" :label="t('customers.form.fields.nationalCode')" inputmode="numeric" pattern="[0-9]*" maxlength="32" dir="ltr" />
               </v-col>
               <v-col cols="12" sm="6">
                 <v-text-field v-model="form.passportNumber" :label="t('customers.form.fields.passportNumber')" maxlength="32" />
@@ -382,6 +384,8 @@ async function submit(ignoreDuplicates = false) {
                 <v-text-field
                   v-model="contact.value"
                   :label="contact.kind === 'PHONE' ? t('customers.form.contacts.phoneNumber') : t('customers.form.contacts.emailAddress')"
+                  :type="contact.kind === 'PHONE' ? 'tel' : 'text'"
+                  :inputmode="contact.kind === 'PHONE' ? 'numeric' : undefined"
                   density="compact"
                   hide-details
                 />
@@ -432,7 +436,7 @@ async function submit(ignoreDuplicates = false) {
                   <v-text-field v-model="address.province" :label="t('customers.form.addresses.province')" density="compact" hide-details />
                 </v-col>
                 <v-col cols="6" sm="2">
-                  <v-text-field v-model="address.postalCode" :label="t('customers.form.addresses.postalCode')" density="compact" hide-details />
+                  <v-text-field v-model="address.postalCode" :label="t('customers.form.addresses.postalCode')" inputmode="numeric" pattern="[0-9]*" dir="ltr" density="compact" hide-details />
                 </v-col>
                 <v-col cols="6" sm="2" class="d-flex align-center justify-end ga-1">
                   <v-chip
