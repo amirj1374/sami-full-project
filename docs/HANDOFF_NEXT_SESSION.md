@@ -2,6 +2,15 @@
 
 Updated: 2026-09-05 (Asia/Tehran)
 
+## Phase 0 continuation checkpoint — 2026-09-06
+
+- Authoritative branch is `development` at `c5e06bcfcb3696f98e16ff13104883ff02331f57`, synchronized with `origin/development`, clean.
+- Contact foundation write path is now present: tenant-scoped Customer/Supplier role attachment, controlled Contact merge that preserves the source as inactive/merged, legacy mapping reassignment, and FoundationAudit evidence.
+- Contact reconciliation summary is available at `GET /api/v1/contacts/reconciliation` (permission `customers:view`) and is tenant-scoped; exact identity matching remains the only automatic policy.
+- Organization administration UI now includes grant-aware Company-role and Branch-grant controls in `/organization`, backed by the existing organization grant APIs and `organization:edit`; the backend remains authoritative.
+- Frontend `npm test` (33/33), type-check and production build pass after this checkpoint. Backend Docker authoritative package build passes with the current source.
+- Remaining Phase 0 gate: execute and retain a repeatable PostgreSQL-backed security integration suite (real DB, not Mockito), then complete a full backend `mvn clean verify` on a workstation/container where the test run completes. Existing manual PostgreSQL isolation evidence is retained, but this automated gate is not yet claimed complete.
+
 ## 2026-09-05 workstation transfer checkpoint
 
 - Authoritative branch: `development`; no secondary worktree or stash contains unique work.
