@@ -6,6 +6,7 @@ import { useDisplay } from 'vuetify'
 import { useAuthStore } from '@/stores/auth'
 import { useMenuStore } from '@/stores/menu'
 import { useUserExperienceStore } from '@/stores/userExperience'
+import { useOrganizationContextStore } from '@/stores/organizationContext'
 import { useNavHistory } from '@/composables/useNavHistory'
 import { useServerLabel } from '@/composables/useServerLabel'
 import { useThemeMode, type ThemeMode } from '@/composables/useThemeMode'
@@ -21,6 +22,7 @@ const { mobile } = useDisplay()
 const auth = useAuthStore()
 const menu = useMenuStore()
 const userExperience = useUserExperienceStore()
+const organizationContext = useOrganizationContextStore()
 const router = useRouter()
 const route = useRoute()
 const { favorites, recent, isFavorite, toggleFavorite, recordVisit } = useNavHistory()
@@ -387,12 +389,12 @@ async function logout(): Promise<void> {
       @click="paletteOpen = true"
     />
 
-    <!-- Branch selector (single branch today) -->
-    <v-menu v-if="!mobile" location="bottom end">
+    <!-- Server-verified organization choices only; selection never grants access. -->
+    <v-menu v-if="!mobile && organizationContext.context" location="bottom end">
       <template #activator="{ props: p }">
         <v-btn variant="text" class="text-none d-none d-sm-flex" v-bind="p">
           <v-icon icon="mdi-store-outline" size="18" class="me-2" />
-          {{ t('shell.mainBranch') }}
+          {{ organizationContext.context.branches.find((b) => b.id === organizationContext.branchId)?.name || organizationContext.context.companies.find((c) => c.id === organizationContext.companyId)?.name || t('shell.branch') }}
           <v-icon icon="mdi-chevron-down" size="16" class="ms-1" />
         </v-btn>
       </template>
@@ -400,8 +402,12 @@ async function logout(): Promise<void> {
         <div class="px-4 py-2 text-caption text-medium-emphasis">{{ t('shell.branch') }}</div>
         <v-divider />
         <v-list density="compact" nav class="pa-2">
-          <v-list-item rounded="lg" active prepend-icon="mdi-store-marker-outline" :title="t('shell.mainBranch')">
-            <template #append><v-icon icon="mdi-check" size="18" color="primary" /></template>
+          <v-list-item v-for="company in organizationContext.context.companies" :key="'company-'+company.id" rounded="lg" prepend-icon="mdi-office-building-outline" :title="company.name" :active="company.id === organizationContext.companyId" @click="organizationContext.select(company.id, null)">
+            <template v-if="company.id === organizationContext.companyId" #append><v-icon icon="mdi-check" size="18" color="primary" /></template>
+          </v-list-item>
+          <v-divider class="my-1" />
+          <v-list-item v-for="branch in organizationContext.context.branches" :key="'branch-'+branch.id" rounded="lg" prepend-icon="mdi-store-marker-outline" :title="branch.name" :active="branch.id === organizationContext.branchId" @click="organizationContext.select(branch.companyId, branch.id)">
+            <template v-if="branch.id === organizationContext.branchId" #append><v-icon icon="mdi-check" size="18" color="primary" /></template>
           </v-list-item>
         </v-list>
       </v-card>
