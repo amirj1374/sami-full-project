@@ -5,6 +5,7 @@ import { authApi, type LoginPayload, type RegisterPayload } from '@/api/auth'
 import { tokenStorage } from '@/api/tokenStorage'
 import { useMenuStore } from '@/stores/menu'
 import { useUserExperienceStore } from '@/stores/userExperience'
+import { useOrganizationContextStore } from '@/stores/organizationContext'
 import { MOCK_MODE } from '@/mocks/config'
 
 /**
@@ -54,12 +55,14 @@ export const useAuthStore = defineStore('auth', () => {
     const result = await authApi.login(payload)
     tokenStorage.set(result.accessToken, result.refreshToken)
     user.value = result.user
+    await useOrganizationContextStore().refresh()
   }
 
   async function register(payload: RegisterPayload): Promise<void> {
     const result = await authApi.register(payload)
     tokenStorage.set(result.accessToken, result.refreshToken)
     user.value = result.user
+    await useOrganizationContextStore().refresh()
   }
 
   /**
@@ -79,6 +82,7 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = null
     useMenuStore().reset()
     useUserExperienceStore().reset()
+    useOrganizationContextStore().reset()
   }
 
   /**
@@ -102,6 +106,7 @@ export const useAuthStore = defineStore('auth', () => {
     if (tokenStorage.getAccessToken()) {
       try {
         user.value = await authApi.me()
+        await useOrganizationContextStore().refresh()
       } catch {
         await logout()
       }

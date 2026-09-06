@@ -28,6 +28,10 @@ http.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
+  const companyId = localStorage.getItem('sami.activeCompanyId')
+  const branchId = localStorage.getItem('sami.activeBranchId')
+  if (companyId) config.headers['X-Active-Company-Id'] = companyId
+  if (branchId) config.headers['X-Active-Branch-Id'] = branchId
   return config
 })
 
