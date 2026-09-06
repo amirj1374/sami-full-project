@@ -4,6 +4,7 @@ import com.sami.app.common.exception.ApiException;
 import com.sami.app.common.exception.ErrorCode;
 import com.sami.app.common.exception.ResourceNotFoundException;
 import com.sami.app.common.tenancy.TenantContext;
+import com.sami.app.organization.service.OrganizationScopeService;
 import com.sami.app.inventory.repository.InventoryWarehouseRepository;
 import com.sami.app.product.repository.ProductRepository;
 import com.sami.app.supplier.domain.Supplier;
@@ -62,6 +63,7 @@ public class PurchaseService {
     private final PurchasingConfigService config;
     private final InventoryWarehouseRepository warehouseRepository;
     private final TenantContext tenantContext;
+    private final OrganizationScopeService organizationScope;
     private final SupplierRepository supplierRepository;
     private final ProductRepository productRepository;
     private final PurchaseNumberGenerator numberGenerator;
@@ -315,6 +317,7 @@ public class PurchaseService {
         Long tenantId = tenantContext.requireTenantId();
         purchase.setCompanyId(resolveCompanyId(request.companyId(), tenantId));
         purchase.setBranchId(resolveBranchId(request.branchId(), purchase.getCompanyId(), tenantId));
+        organizationScope.requireScope(purchase.getCompanyId(), purchase.getBranchId());
         purchase.setLinkedSaleId(validateLinkedSale(request.linkedSaleId(), purchase));
         purchase.setItemCondition(request.itemCondition() == null
                 ? com.sami.app.purchasing.domain.PurchaseItemCondition.OTHER : request.itemCondition());

@@ -4,6 +4,7 @@ import com.sami.app.common.exception.ApiException;
 import com.sami.app.common.exception.ErrorCode;
 import com.sami.app.common.exception.ResourceNotFoundException;
 import com.sami.app.common.tenancy.TenantContext;
+import com.sami.app.organization.service.OrganizationScopeService;
 import com.sami.app.inventory.domain.InventoryWarehouse;
 import com.sami.app.inventory.dto.InventoryDtos.LocationRequest;
 import com.sami.app.inventory.dto.InventoryDtos.LocationResponse;
@@ -31,6 +32,7 @@ public class InventoryWarehouseService {
             "RECEIVING", "STORAGE", "PICKING", "TRANSIT", "QUARANTINE", "RETURNS");
 
     private final TenantContext tenantContext;
+    private final OrganizationScopeService organizationScope;
     private final InventoryWarehouseRepository repository;
     private final JdbcTemplate jdbc;
     private final InventoryLedgerService ledger;
@@ -255,6 +257,7 @@ public class InventoryWarehouseService {
             throw new ApiException(ErrorCode.ACCESS_DENIED,
                     "Company or branch is outside the trusted tenant");
         }
+        organizationScope.requireScope(companyId, branchId);
     }
 
     private void clearWarehouseDefault(Long tenantId) {
