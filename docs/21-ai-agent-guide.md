@@ -263,3 +263,9 @@ explicit approval.
 
 Operational setup and deployment commands belong in
 [`PROJECT_SETUP_AND_DEPLOYMENT.md`](../PROJECT_SETUP_AND_DEPLOYMENT.md).
+
+Release authority remains with the developer/Product Owner: development is
+never assumed Live, and Codex must not create, merge into, tag, rewrite or
+deploy production without explicit release approval. Use the canonical
+Git/production-release policy in
+[`17-deployment-and-operations.md`](17-deployment-and-operations.md).

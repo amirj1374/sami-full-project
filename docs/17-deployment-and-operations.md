@@ -1,5 +1,27 @@
 # Deployment and operations
 
+## Git and production-release policy
+
+development is the canonical integration branch. It may contain approved
+development work that is not approved, validated or safe for production.
+production, when a Product Owner has explicitly established its Live baseline,
+is the canonical branch for the explicitly approved Live release. Never
+develop directly on it, force-push it, rewrite its history, delete it, or merge
+development into it merely because a commit exists.
+
+A release follows development → validation → READY FOR RELEASE → explicit
+release approval → production → Live. A readiness report must identify the two
+HEADs, their common ancestor, commits ahead on each side, migrations,
+configuration and security changes, compatibility and deployment risks. Its
+status is exactly NOT READY, READY FOR RELEASE, or RELEASED.
+
+Only an explicit instruction such as «نسخه بزار» authorizes promotion to
+production. READY FOR RELEASE is not deployment authorization. A released
+commit/tag must be traceable; do not claim a server is updated unless its
+running revision is verifiably the production revision. Database-dependent
+changes require validated migration/upgrade and compensation evidence before a
+release recommendation.
+
 ## Current topology
 
 `docker-compose.prod.yml` defines three services and supports both local builds

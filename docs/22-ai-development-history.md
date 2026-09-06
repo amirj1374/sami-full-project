@@ -3,6 +3,20 @@
 This append-only record explains meaningful changes to SAMI's version-controlled
 AI development policy. Future entries should preserve earlier rationale.
 
+## 2026-09-06 — Git and production-release authority
+
+### Added
+
+- development is the integration branch and is never assumed to be Live
+- production is reserved for an explicitly approved and traceable Live baseline
+- release readiness has distinct NOT READY, READY FOR RELEASE and RELEASED states
+- promotion, production tagging and deployment require explicit Product Owner approval
+
+### Reason
+
+Prevent accidental promotion of unvalidated development work and make the Live
+deployment baseline auditable across workstations and future Codex sessions.
+
 ## 2026-07-28 — Permanent repository development workflow
 
 ### Added

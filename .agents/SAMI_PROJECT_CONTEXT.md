@@ -4,7 +4,7 @@ Last repository inspection: 2026-09-06. Source/configuration is authoritative; c
 
 ## Repository and stack
 
-- Monorepo; `sami-backend` and `sami-frontend` are tracked directories. Integration branch: `development`.
+- Monorepo; sami-backend and sami-frontend are tracked directories. development is the integration branch and is never assumed Live. production, when explicitly baselined by the Product Owner, is the approved Live-release branch; promotion requires explicit release approval and validated release gates.
 - Backend: Java 21, Spring Boot 3.5.3, PostgreSQL 16 target, Flyway, Maven 3.9+. Schema is contiguous through V50.
 - Frontend: Node 22 image, Vue 3.5, TypeScript 5.7, Vite 8, Vuetify 3, Pinia, Vue Router, Axios and Vue I18n.
 - Containers: PostgreSQL 16, JDK/JRE 21 backend, Node 22/nginx frontend; production Compose is under `sami-backend`.
