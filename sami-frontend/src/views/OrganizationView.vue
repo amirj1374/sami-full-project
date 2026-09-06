@@ -2,7 +2,8 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useDisplay } from 'vuetify'
 import { useI18n } from 'vue-i18n'
-import { organizationApi, type Company, type CompanyPayload } from '@/api/organization'
+import { organizationApi, type Company, type CompanyPayload, type OrganizationAssignment, type Branch } from '@/api/organization'
+import { usersApi, type RoleOption } from '@/api/users'
 import { useApiError } from '@/composables/useApiError'
 import { usePermission } from '@/composables/usePermission'
 import AppEmptyState from '@/components/AppEmptyState.vue'
@@ -19,6 +20,14 @@ const loading = ref(false)
 const saving = ref(false)
 const dialog = ref(false)
 const editing = ref<Company | null>(null)
+const grantUserId = ref<number | null>(null)
+const grantRoleId = ref<number | null>(null)
+const grantCompanyId = ref<number | null>(null)
+const grantBranchId = ref<number | null>(null)
+const assignments = ref<OrganizationAssignment[]>([])
+const branches = ref<Branch[]>([])
+const roles = ref<RoleOption[]>([])
+const grantsLoading = ref(false)
 
 const headers = computed(() => [
   { title: t('organization.fields.code'), key: 'code' },
@@ -76,6 +85,25 @@ async function save() {
 }
 
 onMounted(load)
+
+async function loadGrants() {
+  if (!grantUserId.value) return
+  grantsLoading.value = true
+  try { assignments.value = await organizationApi.assignments(grantUserId.value) } catch (error) { apiError.set(error) } finally { grantsLoading.value = false }
+}
+async function loadBranches() {
+  if (grantCompanyId.value) branches.value = await organizationApi.branches(grantCompanyId.value)
+}
+async function assignCompany() {
+  if (!grantUserId.value || !grantCompanyId.value || !grantRoleId.value) return
+  await organizationApi.assign({ userId: grantUserId.value, companyId: grantCompanyId.value, roleId: grantRoleId.value }); await loadGrants()
+}
+async function grantBranch() {
+  const assignment = assignments.value.find((item) => item.companyId === grantCompanyId.value && item.active)
+  if (assignment && grantBranchId.value) { await organizationApi.grantBranch(assignment.id, grantBranchId.value); await loadGrants() }
+}
+async function revokeAssignment(assignment: OrganizationAssignment) { await organizationApi.revokeAssignment(assignment.id); await loadGrants() }
+onMounted(async () => { try { roles.value = await usersApi.roleOptions() } catch (error) { apiError.set(error) } })
 </script>
 
 <template>
@@ -99,6 +127,25 @@ onMounted(load)
         </AppMobileRecordCard>
       </div>
       <AppEmptyState v-else-if="!loading" icon="mdi-office-building-plus-outline" :title="t('organization.empty.title')" :description="t('organization.empty.description')"><template #actions><v-btn v-if="can('organization:create')" color="primary" @click="open()">{{ t('organization.addCompany') }}</v-btn></template></AppEmptyState>
+    </v-card>
+
+    <v-card v-if="can('organization:edit')" class="app-data-surface mt-6" rounded="xl">
+      <v-card-title>{{ t('organization.grants.title') }}</v-card-title>
+      <v-card-text>
+        <p class="text-body-2 text-medium-emphasis mb-4">{{ t('organization.grants.help') }}</p>
+        <v-row>
+          <v-col cols="12" sm="3"><v-text-field v-model.number="grantUserId" type="number" :label="t('organization.grants.userId')" @change="loadGrants" /></v-col>
+          <v-col cols="12" sm="3"><v-select v-model="grantCompanyId" :items="rows" item-title="name" item-value="id" :label="t('organization.grants.company')" @update:model-value="loadBranches" /></v-col>
+          <v-col cols="12" sm="3"><v-select v-model="grantRoleId" :items="roles" item-title="name" item-value="id" :label="t('organization.grants.role')" /></v-col>
+          <v-col cols="12" sm="3" class="d-flex align-center"><v-btn color="primary" :disabled="!grantUserId || !grantCompanyId || !grantRoleId" @click="assignCompany">{{ t('organization.grants.assign') }}</v-btn></v-col>
+        </v-row>
+        <v-divider class="my-3" />
+        <v-row>
+          <v-col cols="12" sm="4"><v-select v-model="grantBranchId" :items="branches" item-title="name" item-value="id" :label="t('organization.grants.branch')" /></v-col>
+          <v-col cols="12" sm="4" class="d-flex align-center"><v-btn variant="tonal" :disabled="!grantBranchId" :loading="grantsLoading" @click="grantBranch">{{ t('organization.grants.grantBranch') }}</v-btn></v-col>
+        </v-row>
+        <v-list density="compact"><v-list-item v-for="assignment in assignments" :key="assignment.id" :title="`${assignment.companyId} / ${assignment.roleId}`" :subtitle="`${t('organization.grants.branches')}: ${assignment.branchIds.join(', ') || '—'}`"><template #append><v-btn icon="mdi-delete-outline" variant="text" color="error" :aria-label="t('organization.grants.revoke')" @click="revokeAssignment(assignment)" /></template></v-list-item></v-list>
+      </v-card-text>
     </v-card>
 
     <v-dialog v-model="dialog" :fullscreen="smAndDown" max-width="820" persistent>

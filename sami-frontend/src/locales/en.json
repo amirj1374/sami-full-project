@@ -464,6 +464,18 @@
     "empty": {
       "title": "No companies yet",
       "description": "Add the first company to get started."
+    },
+    "grants": {
+      "title": "Company and branch access",
+      "help": "Enter a user and role; the server remains authoritative for authorization.",
+      "userId": "User ID",
+      "company": "Company",
+      "role": "Role",
+      "branch": "Branch",
+      "branches": "Branches",
+      "assign": "Assign company access",
+      "grantBranch": "Grant branch access",
+      "revoke": "Revoke access"
     }
   },
   "customers": {

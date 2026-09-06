@@ -15,4 +15,9 @@ public final class ContactDtos {
     public record LegacyMappingResponse(Long id, String legacyType, Long legacyId,
                                         String matchMethod, boolean reviewRequired,
                                         Long contactId) { }
+
+    public record RoleRequest(String role, Long legacyId) { }
+
+    public record MergeResponse(Long sourceId, Long targetId, int mappingsMoved,
+                                boolean sourcePreserved, String auditAction) { }
 }
