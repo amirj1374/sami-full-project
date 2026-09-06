@@ -5,7 +5,12 @@ $ErrorActionPreference = 'Stop'
 try {
   docker network create $network | Out-Null
   docker run -d --name $container --network $network -e POSTGRES_PASSWORD=test -e POSTGRES_DB=security postgres:16-alpine | Out-Null
-  for ($i = 0; $i -lt 30; $i++) { if ((docker exec $container pg_isready -U postgres -d security 2>$null) -match 'accepting connections') { break }; Start-Sleep 1 }
+  $ready = $false
+  for ($i = 0; $i -lt 30; $i++) {
+    if ((docker exec $container pg_isready -U postgres -d security 2>$null) -match 'accepting connections') { $ready = $true; break }
+    Start-Sleep 1
+  }
+  if (-not $ready) { throw "Temporary PostgreSQL instance did not become ready" }
   $sql = @'
 CREATE TABLE user_company_roles (id bigint primary key, tenant_id bigint not null, user_id bigint not null, company_id bigint not null, is_active boolean not null default true);
 CREATE TABLE user_branch_grants (assignment_id bigint not null, tenant_id bigint not null, branch_id bigint not null, is_active boolean not null default true);
@@ -24,6 +29,7 @@ DO $$ BEGIN
 END $$;
 '@
   $sql | docker exec -i $container psql -U postgres -d security -v ON_ERROR_STOP=1 | Out-Null
+  if ($LASTEXITCODE -ne 0) { throw "PostgreSQL security assertions failed" }
   Write-Output "PASS: PostgreSQL grant isolation, revocation, stale context and altered-company checks"
 } finally {
   docker rm -f $container 2>$null | Out-Null
