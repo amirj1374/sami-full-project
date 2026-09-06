@@ -1,8 +1,9 @@
 -- Phase 0 Foundation: additive organization scope, Contact mapping, and audit foundation.
 -- Existing data remains the compatibility source until consuming modules complete dual-read cutover.
 
-ALTER TABLE companies ADD CONSTRAINT uq_companies_id_tenant UNIQUE (id, tenant_id);
-ALTER TABLE users ADD CONSTRAINT uq_users_id_tenant UNIQUE (id, tenant_id);
+-- V43 already owns the unique composite indexes below.  PostgreSQL accepts those
+-- indexes as referenced keys, so V51 must reuse them rather than attempting to
+-- create same-named constraints (which collide with the index relations).
 
 DO $$
 BEGIN
@@ -170,6 +171,8 @@ CREATE TABLE contact_customer_roles (
     contact_id BIGINT NOT NULL REFERENCES contacts(id),
     customer_id BIGINT NOT NULL REFERENCES customers(id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    version BIGINT NOT NULL DEFAULT 0,
     CONSTRAINT uq_contact_customer_role_contact UNIQUE(contact_id),
     CONSTRAINT uq_contact_customer_role_customer UNIQUE(customer_id)
 );
@@ -181,6 +184,8 @@ CREATE TABLE contact_supplier_roles (
     contact_id BIGINT NOT NULL REFERENCES contacts(id),
     supplier_id BIGINT NOT NULL REFERENCES suppliers(id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    version BIGINT NOT NULL DEFAULT 0,
     CONSTRAINT uq_contact_supplier_role_contact_supplier UNIQUE(contact_id, supplier_id),
     CONSTRAINT uq_contact_supplier_role_supplier UNIQUE(supplier_id)
 );
@@ -195,6 +200,8 @@ CREATE TABLE legacy_contact_mappings (
     match_method VARCHAR(32) NOT NULL,
     review_required BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    version BIGINT NOT NULL DEFAULT 0,
     CONSTRAINT ck_legacy_contact_mapping_type CHECK (legacy_type IN ('CUSTOMER','SUPPLIER')),
     CONSTRAINT uq_legacy_contact_mapping UNIQUE(tenant_id, legacy_type, legacy_id)
 );
@@ -248,6 +255,11 @@ INSERT INTO contacts (tenant_id, identity_type, display_name, company_name, lega
 SELECT s.tenant_id, 'LEGAL', s.display_name, s.company_name, s.national_id, s.tax_number
 FROM suppliers s
 WHERE s.national_id IS NOT NULL
+  AND NOT EXISTS (
+      SELECT 1 FROM contacts c
+      WHERE c.tenant_id = s.tenant_id
+        AND (c.legal_identifier = s.national_id OR c.national_code = s.national_id)
+  )
 ON CONFLICT (tenant_id, legal_identifier) WHERE legal_identifier IS NOT NULL DO NOTHING;
 
 INSERT INTO contacts (tenant_id, identity_type, display_name, company_name, tax_number, legacy_source_type, legacy_source_id)
@@ -258,18 +270,16 @@ ON CONFLICT (tenant_id, legacy_source_type, legacy_source_id) WHERE legacy_sourc
 
 INSERT INTO legacy_contact_mappings (tenant_id, legacy_type, legacy_id, contact_id, match_method)
 SELECT s.tenant_id, 'SUPPLIER', s.id, c.id,
- CASE WHEN s.national_id IS NOT NULL AND (c.legal_identifier=s.national_id OR c.national_code=s.national_id) THEN 'EXACT_IDENTIFIER' ELSE 'EXACT_TAX_NUMBER' END
+ CASE WHEN s.national_id IS NOT NULL AND (c.legal_identifier=s.national_id OR c.national_code=s.national_id) THEN 'EXACT_IDENTIFIER' ELSE 'SUPPLIER_SOURCE' END
 FROM suppliers s
 JOIN LATERAL (
  SELECT c.id, c.legal_identifier, c.national_code, c.tax_number FROM contacts c
  WHERE c.tenant_id=s.tenant_id
  AND ((s.national_id IS NOT NULL AND (c.legal_identifier=s.national_id OR c.national_code=s.national_id))
-   OR (s.tax_number IS NOT NULL AND c.tax_number=s.tax_number)
    OR (c.legacy_source_type='SUPPLIER' AND c.legacy_source_id=s.id))
  ORDER BY CASE
    WHEN s.national_id IS NOT NULL AND (c.legal_identifier=s.national_id OR c.national_code=s.national_id) THEN 0
-   WHEN s.tax_number IS NOT NULL AND c.tax_number=s.tax_number THEN 1
-   ELSE 2
+   ELSE 1
  END, c.id
  LIMIT 1
 ) c ON TRUE;

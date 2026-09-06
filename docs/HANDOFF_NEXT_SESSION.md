@@ -174,6 +174,15 @@ Invoke-WebRequest -UseBasicParsing http://localhost/api/v1/menu -SkipHttpErrorCh
 
 Acceptance requires fresh-volume Flyway V1→V42, backend integration/schema validation, healthy PostgreSQL/backend/frontend, nginx `/api`, login, provenance equal to `$sha`, and browser/mobile RTL/LTR smoke for Customer Purchase, Data Quality, Legacy Asan, HAMTA, Market Sync and font rendering. Tear down the throwaway stack afterward; do not deploy.
 
+## Phase 0 foundation checkpoint — 2026-09-06
+
+- `development` started at `c236cdca7455b16ce5b7239ba00eb2ad04c840b0`. Phase 0 remains **IN PROGRESS**; do not start Phase 1.
+- PostgreSQL 16 fresh validation exposed and corrected three V51 defects before the migration had any successful application: V43 already owns the composite key indexes, the three `BaseEntity`-mapped Contact role/mapping tables needed `updated_at` and `version`, and an exact Supplier identity could otherwise create an unused duplicate Contact. Tax numbers are retained as evidence but are not an automatic identity merge key.
+- Fresh disposable validation: Flyway V1→V51, Hibernate, `/actuator/health`, one default Company/Branch, and bootstrap admin Company/Branch grants passed. The runtime bootstrap is required because Flyway precedes first-run admin creation.
+- Upgrade disposable validation: migrated a fresh PostgreSQL database only to V50, added sanitized existing User/Customer/Supplier rows, then upgraded to V51. It passed with 3 Contacts, 2 Customer roles, 2 Supplier roles, one Company role and one Branch grant. Mappings were `NATIONAL_CODE`, `EXACT_IDENTIFIER`, `CUSTOMER_SOURCE`, and `SUPPLIER_SOURCE` only.
+- Remaining Phase 0 work: PostgreSQL-backed tenant/company/branch isolation tests; Contact APIs, reconciliation/provenance reporting, dual-read compatibility, controlled merge/audit; Company/Branch grant administration UI; frontend/backend contract and full frontend/backend gates.
+- Disposable resources currently intentionally running for validation: `sami-phase0-fresh-*` and `sami-phase0-upgrade-*`. Tear them down with their exact named project/resources after evidence is captured; preserve unrelated Docker resources.
+
 ## Asan accounting continuation — 2026-08-22
 
 - Work is on `codex/feature-asan-accounting-reconciliation`, based on
