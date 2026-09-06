@@ -22,6 +22,7 @@ historical reports.
 | `DEPLOYMENT_AUTOMATION_GUIDE.md` | Canonical automated release/deploy/rollback workflow |
 | `docs/IMPLEMENTATION_BACKLOG.md` | Prioritized incomplete and future work |
 | `docs/IMPLEMENTATION_ROADMAP.md` | Frozen architecture's phased implementation specification |
+| `docs/PHASE_0_FOUNDATION_SPECIFICATION.md` | Phase 0 Foundation preservation, migration, security, audit, and acceptance specification |
 | Feature/release reports | Historical evidence for the named revision only |
 
 ## Start Here
@@ -47,6 +48,7 @@ historical reports.
 - `docs/12-files-and-communications.md` — shared file and communication foundations.
 - `docs/23-known-risks-and-technical-debt.md` and `docs/24-roadmap-and-open-decisions.md` — risks and unresolved architecture decisions.
 - `docs/IMPLEMENTATION_ROADMAP.md` — approved dependency order and phase-level implementation specifications.
+- `docs/PHASE_0_FOUNDATION_SPECIFICATION.md` — Phase 0 implementation prerequisite and acceptance plan.
 
 ## Backend
 
