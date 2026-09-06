@@ -49,6 +49,22 @@ CREATE TABLE user_branch_grants (
 );
 CREATE INDEX ix_ubg_scope ON user_branch_grants(tenant_id, branch_id, is_active);
 
+-- Existing platform administrators receive persisted, same-tenant bootstrap
+-- assignments only. Ordinary users receive no inferred Company or Branch grant.
+INSERT INTO user_company_roles (tenant_id, user_id, company_id, role_id)
+SELECT u.tenant_id, u.id, c.id, u.role_id
+FROM users u
+JOIN roles r ON r.id = u.role_id
+JOIN companies c ON c.tenant_id = u.tenant_id
+WHERE r.is_super_admin AND u.deleted_at IS NULL
+ON CONFLICT (tenant_id, user_id, company_id) DO NOTHING;
+
+INSERT INTO user_branch_grants (tenant_id, assignment_id, branch_id)
+SELECT a.tenant_id, a.id, b.id
+FROM user_company_roles a
+JOIN branches b ON b.tenant_id = a.tenant_id AND b.company_id = a.company_id
+ON CONFLICT (assignment_id, branch_id) DO NOTHING;
+
 CREATE TABLE user_organization_contexts (
     tenant_id BIGINT NOT NULL,
     user_id BIGINT NOT NULL,
