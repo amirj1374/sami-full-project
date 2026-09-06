@@ -6,16 +6,10 @@ Approved business behavior is in
 boundaries are in
 [`SAMI_ERP_ARCHITECTURE_CONSTITUTION.md`](SAMI_ERP_ARCHITECTURE_CONSTITUTION.md).
 
-## P0 — Architecture Freeze blockers (`STILL_OPEN`)
+## P0 — Architecture Freeze blockers
 
-1. **Sales invoice recognition timing:** when invoice and physical delivery are
-   separate, when does the Counterparty debt arise?
-2. **Purchase obligation recognition timing:** when supplier invoice and Goods
-   Receipt are separate, when does company debt arise?
-3. **Received-cheque settlement timing:** does customer cheque settle debt on
-   receipt or only after clearance?
-4. **Accounting and tax policy:** chart of accounts, fiscal periods, official
-   invoice/statements, tax/exemption/withholding, currency, and rounding policy.
+None. The Architecture Freeze baseline is recorded in
+[`SAMI_ERP_ARCHITECTURE_CONSTITUTION.md`](SAMI_ERP_ARCHITECTURE_CONSTITUTION.md).
 
 ## P1 — Business-policy configuration (`STILL_OPEN`)
 
@@ -25,6 +19,9 @@ boundaries are in
 4. Common approval-policy semantics where needed.
 5. Canonical file storage strategy, official Market Sync contracts, and Web Push
    provider/delivery policy.
+6. Tax rates, exemptions, withholding applicability, official-document layouts,
+   and statutory reporting configuration, owned as finance policy rather than
+   a commercial-domain architecture decision.
 
 ## P2 — Deferred product scope (`STILL_OPEN`)
 
@@ -43,3 +40,37 @@ boundaries are in
 - **RESOLVED:** Return and refund are separate traceable events.
 - **RESOLVED:** Party matching uses authoritative Iranian identifiers; uncertain identity never
   merges automatically.
+- **RESOLVED:** Registered order price is preserved at order registration.
+- **RESOLVED:** Confirmed orders may be corrected by their creator only during the configured
+  correction window, with the audit trail preserved.
+- **RESOLVED:** Quotation/proforma has no inventory or financial effect.
+- **RESOLVED:** Received customer cheques settle debt on receipt, remain pending collection until
+  clearance, and reduce available credit until they clear.
+- **RESOLVED:** Returned customer cheques do not recreate the original debt; they block further
+  credit sales until resolved.
+- **RESOLVED:** Delivered supplier cheques settle payable for payable-balance purposes; later return
+  does not recreate the original payable.
+- **RESOLVED:** Reservation timeout defaults to 30 minutes and is configurable.
+- **RESOLVED:** Full requested order quantity may be registered even when stock is short; available
+  quantity is reserved and the remainder is backordered.
+- **RESOLVED:** Debt forgiveness requires a recorded reason.
+- **RESOLVED:** Expense may be recorded before approval; approval state remains explicit.
+- **RESOLVED:** Accrued/unreceived income is recorded as a receivable from recognition time.
+- **RESOLVED:** A creator-only correction window defaults to 30 minutes and is configurable; manager
+  notification is required when such a correction occurs.
+- **RESOLVED:** Completely incorrect transactions may be manager-deleted if audit evidence is retained.
+- **RESOLVED:** Contact is the shared identity; Customer and Supplier are roles
+  on that identity. Confirmed duplicates merge only through an audited,
+  history-preserving operation.
+- **RESOLVED:** Active Company and Branch are real operating context. Access is
+  explicit positive grant; Company roles apply only within granted Branches.
+- **RESOLVED:** Sales Invoice creates customer receivable while Delivery controls
+  physical stock issue. Multiple traceable Sales Orders may be combined in one
+  Invoice for the same Counterparty.
+- **RESOLVED:** Accepted Supplier Invoice creates supplier payable while Goods
+  Receipt alone controls physical stock receipt.
+- **RESOLVED:** Canonical Accounting owns Journal/GL and receives finalized
+  commercial and Treasury facts through a posting contract.
+- **RESOLVED:** The operating monetary unit is Toman; multi-currency is deferred.
+- **RESOLVED:** Tax and official-document details are configuration-led finance
+  policy and do not block commercial-domain architecture.

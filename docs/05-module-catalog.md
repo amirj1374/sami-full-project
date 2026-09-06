@@ -48,7 +48,7 @@ alone.
 | Repairs | PLANNED | scheduling/portal/knowledge references only | No owning aggregate, API or UI |
 | Warranty | PLANNED | reference data/text only | No owning module |
 | Installments | PLANNED | portal/workflow references only | Ownership and accounting boundary are undecided |
-| Accounting | PLANNED | Sales-local accounting entries only | No canonical General Ledger, chart of accounts or posting contract |
+| Accounting | PLANNED | Canonical Accounting ownership and posting baseline are frozen | Journal/GL, chart of accounts, fiscal-period, tax configuration, and posting implementation are Phase 4 work |
 
 The frontend source contains partial views for Files and Appointments. They are
 deliberately not static routes: V35 disables those modules and

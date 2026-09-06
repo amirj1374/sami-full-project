@@ -28,6 +28,10 @@ enforced across those older modules.
 - Do not copy the default-tenant bridge into a new module as final design.
 - Do not treat future multi-company/intercompany scenarios as a current business
   requirement merely because Company/Branch structures exist technically.
+- Treat active Company and active Branch as trusted operating context, not
+  frontend-only selectors. A business document remains in its creating Company.
+- Grant Company and Branch access positively and explicitly. No grant means no
+  access; Company roles apply only to the user's granted Branches.
 
 ## Remaining enforcement work
 

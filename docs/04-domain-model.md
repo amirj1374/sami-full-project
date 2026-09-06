@@ -43,6 +43,25 @@ erDiagram
   PURCHASE ||--|{ PURCHASE_ITEM : contains
 ```
 
+## Active behavioral notes
+
+- Quotation and proforma are non-posting commercial documents.
+- Registered order price is preserved, and confirmed orders may only be
+  corrected by their creator during the configurable correction window.
+- When stock is short, the available quantity is reserved and the remainder is
+  backordered.
+- Received customer cheques settle debt on receipt and keep reducing available
+  credit until clearance.
+- Closed financial periods require manager authorization for modification and
+  are not treated as absolute immutability.
+- Contact is the shared identity for a real person or organization. Customer and
+  Supplier are commercial roles on that identity; controlled merges preserve
+  all commercial and financial history.
+- A Sales Invoice creates the customer receivable and an accepted Supplier
+  Invoice creates the supplier payable. Delivery and Goods Receipt remain the
+  independent physical-stock facts.
+- The operating monetary unit is Toman. Multi-currency is deferred scope.
+
 ## Invariants visible in architecture
 
 - Backend permissions—not frontend visibility—protect operations.

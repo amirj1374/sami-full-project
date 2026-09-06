@@ -178,6 +178,8 @@ with future expansion.
 - Deactivation preserves history; reactivation/deletion require manager approval.
 - Potential duplicates may be suggested; uncertain merge requires manager/admin
   action and full audit.
+- Contact is the shared identity. Customer and Supplier are roles on that
+  Contact; a controlled merge preserves all history under the surviving Contact.
 - Customer history includes calls, follow-ups, issues, negotiation result, notes,
   and satisfaction follow-up.
 
@@ -185,6 +187,13 @@ with future expansion.
 
 - Partial delivery and multiple Invoices per Order are allowed; final single
   invoice is allowed.
+- Registered order price is preserved.
+- Confirmed orders may be corrected by their creator only during the
+  configurable correction window, subject to the preserved audit history.
+- Quotation/proforma has no stock or financial effect.
+- A full requested order quantity may be registered even when stock is
+  insufficient; available quantity is reserved and the remainder becomes
+  outstanding/backordered.
 - Customer advance, partial/multi-method payment, allocation, return/refund,
   credit/account credit, discount, price override, forgiveness, and correction
   follow the business-rules specification.
@@ -194,12 +203,21 @@ with future expansion.
   subject to explicit manager exception where approved.
 - Confirmed Order editing is allowed only while dependencies, consistency, and
   audit history remain preserved.
+- Sales Invoice creates the customer receivable; Fulfillment/Delivery remains
+  the independent physical-stock fact.
+- Several traceable Sales Orders for one Counterparty may be combined in one
+  Sales Invoice.
 
 ### Purchasing / Supplier Settlement
 
 - Credit purchase creates debt; supplier advance creates receivable until goods
   or refund settle it.
 - Purchase Invoice and Goods Receipt are separate; stock increases only on actual receipt.
+- An accepted Supplier Invoice creates the supplier payable; Goods Receipt
+  remains the independent physical-stock fact.
+- Supplier invoice difference may be recorded but requires manager approval.
+- Defective goods are not accepted as a normal receiving outcome; later handling
+  needs an explicit approved workflow.
 - Supplier payment defaults to oldest debt when no specific debt is selected.
 - Supplier return/refund/replacement/invoice-difference/delay behavior follows
   the business-rules specification.
@@ -209,12 +227,19 @@ with future expansion.
 - Bank accounts/cashboxes have independent balances.
 - Receipt, payment, transfer, cheque, adjustment, refund, and correction are
   separate traceable financial events.
+- Received customer cheques settle debt on receipt, remain pending collection
+  until clearance, and reduce available credit until they clear.
+- Delivered supplier cheques settle payable for payable-balance purposes; later
+  return does not recreate the original payable.
 - Internal transfer is not income/expense; financial adjustment requires request,
   manager approval, and auditable evidence.
+- Completely incorrect transactions may be manager-deleted only with audit
+  evidence retained.
 
 ### Automation / Customer Intelligence
 
 - Debt and supplier-delay reminders use Scheduler/Notification Center.
+- Customer decline or follow-up need creates a seller/user follow-up task.
 - Inactivity creates manager notification/follow-up. Three days after completed
   product sale, seller receives satisfaction/issue follow-up reminder.
 - Customer score and churn suggestions are advisory, never automatic restriction
@@ -224,18 +249,33 @@ with future expansion.
 
 - Tenant -> Company -> Branch remains technical hierarchy. Current business scope
   is one operating company; this supersedes an active Intercompany requirement.
+- Active Company and Branch are operating context, not frontend-only selectors.
+  Company/Branch access is explicit positive grant; a Company role applies only
+  within granted Branches, and a created business document stays in its Company.
+
+### Product / Pricing
+
+- Product and Product Variant are distinct; Variant owns stockable identity and
+  SKU where it exists, while simple Product remains supported.
+- UOM has base-unit, conversion, and transaction-snapshot behavior.
+- Price Lists are policy-driven with configurable priority. Market Sync may
+  propose base/list prices but never changes confirmed document snapshots.
+
+### Accounting / Finance
+
+- Canonical Accounting owns Journal/GL and receives finalized commercial and
+  Treasury facts through its posting contract.
+- Current monetary operation is Toman. Multi-currency is deferred scope.
+- Tax, exemption, withholding, official-document, and statutory-reporting
+  details are configuration-led finance policy; they do not change commercial
+  domain ownership.
 
 ## 13. Pending Product Decisions
 
 ### P0
 
-1. When invoice and delivery occur at different times, does customer debt arise
-   at Invoice issue or physical delivery?
-2. When supplier invoice and Goods Receipt occur at different times, does company
-   debt arise at invoice record time or receipt?
-3. Does customer cheque settle debt/usable credit on receipt or only clearance?
-4. Accounting/Tax: chart of accounts, periods, tax/exemption/withholding, official
-   invoice/statements, currency, and rounding.
+None. Product decisions required to define the architecture baseline are
+resolved.
 
 ### P1
 
@@ -244,6 +284,8 @@ with future expansion.
 3. Manager-delegation policy when multiple managers exist.
 4. Common approval-policy semantics, storage strategy, official Market Sync
    contracts, and Web Push delivery policy.
+5. Tax rates, exemptions, withholding applicability, official-document layouts,
+   and statutory reporting configuration.
 
 ### P2
 
@@ -255,8 +297,10 @@ with future expansion.
 2. Customer/Supplier data overlaps and does not yet implement unified Counterparty balance.
 3. Canonical Accounting is absent; local evidence is not official ledger truth.
 4. Current company operation is single-company; speculative Intercompany adds risk.
-5. Invoice/purchase obligation/cheque timing affects balance, credit, reporting, and Accounting.
-6. Legacy Asan is staging/reconciliation only until Accounting/Final Import policy exists.
+5. Current implementation has not yet adopted the frozen Sales Invoice/
+   Supplier Invoice receivable/payable timing.
+6. Legacy Asan is staging/reconciliation only until Phase 4 Accounting and
+   Phase 6 Final Import acceptance are implemented.
 
 ## 15. Future Architecture Roadmap
 
@@ -275,15 +319,38 @@ Establish canonical Accounting/Tax before official reporting or Final Asan Impor
 ### Legacy Retirement
 After approved Final Import/reconciliation, retain required evidence and retire Legacy Asan from active workflow.
 
-## 16. Architecture Freeze
+## 16. ARCHITECTURE FREEZE BASELINE
 
 **Architecture Version:** v1.0
 
-**Status:** DRAFT
+**Status:** READY FOR FREEZE
 
-Party matching, Order/Invoice cardinality, advance payment, return/refund, and
-active Intercompany priority are resolved. Freeze remains blocked only by P0:
-sales invoice recognition timing, purchase obligation recognition timing,
-customer cheque settlement timing, and Accounting/Tax policy.
+This baseline fixes the production architecture for phased development:
 
-The P0 decisions must be recorded explicitly before status changes to READY FOR FREEZE.
+- **Scope and hierarchy:** Tenant -> Company -> Branch; Company/Branch are
+  trusted active context, grants are explicit and positive, and commercial
+  documents never move Company after creation.
+- **Identity:** Contact is the shared real-world identity. Customer/Supplier are
+  roles, duplicate handling is controlled/audited, and financial/business
+  history is preserved.
+- **Commercial ownership:** Sales owns Quotation, Order, Delivery/Fulfillment,
+  Invoice, Return/Credit and pricing; Purchasing owns Purchase Order, Goods
+  Receipt, Supplier Invoice and supplier follow-up; Inventory owns physical
+  stock, reservation, movements and Serial/IMEI; Treasury owns settlement.
+- **Financial ownership:** Accounting owns canonical Journal/GL. Sales Invoice
+  creates receivable, accepted Supplier Invoice creates payable, and finalized
+  Treasury movements post through the accounting contract. Closed-period and
+  correction behavior preserves auditable history.
+- **Key dependencies:** Sales/Purchasing call Inventory for physical stock and
+  Treasury for settlement; Accounting consumes finalized domain facts; CRM
+  supplies Contact identity and history; Automation/Scheduler/Notification
+  execute approved reminders without owning business policy; Market Sync is a
+  price input only; Asan retains staging provenance until final acceptance.
+- **Invariants:** approved document price/tax/discount and quantity snapshots
+  are immutable; partial delivery, backorder, returns, advances, cheques, and
+  corrections remain separately traceable; no domain bypasses its owner.
+
+Implementation order, compatibility work, and per-phase acceptance criteria are
+defined in [`IMPLEMENTATION_ROADMAP.md`](IMPLEMENTATION_ROADMAP.md). Freeze
+approves the target architecture and requirements; it does not claim that all
+frozen capabilities are implemented.

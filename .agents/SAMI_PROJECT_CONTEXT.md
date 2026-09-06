@@ -1,6 +1,6 @@
 # SAMI ERP — reusable development context
 
-Last repository inspection: 2026-09-05. Source/configuration is authoritative; current operational state is in `docs/HANDOFF_NEXT_SESSION.md`.
+Last repository inspection: 2026-09-06. Source/configuration is authoritative; current operational state is in `docs/25-overnight-handoff.md`.
 
 ## Repository and stack
 
@@ -29,6 +29,8 @@ Last repository inspection: 2026-09-05. Source/configuration is authoritative; c
 - Market Sync: V42 source/pricing/inventory/sale/rules/history/health UI implemented. Authorized public HTTPS JSON feeds can use the bounded `STRUCTURED_JSON_V1` adapter with environment-referenced credentials. Production remains partial until official Rond contracts and a real website publication connector exist; publication fails closed.
 - Treasury: V49 owns tenant-scoped financial accounts, transactions, immutable movements, reversals, cheques and daily closings; `/treasury` is permission-gated and bilingual.
 - Purchase Payment Requests: V50 owns employee requests, decisions, partial/multiple receipts and daily capacity. Payments post only through Treasury; reminders use Scheduler and Notification Center; `/purchase-payments` is permission-gated and bilingual.
+- Finalized Product Owner decisions fix Contact as the shared Counterparty identity, explicit Company/Branch scope, registered order price preservation, creator-only correction windows, quotation/proforma non-posting, configurable reservation timeout/backorder behavior, cheque settlement, and mandatory-reason debt forgiveness.
+- Architecture Freeze baseline is READY: Sales Invoice creates receivable, accepted Supplier Invoice creates payable, Canonical Accounting owns Journal/GL, current currency is Toman, and tax/statutory details are configuration-led finance policy. Implementation remains phased; this is not an implementation-complete claim.
 - Automation notifications: the existing `notify` action now uses Notification Center with tenant/user validation and deterministic idempotency rather than a log-only side effect.
 - Employees & Attendance: V43 introduces the canonical tenant-scoped employee identity, optional user linkage, company/branch assignment, manual clock-in/out, correction/report contracts, audit trail, permissions, bilingual UI and mobile record cards. Payroll, leave workflows and biometric/device ingestion are not part of this phase; fresh PostgreSQL runtime and live-browser validation remain pending.
 - 0912 SIM Investment: V47 provides tenant-scoped, idempotent CSV/XLSX market-snapshot staging, normalized 0912 identities, price/listing history, rond-pattern classification, confidence-aware market valuation, opportunity ranking, audit evidence, bilingual responsive UI and read-only links to canonical purchasing/sales prices. Imports never write Inventory, Purchasing or Sales records; zero prices remain evidence but are excluded from valuation.
