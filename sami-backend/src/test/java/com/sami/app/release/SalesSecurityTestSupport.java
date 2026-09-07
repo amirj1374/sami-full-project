@@ -24,6 +24,11 @@ public final class SalesSecurityTestSupport {
         return authenticate(userId, null, email, true);
     }
 
+    /** Platform principal with a trusted tenant context for tenant lifecycle tests. */
+    public static SecurityUser authenticatePlatformTenantUser(Long userId, Long tenantId, String email) {
+        return authenticate(userId, tenantId, email, true);
+    }
+
     public static void clear() {
         SecurityContextHolder.clearContext();
     }
