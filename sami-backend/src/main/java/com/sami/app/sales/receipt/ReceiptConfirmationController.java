@@ -1,0 +1,2 @@
+package com.sami.app.sales.receipt; import lombok.RequiredArgsConstructor; import org.springframework.web.bind.annotation.*; import com.sami.app.common.api.ApiResponse; import java.util.Map;
+@RestController @RequestMapping("/api/v1/sales-receipts") @RequiredArgsConstructor public class ReceiptConfirmationController { private final ReceiptConfirmationOrchestrator orchestrator; @PostMapping("/{id}/confirm-now") public ApiResponse<Map<String,Object>> confirm(@PathVariable Long id){return ApiResponse.ok(orchestrator.confirm(id));} }
