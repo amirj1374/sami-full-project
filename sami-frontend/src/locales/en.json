@@ -1931,5 +1931,6 @@
     }
   },
   "salesDocuments": { "title":"Quotations & Proformas", "new":"New document", "quotation":"Quotation", "proforma":"Proforma", "number":"Number", "type":"Type", "status":"Status", "total":"Total", "issue":"Issue", "cancel":"Cancel", "expire":"Expire", "history":"History", "saved":"Document saved", "scopeRequired":"Select an active company and branch first." },
-  "salesOrders": { "title":"Sales Orders", "new":"New order", "confirm":"Confirm", "backordered":"Backordered", "reserved":"Reserved", "fulfilled":"Fulfilled", "fromQuotation":"Convert to order", "delivery":"Delivery", "newDelivery":"Create delivery", "deliveries":"Deliveries", "ordered":"Ordered", "previouslyDelivered":"Previously delivered", "deliverable":"Deliverable now", "deliveryQuantity":"Delivery quantity" }
+  "salesOrders": { "title":"Sales Orders", "new":"New order", "confirm":"Confirm", "backordered":"Backordered", "reserved":"Reserved", "fulfilled":"Fulfilled", "fromQuotation":"Convert to order", "delivery":"Delivery", "newDelivery":"Create delivery", "deliveries":"Deliveries", "ordered":"Ordered", "previouslyDelivered":"Previously delivered", "deliverable":"Deliverable now", "deliveryQuantity":"Delivery quantity" },
+  "salesInvoices": { "title":"Sales Invoices", "new":"New invoice", "number":"Number", "status":"Status", "total":"Total", "issue":"Issue" }
 }
