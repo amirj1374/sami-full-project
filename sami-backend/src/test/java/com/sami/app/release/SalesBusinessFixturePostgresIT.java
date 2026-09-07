@@ -30,7 +30,9 @@ class SalesBusinessFixturePostgresIT extends PostgresApplicationFixture {
 
     @Test void shouldCreateTenantAndCompany() {
         Tenant tenant = createTenant();
-        SalesSecurityTestSupport.authenticateTenantUser(9002L, tenant.getId(), "tenant@sami.test", "organization:create", "organization:edit");
+        // V4 bootstrap seeds the admin user with id 1; organization audit rows
+        // enforce a foreign key to users, so use that real persisted actor.
+        SalesSecurityTestSupport.authenticateTenantUser(1L, tenant.getId(), "admin@sami.local", "organization:create", "organization:edit");
         CompanyRequest request = new CompanyRequest("IT-COMPANY-" + tenant.getId(), "SAMI Integration Company", null, null, null, "IRR", "Asia/Tehran", "fa", 1, null, null, null, null, null, null, null, null, true, 0, null);
         var company = companies.create(request);
         assertNotNull(company.id());

@@ -9,7 +9,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 /** Shared real PostgreSQL/Spring fixture for persisted acceptance tests. */
 @Testcontainers
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public abstract class PostgresApplicationFixture {
     @Container
     protected static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine")
@@ -25,5 +25,6 @@ public abstract class PostgresApplicationFixture {
         registry.add("spring.flyway.url", POSTGRES::getJdbcUrl);
         registry.add("spring.flyway.user", POSTGRES::getUsername);
         registry.add("spring.flyway.password", POSTGRES::getPassword);
+        registry.add("app.demo.enabled", () -> false);
     }
 }
