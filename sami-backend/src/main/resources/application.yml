@@ -63,6 +63,9 @@ app:
   purchasing:
     number-include-year: ${PUR_NUMBER_INCLUDE_YEAR:true}
     number-padding: ${PUR_NUMBER_PADDING:6}
+  sales:
+    order:
+      correction-window: ${SALES_ORDER_CORRECTION_WINDOW:PT24H}
   crm:
     customer-code-prefix: ${CRM_CODE_PREFIX:C}
     customer-code-padding: ${CRM_CODE_PADDING:6}

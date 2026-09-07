@@ -15,6 +15,8 @@ public interface InventoryStockOperations {
 
     void reserve(ReservationCommand command);
 
+    ReservationResult reserveAvailable(ReservationCommand command);
+
     void release(String sourceType, Long sourceId, String reason);
 
     void issue(String sourceType, Long sourceId);
@@ -48,6 +50,11 @@ public interface InventoryStockOperations {
     record ReservationCommand(Long companyId, Long branchId, String sourceType,
                               Long sourceId, List<StockLine> lines) {
     }
+
+    record ReservationResult(List<ReservationAllocation> allocations) {}
+
+    record ReservationAllocation(Long sourceLineId, BigDecimal orderedQuantity,
+                                  BigDecimal reservedQuantity, BigDecimal backorderedQuantity) {}
 
     record CustomerReturnCommand(Long companyId, Long branchId, String sourceType,
                                  Long sourceId, List<StockLine> lines) {

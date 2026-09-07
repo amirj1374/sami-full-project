@@ -110,6 +110,27 @@ public class InventoryStockService implements InventoryStockOperations {
 
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
+    public ReservationResult reserveAvailable(ReservationCommand command) {
+        Long tenantId = tenantContext.requireTenantId();
+        InventoryWarehouse warehouse = ledger.salesWarehouse(tenantId, command.branchId());
+        Long locationId = ledger.requireLocation(tenantId, warehouse.getId(), null);
+        List<ReservationAllocation> allocations = requireLines(command.lines()).stream().map(line -> {
+            BigDecimal reserved = ledger.reserveAvailable(tenantId, line.productId(), warehouse.getId(), locationId,
+                    line.quantity(), normalize(command.sourceType()), command.sourceId(), line.sourceLineId(),
+                    line.serialNumber(), line.imei());
+            return new ReservationAllocation(line.sourceLineId(), line.quantity(), reserved,
+                    line.quantity().subtract(reserved).max(BigDecimal.ZERO));
+        }).toList();
+        ledger.audit(tenantId, "RESERVATION", command.sourceId(), "CREATED", null,
+                Map.of("sourceType", normalize(command.sourceType()), "warehouseId", warehouse.getId(),
+                        "lines", allocations.size(), "partialAllowed", true));
+        ledger.publish(tenantId, "StockReserved", "RESERVATION", command.sourceId(),
+                Map.of("sourceType", normalize(command.sourceType()), "partialAllowed", true));
+        return new ReservationResult(allocations);
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
     public void release(String sourceType, Long sourceId, String reason) {
         Long tenantId = tenantContext.requireTenantId();
         List<InventoryLedgerService.ReservationState> reservations =

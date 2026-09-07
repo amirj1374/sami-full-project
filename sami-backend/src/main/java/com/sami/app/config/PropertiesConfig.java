@@ -11,6 +11,7 @@ import com.sami.app.legacyimport.LegacyImportProperties;
 import com.sami.app.licensing.LicensingProperties;
 import com.sami.app.purchasing.PurchasingProperties;
 import com.sami.app.supplier.SupplierProperties;
+import com.sami.app.sales.order.SalesOrderProperties;
 import com.sami.app.security.jwt.JwtProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
@@ -32,6 +33,7 @@ import org.springframework.context.annotation.Configuration;
         PortalProperties.class,
         DemoNotificationProperties.class,
         LegacyImportProperties.class
+        , SalesOrderProperties.class
 })
 public class PropertiesConfig {
 }

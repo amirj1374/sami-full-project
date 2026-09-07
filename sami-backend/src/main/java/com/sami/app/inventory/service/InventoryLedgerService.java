@@ -181,6 +181,41 @@ public class InventoryLedgerService {
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
+    public BigDecimal reserveAvailable(Long tenantId, Long productId, Long warehouseId, Long locationId,
+                                       BigDecimal quantity, String sourceType, Long sourceId, Long sourceLineId,
+                                       String serialNumber, String imei) {
+        requirePositive(quantity);
+        requireProduct(tenantId, productId);
+        Long location = requireLocation(tenantId, warehouseId, locationId);
+        BalanceState state = lockBalance(tenantId, warehouseId, location, productId);
+        BigDecimal available = state.onHand().subtract(state.reserved()).max(BigDecimal.ZERO);
+        BigDecimal reserved = available.min(quantity);
+        if (reserved.signum() == 0) return BigDecimal.ZERO;
+        Long serialId = findSerialForUpdate(tenantId, productId, warehouseId, serialNumber, imei, "AVAILABLE");
+        if (serialId != null && reserved.compareTo(BigDecimal.ONE) != 0) {
+            throw new ApiException(ErrorCode.VALIDATION_FAILED,
+                    "Serialized reservations must have quantity 1");
+        }
+        updateBalance(state.id(), state.onHand(), state.reserved().add(reserved), state.averageCost());
+        jdbc.queryForObject("""
+                insert into inventory_reservations(
+                    tenant_id,product_id,warehouse_id,location_id,source_type,source_id,
+                    source_line_id,quantity,serial_unit_id,created_by)
+                values(?,?,?,?,?,?,?,?,?,?) returning id
+                """, Long.class, tenantId, productId, warehouseId, location,
+                normalize(sourceType), sourceId, sourceLineId, reserved, serialId, CurrentActor.id());
+        if (serialId != null) {
+            jdbc.update("update inventory_serial_units set status='RESERVED',updated_at=now(),version=version+1 where id=?",
+                    serialId);
+        }
+        recordMovement(tenantId, productId, warehouseId, location, null, null,
+                "RESERVE", reserved, state.averageCost(), sourceType, sourceId,
+                sourceLineId, "RESERVE-" + normalize(sourceType) + "-" + sourceId + "-" + sourceLineId,
+                null);
+        return reserved;
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
     public void releaseReservation(Long tenantId, ReservationState reservation, String reason) {
         BalanceState state = lockBalance(tenantId, reservation.warehouseId(),
                 reservation.locationId(), reservation.productId());

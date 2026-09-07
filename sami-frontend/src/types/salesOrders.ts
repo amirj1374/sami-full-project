@@ -1,0 +1,5 @@
+export type SalesOrderStatus = 'DRAFT' | 'CONFIRMED' | 'CANCELLED'
+export interface SalesOrderLine { id:number; sourceLineId?:number; productId:number; sku:string; name:string; quantity:number; unitPrice:number; discount:number; lineTotal:number; reservedQuantity:number; backorderedQuantity:number; fulfilledQuantity:number }
+export interface SalesOrder { id:number; number:string; status:SalesOrderStatus; companyId:number; branchId:number; customerId:number; contactId:number; sourceDocumentId?:number; currency:string; subtotal:number; discountTotal:number; finalAmount:number; notes?:string; lines:SalesOrderLine[]; createdAt:string; confirmedAt?:string; version:number }
+export interface SalesOrderPayload { companyId:number; branchId:number; customerId:number; currency?:string; notes?:string; lines:Array<{productId:number;quantity:number;unitPrice:number;discount?:number}>; expectedVersion?:number }
+export interface SalesOrderAudit { id:number; action:string; actorId?:number; actorEmail?:string; occurredAt:string }
