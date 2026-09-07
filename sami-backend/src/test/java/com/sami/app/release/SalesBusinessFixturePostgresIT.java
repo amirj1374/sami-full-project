@@ -3,6 +3,7 @@ package com.sami.app.release;
 import com.sami.app.licensing.domain.Tenant;
 import com.sami.app.licensing.service.TenantService;
 import com.sami.app.organization.service.CompanyService;
+import com.sami.app.organization.service.BranchService;
 import com.sami.app.organization.dto.CompanyDtos.CompanyRequest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.junit.jupiter.api.AfterEach;
@@ -19,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 class SalesBusinessFixturePostgresIT extends PostgresApplicationFixture {
     @Autowired TenantService tenants;
     @Autowired CompanyService companies;
+    @Autowired BranchService branches;
     @Autowired JdbcTemplate jdbc;
 
     @AfterEach void clearSecurity() { SalesSecurityTestSupport.clear(); }
@@ -38,6 +40,13 @@ class SalesBusinessFixturePostgresIT extends PostgresApplicationFixture {
         assertNotNull(company.id());
         assertEquals(tenant.getId(), jdbc.queryForObject("select tenant_id from companies where id=?", Long.class, company.id()));
         assertEquals(1, companies.list().stream().filter(c -> c.id().equals(company.id())).count());
+        Long branchTypeId = jdbc.queryForObject("select id from branch_types where is_default and tenant_id is null limit 1", Long.class);
+        var branch = branches.create(company.id(), new com.sami.app.organization.dto.BranchDtos.Request(
+                "IT-BRANCH-" + tenant.getId(), "SAMI Integration Branch", branchTypeId, true, 1, null));
+        assertNotNull(branch.id());
+        assertEquals(tenant.getId(), jdbc.queryForObject("select tenant_id from branches where id=?", Long.class, branch.id()));
+        assertEquals(company.id(), jdbc.queryForObject("select company_id from branches where id=?", Long.class, branch.id()));
+        assertEquals(1, branches.list(company.id()).stream().filter(b -> b.id().equals(branch.id())).count());
     }
 
     private Tenant createTenant() {
