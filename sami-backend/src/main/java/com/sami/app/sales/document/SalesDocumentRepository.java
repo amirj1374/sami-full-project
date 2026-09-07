@@ -1,0 +1,2 @@
+package com.sami.app.sales.document; import java.util.*; import org.springframework.data.jpa.repository.*;
+public interface SalesDocumentRepository extends JpaRepository<SalesDocument,Long> { @EntityGraph(attributePaths={"lines"}) Optional<SalesDocument> findByIdAndTenantId(Long id,Long tenantId); @EntityGraph(attributePaths={"lines"}) List<SalesDocument> findByTenantIdAndCompanyIdAndBranchIdOrderByCreatedAtDesc(Long tenantId,Long companyId,Long branchId); @Query(value="select nextval('sales_document_number_seq')",nativeQuery=true) long nextNumber(); }

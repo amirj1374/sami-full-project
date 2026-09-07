@@ -1,0 +1,3 @@
+package com.sami.app.sales.document;
+import com.sami.app.common.domain.BaseEntity; import jakarta.persistence.*; import lombok.*; import java.math.BigDecimal;
+@Entity @Table(name="sales_document_lines") @Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor public class SalesDocumentLine extends BaseEntity { @ManyToOne(fetch=FetchType.LAZY) @JoinColumn(name="document_id") SalesDocument document; @Column(name="tenant_id") Long tenantId; @Column(name="product_id") Long productId; @Column(name="product_sku") String productSku; @Column(name="product_name") String productName; @Column BigDecimal quantity; @Column(name="unit_price") BigDecimal unitPrice; @Column BigDecimal discount; @Column(name="line_total") BigDecimal lineTotal; }

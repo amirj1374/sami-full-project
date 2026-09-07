@@ -6,6 +6,7 @@ import AppPageHeader from "@/components/AppPageHeader.vue";
 import SaleActionPanel from "@/components/SaleActionPanel.vue";
 import SalesReportsPanel from "@/components/SalesReportsPanel.vue";
 import LostSalesPanel from "@/components/LostSalesPanel.vue";
+import SalesDocumentsPanel from "@/components/SalesDocumentsPanel.vue";
 import AppQuickCreateButton from "@/components/AppQuickCreateButton.vue";
 import AppMoneyField from "@/components/AppMoneyField.vue";
 import AppMobileRecordCard from "@/components/AppMobileRecordCard.vue";
@@ -80,7 +81,7 @@ function selectCreatedProduct(product: Product) {
   }
   quickProductLine.value = null;
 }
-const workspace = ref<"sales" | "reports" | "lost">("sales"),
+const workspace = ref<"sales" | "documents" | "reports" | "lost">("sales"),
   editingId = ref<number | null>(null),
   form = reactive({
     companyId: null as number | null,
@@ -363,6 +364,7 @@ onMounted(load);
       ><v-tab value="sales" prepend-icon="mdi-receipt-text-outline">{{
         t("sales.invoices")
       }}</v-tab
+      ><v-tab value="documents" prepend-icon="mdi-file-document-outline">{{ t("salesDocuments.title") }}</v-tab
       ><v-tab
         v-if="can('sales:report')"
         value="reports"
@@ -395,6 +397,7 @@ onMounted(load);
         ></v-col
       ></v-row
     >
+    <SalesDocumentsPanel v-if="workspace === 'documents'" />
     <v-card v-if="workspace === 'sales'" class="app-data-surface" rounded="xl"
       ><v-card-title class="d-flex align-center ga-2"
         ><v-icon icon="mdi-receipt-text-outline" /><span>{{

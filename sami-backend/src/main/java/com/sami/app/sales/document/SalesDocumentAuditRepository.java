@@ -1,0 +1,1 @@
+package com.sami.app.sales.document; import java.util.*; import org.springframework.data.jpa.repository.JpaRepository; public interface SalesDocumentAuditRepository extends JpaRepository<SalesDocumentAudit,Long>{ List<SalesDocumentAudit> findByDocumentIdAndTenantIdOrderByOccurredAtDesc(Long documentId,Long tenantId); }

@@ -1929,5 +1929,6 @@
       "access": { "reason": "Your account cannot perform this operation, or your session has expired", "solution": "Sign in again. If it continues, ask an administrator for the legacy migration permission" },
       "unexpected": { "reason": "SAMI could not complete the file check", "solution": "Try again. If it continues, send the displayed filename and stage to support" }
     }
-  }
+  },
+  "salesDocuments": { "title":"Quotations & Proformas", "new":"New document", "quotation":"Quotation", "proforma":"Proforma", "number":"Number", "type":"Type", "status":"Status", "total":"Total", "issue":"Issue", "cancel":"Cancel", "expire":"Expire", "history":"History", "saved":"Document saved", "scopeRequired":"Select an active company and branch first." }
 }
