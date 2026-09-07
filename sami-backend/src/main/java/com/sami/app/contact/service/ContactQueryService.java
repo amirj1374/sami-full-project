@@ -2,6 +2,7 @@ package com.sami.app.contact.service;
 
 import com.sami.app.common.tenancy.TenantContext;
 import com.sami.app.common.exception.ResourceNotFoundException;
+import com.sami.app.contact.publicapi.ContactCustomerRoleLookup;
 import com.sami.app.contact.dto.ContactDtos.ContactResponse;
 import com.sami.app.contact.dto.ContactDtos.LegacyMappingResponse;
 import java.util.List;
@@ -12,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-public class ContactQueryService {
+public class ContactQueryService implements ContactCustomerRoleLookup {
     private final JdbcTemplate jdbc;
     private final TenantContext tenantContext;
 
@@ -52,6 +53,21 @@ public class ContactQueryService {
                   from legacy_contact_mappings m join contacts c on c.id=m.contact_id and c.tenant_id=m.tenant_id
                  where m.tenant_id=? and m.contact_id=? order by m.legacy_type,m.legacy_id
                 """, (rs, row) -> new LegacyMappingResponse(rs.getLong(1), rs.getString(2), rs.getLong(3), rs.getString(4), rs.getBoolean(5), rs.getLong(6)), tenant, contactId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Long requireContactIdForCustomer(Long customerId) {
+        Long tenant = tenantContext.requireTenantId();
+        List<Long> matches = jdbc.query("""
+                select r.contact_id
+                  from contact_customer_roles r
+                  join contacts c on c.id=r.contact_id and c.tenant_id=r.tenant_id
+                 where r.tenant_id=? and r.customer_id=?
+                   and c.merged_into_id is null and c.is_active=true
+                """, (rs, row) -> rs.getLong(1), tenant, customerId);
+        return matches.stream().findFirst()
+                .orElseThrow(() -> ResourceNotFoundException.of("Customer Contact role", customerId));
     }
 
     private ContactResponse mapContact(java.sql.ResultSet rs, int row) throws java.sql.SQLException {
