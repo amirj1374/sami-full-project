@@ -247,21 +247,29 @@ public class InventoryLedgerService {
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void issueReservation(Long tenantId, ReservationState reservation) {
+        issueReservation(tenantId, reservation, reservation.quantity().subtract(reservation.fulfilledQuantity()),
+                reservation.sourceType(), reservation.sourceId(), "ISSUE-" + reservation.id());
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void issueReservation(Long tenantId, ReservationState reservation, BigDecimal quantity,
+                                 String provenanceType, Long provenanceId, String operationKey) {
         BalanceState state = lockBalance(tenantId, reservation.warehouseId(),
                 reservation.locationId(), reservation.productId());
         BigDecimal remaining = reservation.quantity().subtract(reservation.fulfilledQuantity());
-        if (remaining.signum() <= 0 || state.onHand().compareTo(remaining) < 0
-                || state.reserved().compareTo(remaining) < 0) {
+        if (quantity == null || quantity.signum() <= 0 || quantity.compareTo(remaining) > 0
+                || state.onHand().compareTo(quantity) < 0 || state.reserved().compareTo(quantity) < 0) {
             throw new ApiException(ErrorCode.RESOURCE_CONFLICT,
                     "Reserved stock is no longer available");
         }
-        updateBalance(state.id(), state.onHand().subtract(remaining),
-                state.reserved().subtract(remaining), state.averageCost());
+        BigDecimal fulfilled = reservation.fulfilledQuantity().add(quantity);
+        updateBalance(state.id(), state.onHand().subtract(quantity),
+                state.reserved().subtract(quantity), state.averageCost());
         jdbc.update("""
                 update inventory_reservations
-                set fulfilled_quantity=quantity,status='FULFILLED',updated_at=now(),version=version+1
+                set fulfilled_quantity=?,status=case when ? >= quantity then 'FULFILLED' else 'ACTIVE' end,updated_at=now(),version=version+1
                 where id=? and tenant_id=? and status='ACTIVE'
-                """, reservation.id(), tenantId);
+                """, fulfilled, fulfilled, reservation.id(), tenantId);
         if (reservation.serialUnitId() != null) {
             jdbc.update("""
                     update inventory_serial_units
@@ -270,9 +278,9 @@ public class InventoryLedgerService {
                     """, reservation.serialUnitId(), tenantId);
         }
         recordMovement(tenantId, reservation.productId(), reservation.warehouseId(),
-                reservation.locationId(), null, null, "ISSUE", remaining,
-                state.averageCost(), reservation.sourceType(), reservation.sourceId(),
-                reservation.sourceLineId(), "ISSUE-" + reservation.id(), null);
+                reservation.locationId(), null, null, "ISSUE", quantity,
+                state.averageCost(), provenanceType, provenanceId,
+                reservation.sourceLineId(), operationKey, null);
         syncProductProjection(tenantId, reservation.productId());
     }
 

@@ -1,0 +1,3 @@
+import test from 'node:test'; import assert from 'node:assert/strict'; import { readFileSync } from 'node:fs'; import { join } from 'node:path';
+const root=process.cwd();const read=p=>readFileSync(join(root,p),'utf8');
+test('delivery contract is order-scoped, partial and audit-aware',()=>{const api=read('src/api/deliveries.ts'),view=read('src/components/SalesDeliveriesPanel.vue');assert.match(api,/from-order/);assert.match(api,/\/confirm/);assert.match(api,/\/audit/);assert.match(view,/deliveryQuantity/);assert.match(view,/backordered/);assert.match(view,/previouslyDelivered/);assert.match(view,/salesOrdersApi\.list/);});

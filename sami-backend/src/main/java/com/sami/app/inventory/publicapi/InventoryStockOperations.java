@@ -21,6 +21,8 @@ public interface InventoryStockOperations {
 
     void issue(String sourceType, Long sourceId);
 
+    void issuePartial(PartialIssueCommand command);
+
     void customerReturn(CustomerReturnCommand command);
 
     void setMarketAvailability(MarketAvailabilityCommand command);
@@ -55,6 +57,10 @@ public interface InventoryStockOperations {
 
     record ReservationAllocation(Long sourceLineId, BigDecimal orderedQuantity,
                                   BigDecimal reservedQuantity, BigDecimal backorderedQuantity) {}
+
+    record PartialIssueCommand(String reservationSourceType, Long reservationSourceId,
+                               String deliverySourceType, Long deliverySourceId,
+                               List<StockLine> lines) {}
 
     record CustomerReturnCommand(Long companyId, Long branchId, String sourceType,
                                  Long sourceId, List<StockLine> lines) {

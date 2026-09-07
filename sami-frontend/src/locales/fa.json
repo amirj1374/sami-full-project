@@ -1931,5 +1931,5 @@
     }
   },
   "salesDocuments": { "title":"پیش‌فاکتور و پیشنهاد قیمت", "new":"سند جدید", "quotation":"پیشنهاد قیمت", "proforma":"پیش‌فاکتور", "number":"شماره", "type":"نوع", "status":"وضعیت", "total":"جمع کل", "issue":"صدور", "cancel":"لغو", "expire":"انقضا", "history":"تاریخچه", "saved":"سند ذخیره شد", "scopeRequired":"ابتدا شرکت و شعبه فعال را انتخاب کنید." },
-  "salesOrders": { "title":"سفارش‌های فروش", "new":"سفارش جدید", "confirm":"تأیید", "backordered":"در انتظار تأمین", "reserved":"رزروشده", "fulfilled":"تحویل‌شده", "fromQuotation":"تبدیل به سفارش" }
+  "salesOrders": { "title":"سفارش‌های فروش", "new":"سفارش جدید", "confirm":"تأیید", "backordered":"در انتظار تأمین", "reserved":"رزروشده", "fulfilled":"تحویل‌شده", "fromQuotation":"تبدیل به سفارش", "delivery":"تحویل", "newDelivery":"ایجاد تحویل", "deliveries":"تحویل‌ها", "ordered":"سفارش‌شده", "previouslyDelivered":"تحویل قبلی", "deliverable":"قابل تحویل اکنون", "deliveryQuantity":"مقدار تحویل" }
 }

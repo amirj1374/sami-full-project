@@ -17,6 +17,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 
 /** Canonical transactional adapter for Product, Purchasing and Sales stock effects. */
 @Service
@@ -159,6 +160,32 @@ public class InventoryStockService implements InventoryStockOperations {
                 Map.of("sourceType", normalize(sourceType)));
         ledger.publish(tenantId, "StockIssued", "RESERVATION", sourceId,
                 Map.of("sourceType", normalize(sourceType)));
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void issuePartial(PartialIssueCommand command) {
+        Long tenantId = tenantContext.requireTenantId();
+        for (StockLine line : requireLines(command.lines())) {
+            List<InventoryLedgerService.ReservationState> reservations = ledger.activeReservations(
+                    tenantId, normalize(command.reservationSourceType()), command.reservationSourceId()).stream()
+                    .filter(r -> Objects.equals(r.sourceLineId(), line.sourceLineId()) && Objects.equals(r.productId(), line.productId()))
+                    .toList();
+            BigDecimal remaining = line.quantity();
+            for (var reservation : reservations) {
+                if (remaining.signum() <= 0) break;
+                BigDecimal capacity = reservation.quantity().subtract(reservation.fulfilledQuantity());
+                BigDecimal quantity = capacity.min(remaining);
+                ledger.issueReservation(tenantId, reservation, quantity, normalize(command.deliverySourceType()),
+                        command.deliverySourceId(), "ISSUE-" + normalize(command.deliverySourceType()) + "-" + command.deliverySourceId() + "-" + line.sourceLineId());
+                remaining = remaining.subtract(quantity);
+            }
+            if (remaining.signum() > 0) throw new ApiException(ErrorCode.RESOURCE_CONFLICT,
+                    "Delivery quantity exceeds the active order reservation");
+        }
+        ledger.audit(tenantId, "DELIVERY", command.deliverySourceId(), "ISSUED", null,
+                Map.of("reservationSourceType", normalize(command.reservationSourceType()), "reservationSourceId", command.reservationSourceId(), "lines", command.lines().size()));
+        ledger.publish(tenantId, "StockIssued", "DELIVERY", command.deliverySourceId(), Map.of("sourceType", normalize(command.deliverySourceType())));
     }
 
     @Override

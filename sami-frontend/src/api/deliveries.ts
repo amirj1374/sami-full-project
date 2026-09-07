@@ -1,0 +1,4 @@
+import type { ApiResponse } from '@/types/api'
+import type { Delivery, DeliveryAudit, DeliveryPayload } from '@/types/deliveries'
+import { http, unwrap } from './http'
+export const deliveriesApi={ list:(companyId:number,branchId:number)=>unwrap(http.get<ApiResponse<Delivery[]>>('/v1/sales-deliveries',{params:{companyId,branchId}})), get:(id:number)=>unwrap(http.get<ApiResponse<Delivery>>(`/v1/sales-deliveries/${id}`)), create:(orderId:number,p:DeliveryPayload)=>unwrap(http.post<ApiResponse<Delivery>>(`/v1/sales-deliveries/from-order/${orderId}`,p)), update:(id:number,p:DeliveryPayload)=>unwrap(http.put<ApiResponse<Delivery>>(`/v1/sales-deliveries/${id}`,p)), confirm:(id:number)=>unwrap(http.post<ApiResponse<Delivery>>(`/v1/sales-deliveries/${id}/confirm`)), cancel:(id:number)=>unwrap(http.post<ApiResponse<Delivery>>(`/v1/sales-deliveries/${id}/cancel`)), audit:(id:number)=>unwrap(http.get<ApiResponse<DeliveryAudit[]>>(`/v1/sales-deliveries/${id}/audit`)) }
