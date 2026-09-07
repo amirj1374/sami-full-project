@@ -22,6 +22,15 @@ running revision is verifiably the production revision. Database-dependent
 changes require validated migration/upgrade and compensation evidence before a
 release recommendation.
 
+## Official production baseline
+
+- Release: `v0.1.0`
+- Approved commit: `480132972b1371e83146fba01c8d5e8dd08ddd73`
+- Production branch: `production`
+- Meaning: first explicitly approved production baseline.
+- Live deployment status: **NOT VERIFIED**. This baseline has not, by itself,
+  established that any Live server is running the approved commit.
+
 ## Current topology
 
 `docker-compose.prod.yml` defines three services and supports both local builds
