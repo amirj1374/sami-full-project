@@ -1,0 +1,2 @@
+import {http,unwrap} from './http'
+export const supplierInvoicesApi={list:()=>unwrap<any[]>(http.get('/api/v1/supplier-invoices')),get:(id:number)=>unwrap<any>(http.get(`/api/v1/supplier-invoices/${id}`)),create:(p:any)=>unwrap<any>(http.post('/api/v1/supplier-invoices',p.lines,{params:{companyId:p.companyId,branchId:p.branchId,purchaseOrderId:p.purchaseOrderId,goodsReceiptId:p.goodsReceiptId}}))}
