@@ -1,9 +1,16 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { supplierInvoicesApi } from '@/api/supplierInvoices'
+import { purchaseOrdersApi } from '@/api/purchaseOrders'; import { goodsReceiptsApi } from '@/api/goodsReceipts'
 const rows = ref<any[]>([]); const loading = ref(false); const error = ref(''); const detail = ref<any>(null)
-async function load(){ loading.value=true; try{ rows.value=await supplierInvoicesApi.list() } catch { error.value='Unable to load supplier invoices' } finally { loading.value=false } }
+const orders=ref<any[]>([]), receipts=ref<any[]>([]), createOpen=ref(false), po=ref<any>(null), gr=ref<any>(null), invoiceLines=ref<any[]>([]), saving=ref(false)
+async function load(){ loading.value=true; try{ rows.value=await supplierInvoicesApi.list(); orders.value=(await purchaseOrdersApi.list()).filter((x:any)=>x.status==='APPROVED'); receipts.value=(await goodsReceiptsApi.list()).filter((x:any)=>x.status==='CONFIRMED') } catch { error.value='Unable to load supplier invoices' } finally { loading.value=false } }
+async function choosePo(v:any){po.value=v; if(v) po.value=await purchaseOrdersApi.get(v.id)}
+async function chooseGr(v:any){gr.value=v; if(v) gr.value=await goodsReceiptsApi.get(v.id); invoiceLines.value=(gr.value?.lines||[]).map((l:any)=>({goodsReceiptLineId:l.id,productId:l.product_id,quantity:l.received_quantity,unitPrice:l.unit_cost}))}
+async function create(){if(!po.value||!gr.value||!invoiceLines.value.length){error.value='Select a valid Purchase Order and Goods Receipt';return} saving.value=true;try{await supplierInvoicesApi.create({companyId:gr.value.company_id,branchId:gr.value.branch_id,purchaseOrderId:po.value.id,goodsReceiptId:gr.value.id,lines:invoiceLines.value,notes:''});createOpen.value=false;await load()}catch{error.value='Unable to create supplier invoice'}finally{saving.value=false}}
 async function open(id:number){ try{ detail.value=await supplierInvoicesApi.get(id) } catch { error.value='Unable to load invoice detail' } }
 onMounted(load)
+void choosePo; void chooseGr; void create; void issue
 </script>
 <template><section class="pa-4"><div class="d-flex justify-space-between"><h2 class="text-h6">Supplier Invoices</h2><v-btn icon="mdi-refresh" :loading="loading" @click="load"/></div><v-alert v-if="error" type="error">{{error}}</v-alert><v-progress-linear v-if="loading" indeterminate/><v-list v-else><v-list-item v-for="i in rows" :key="i.id" :title="i.invoice_number" :subtitle="`${i.status} · ${i.total} · PO ${i.purchase_order_id} · GR ${i.goods_receipt_id}`" @click="open(i.id)"><template #append><v-chip size="small" variant="tonal">{{i.payable_posting_reference||'Payable pending'}}</v-chip></template></v-list-item><v-list-item v-if="!rows.length" title="No supplier invoices"/></v-list><v-dialog :model-value="!!detail" max-width="650" @update:model-value="detail=null"><v-card v-if="detail"><v-card-title>{{detail.invoice_number}}</v-card-title><v-card-text>Supplier: {{detail.supplier_id}}<br>Purchase Order: {{detail.purchase_order_id}}<br>Goods Receipt: {{detail.goods_receipt_id}}<br>Company / Branch: {{detail.company_id}} / {{detail.branch_id}}<br>Status: {{detail.status}}<br>Total: {{detail.total}}<v-divider class="my-3"/><div v-for="l in detail.lines" :key="l.id">Product {{l.product_id}} · {{l.quantity}} × {{l.unit_price}}</div><div>Payable reference: {{detail.payable_posting_reference||'—'}}</div></v-card-text></v-card></v-dialog></section></template>
+
