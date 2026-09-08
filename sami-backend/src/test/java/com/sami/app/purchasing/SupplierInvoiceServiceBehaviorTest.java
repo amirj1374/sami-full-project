@@ -1,0 +1,3 @@
+package com.sami.app.purchasing;
+import com.sami.app.purchasing.service.SupplierInvoiceService; import org.junit.jupiter.api.Test; import java.lang.reflect.Method; import static org.junit.jupiter.api.Assertions.*;
+class SupplierInvoiceServiceBehaviorTest { @Test void serviceExposesCreateIssueAndScopedReads(){assertNotNull(method("create",Long.class,Long.class,Long.class,Long.class,java.util.List.class,String.class));assertNotNull(method("issue",Long.class));assertNotNull(method("get",Long.class));assertNotNull(method("list"));} private Method method(String n,Class<?>...t){try{return SupplierInvoiceService.class.getMethod(n,t);}catch(Exception e){fail(e);return null;}} }
