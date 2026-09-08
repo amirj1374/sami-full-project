@@ -62,7 +62,11 @@ public class PurchaseOrderService {
     @Transactional(readOnly = true)
     public List<Map<String,Object>> list() {
         Long tenant = tenants.requireTenantId();
-        return jdbc.queryForList("select * from purchase_orders where tenant_id=? order by order_date desc,id desc", tenant);
+        var context = scope.current();
+        if (context.companyId() == null) return List.of();
+        if (context.branchId() == null)
+            return jdbc.queryForList("select * from purchase_orders where tenant_id=? and company_id=? order by order_date desc,id desc", tenant, context.companyId());
+        return jdbc.queryForList("select * from purchase_orders where tenant_id=? and company_id=? and branch_id=? order by order_date desc,id desc", tenant, context.companyId(), context.branchId());
     }
 
     @Transactional public void submit(Long id) { updateStatus(id, "DRAFT", "SUBMITTED"); }
