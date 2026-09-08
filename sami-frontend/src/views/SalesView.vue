@@ -10,6 +10,7 @@ import SalesDocumentsPanel from "@/components/SalesDocumentsPanel.vue";
 import SalesOrdersPanel from "@/components/SalesOrdersPanel.vue";
 import SalesDeliveriesPanel from "@/components/SalesDeliveriesPanel.vue";
 import SalesInvoicesPanel from "@/components/SalesInvoicesPanel.vue";
+import SalesReceiptsPanel from "@/components/SalesReceiptsPanel.vue";
 import AppQuickCreateButton from "@/components/AppQuickCreateButton.vue";
 import AppMoneyField from "@/components/AppMoneyField.vue";
 import AppMobileRecordCard from "@/components/AppMobileRecordCard.vue";
@@ -84,7 +85,7 @@ function selectCreatedProduct(product: Product) {
   }
   quickProductLine.value = null;
 }
-const workspace = ref<"sales" | "documents" | "orders" | "deliveries" | "invoices" | "reports" | "lost">("sales"),
+const workspace = ref<"sales" | "documents" | "orders" | "deliveries" | "invoices" | "receipts" | "reports" | "lost">("sales"),
   editingId = ref<number | null>(null),
   form = reactive({
     companyId: null as number | null,
@@ -371,6 +372,7 @@ onMounted(load);
       ><v-tab value="orders" prepend-icon="mdi-cart-outline">{{ t("salesOrders.title") }}</v-tab
       ><v-tab value="deliveries" prepend-icon="mdi-truck-delivery-outline">{{ t("salesOrders.deliveries") }}</v-tab
       ><v-tab value="invoices" prepend-icon="mdi-file-document-outline">{{ t("salesInvoices.title") }}</v-tab
+      ><v-tab value="receipts" prepend-icon="mdi-cash-check">Receipt</v-tab
       ><v-tab
         v-if="can('sales:report')"
         value="reports"
@@ -407,6 +409,7 @@ onMounted(load);
     <SalesOrdersPanel v-if="workspace === 'orders'" />
     <SalesDeliveriesPanel v-if="workspace === 'deliveries'" />
     <SalesInvoicesPanel v-if="workspace === 'invoices'" />
+    <SalesReceiptsPanel v-if="workspace === 'receipts'" />
     <v-card v-if="workspace === 'sales'" class="app-data-surface" rounded="xl"
       ><v-card-title class="d-flex align-center ga-2"
         ><v-icon icon="mdi-receipt-text-outline" /><span>{{
