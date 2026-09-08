@@ -14,6 +14,7 @@ import PurchaseFormDialog from '@/components/PurchaseFormDialog.vue'
 import PurchasingConfigPanel from '@/components/purchasing/PurchasingConfigPanel.vue'
 import PurchasingReportsPanel from '@/components/purchasing/PurchasingReportsPanel.vue'
 import PurchaseOrdersPanel from '@/components/purchasing/PurchaseOrdersPanel.vue'
+import GoodsReceiptsPanel from '@/components/purchasing/GoodsReceiptsPanel.vue'
 import { useApiError } from '@/composables/useApiError'
 import { useFormat } from '@/composables/useFormat'
 import { useNotifications } from '@/composables/useNotifications'
@@ -59,6 +60,7 @@ const exporting = ref(false)
 const tabs = computed(() => [
   { value: 'orders', label: t('purchases.tabs.orders'), icon: 'mdi-cart-outline', allowed: true },
   { value: 'purchase-orders', label: 'Purchase Orders', icon: 'mdi-file-document-edit-outline', allowed: can('purchasing:view') },
+  { value: 'goods-receipts', label: 'Goods Receipts', icon: 'mdi-package-down', allowed: can('purchasing:view') },
   { value: 'reports', label: t('purchases.tabs.reports'), icon: 'mdi-chart-box-outline', allowed: can('purchasing:report') },
   { value: 'config', label: t('purchases.tabs.config'), icon: 'mdi-tune-variant', allowed: can('purchasing:manage-config') || can('purchasing:edit') },
 ].filter((item) => item.allowed))
@@ -327,6 +329,7 @@ onMounted(async () => {
 
     <PurchasingReportsPanel v-else-if="tab === 'reports' && can('purchasing:report')" @open="openDetailId" />
     <PurchaseOrdersPanel v-else-if="tab === 'purchase-orders' && can('purchasing:view')" />
+    <GoodsReceiptsPanel v-else-if="tab === 'goods-receipts' && can('purchasing:view')" />
     <PurchasingConfigPanel v-else-if="tab === 'config' && (can('purchasing:manage-config') || can('purchasing:edit'))" @changed="loadReferenceData" />
 
     <PurchaseFormDialog v-model="formOpen" :purchase="editingDetail" :types="types" :warehouses="warehouses" @saved="refreshAll" />
