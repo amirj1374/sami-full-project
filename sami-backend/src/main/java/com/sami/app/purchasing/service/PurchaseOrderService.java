@@ -25,7 +25,7 @@ public class PurchaseOrderService {
     public Map<String,Object> create(Long company, Long branch, Long supplier, List<Map<String,Object>> lines, String notes) {
         Long tenant = tenants.requireTenantId();
         scope.requireScope(company, branch);
-        if (supplier == null || jdbc.queryForObject("select count(*) from suppliers where id=?", Integer.class, supplier) == 0)
+        if (supplier == null || jdbc.queryForObject("select count(*) from suppliers where id=? and tenant_id=? and deleted_at is null", Integer.class, supplier, tenant) == 0)
             throw new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Supplier not found");
         if (lines == null || lines.isEmpty()) throw new ApiException(ErrorCode.VALIDATION_FAILED, "Purchase order requires items");
         String number = "PO-" + jdbc.queryForObject("select nextval('purchase_order_number_seq')", Long.class);
@@ -36,7 +36,7 @@ public class PurchaseOrderService {
             Object product = line.get("productId");
             BigDecimal quantity = decimal(line.get("quantity"));
             BigDecimal price = decimal(line.get("unitPrice"));
-            if (product == null || quantity.signum() <= 0 || price.signum() < 0 || jdbc.queryForObject("select count(*) from products where id=? and active=true", Integer.class, product) == 0)
+            if (product == null || quantity.signum() <= 0 || price.signum() < 0 || jdbc.queryForObject("select count(*) from products where id=? and tenant_id=? and active=true", Integer.class, product, tenant) == 0)
                 throw new ApiException(ErrorCode.VALIDATION_FAILED, "Invalid purchase order line");
             BigDecimal lineTotal = quantity.multiply(price); total = total.add(lineTotal);
             jdbc.update("insert into purchase_order_lines(tenant_id,purchase_order_id,product_id,quantity,unit_price,line_total) values(?,?,?,?,?,?)", tenant, id, product, quantity, price, lineTotal);
