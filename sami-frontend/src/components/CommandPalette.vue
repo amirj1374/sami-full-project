@@ -146,11 +146,6 @@ function onKeydown(e: KeyboardEvent): void {
         />
       </div>
 
-      <v-divider />
-      <div class="d-flex align-center ga-4 px-4 py-2 text-caption text-medium-emphasis">
-        <span><v-icon icon="mdi-arrow-up-down" size="14" /> {{ t('shell.navMove') }}</span>
-        <span><v-icon icon="mdi-keyboard-return" size="14" /> {{ t('shell.navOpen') }}</span>
-      </div>
     </v-card>
   </v-dialog>
 </template>

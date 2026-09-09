@@ -4,8 +4,7 @@ import { nextTick, onBeforeUnmount, onMounted, watch } from 'vue'
 const props = defineProps<{ enabled: boolean }>()
 
 const TARGET_CLASS = 'app-shortcut-target'
-const POSITIONED_CLASS = 'app-shortcut-target--positioned'
-const BADGE_CLASS = 'app-shortcut-badge'
+// Previously visible badges used ariaHidden = 'true'; shortcuts remain non-visual.
 const ACTION_SELECTOR = [
   'button',
   'a[href]',
@@ -51,11 +50,9 @@ function isActionable(element: HTMLElement): boolean {
 function clearBadges(): void {
   document.querySelectorAll<HTMLElement>(`.${TARGET_CLASS}, [data-sami-shortcut]`).forEach((element) => {
     element.classList.remove(TARGET_CLASS)
-    element.classList.remove(POSITIONED_CLASS)
     delete element.dataset.samiShortcut
     element.removeAttribute('aria-keyshortcuts')
   })
-  document.querySelectorAll<HTMLElement>(`.${BADGE_CLASS}`).forEach((badge) => badge.remove())
   targets.clear()
 }
 
@@ -92,15 +89,9 @@ function refreshTargets(): void {
   candidates.forEach((element, index) => {
     const shortcut = SHORTCUT_KEYS[index]
     if (!shortcut) return
-    const badge = document.createElement('kbd')
-    badge.className = BADGE_CLASS
-    badge.ariaHidden = 'true'
-    badge.textContent = `⇧${shortcut.label}`
     element.classList.add(TARGET_CLASS)
-    if (window.getComputedStyle(element).position === 'static') element.classList.add(POSITIONED_CLASS)
     element.dataset.samiShortcut = `Shift+${shortcut.label}`
     element.setAttribute('aria-keyshortcuts', `Shift+${shortcut.label}`)
-    element.append(badge)
     targets.set(shortcut.code, element)
   })
 }
@@ -131,7 +122,7 @@ function mutationNeedsRefresh(mutations: MutationRecord[]): boolean {
   return mutations.some((mutation) => {
     if (mutation.type === 'attributes') return true
     const nodes = [...mutation.addedNodes, ...mutation.removedNodes]
-    return nodes.some((node) => !(node instanceof HTMLElement && node.classList.contains(BADGE_CLASS)))
+    return nodes.length > 0
   })
 }
 
@@ -165,40 +156,3 @@ onBeforeUnmount(() => {
   clearBadges()
 })
 </script>
-
-<style>
-.app-shortcut-target--positioned {
-  position: relative;
-}
-.app-shortcut-badge {
-  position: absolute;
-  z-index: 3;
-  inset-inline-end: 2px;
-  inset-block-end: 2px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 17px;
-  height: 14px;
-  padding-inline: 2px;
-  border: 1px solid rgba(var(--v-theme-on-warning), 0.22);
-  border-radius: 4px;
-  background: rgb(var(--v-theme-warning));
-  color: rgb(var(--v-theme-on-warning));
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.28);
-  direction: ltr;
-  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
-  font-size: 8px;
-  font-weight: 800;
-  line-height: 1;
-  letter-spacing: -0.04em;
-  pointer-events: none;
-}
-@media (prefers-reduced-motion: no-preference) {
-  .app-shortcut-badge { animation: app-shortcut-appear var(--app-dur-fast) var(--app-ease); }
-}
-@keyframes app-shortcut-appear {
-  from { opacity: 0; transform: scale(0.8); }
-  to { opacity: 1; transform: scale(1); }
-}
-</style>
