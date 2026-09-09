@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useDisplay } from "vuetify";
 import { useI18n } from "vue-i18n";
 import AppPageHeader from "@/components/AppPageHeader.vue";
@@ -22,6 +22,7 @@ import { customersApi } from "@/api/customers";
 import { productsApi } from "@/api/products";
 import { useApiError } from "@/composables/useApiError";
 import { usePermission } from "@/composables/usePermission";
+import { useOrganizationContextStore } from "@/stores/organizationContext";
 import type { Customer, Product } from "@/types/models";
 import type {
   Sale,
@@ -33,6 +34,7 @@ const { t } = useI18n(),
   { mdAndUp } = useDisplay(),
   { can } = usePermission(),
   error = useApiError();
+const organizationContext = useOrganizationContextStore();
 const loading = ref(false),
   saving = ref(false),
   sales = ref<Sale[]>([]),
@@ -118,6 +120,12 @@ const statusColor = (s: string) =>
     RETURNED: "secondary",
   })[s] || "grey";
 const label = (code: string) => t(`sales.values.${code}`, code);
+const companyOptions = computed(() => organizationContext.context?.companies ?? []);
+const branchOptions = computed(() => (organizationContext.context?.branches ?? []).filter((branch) => branch.companyId === form.companyId));
+watch(() => form.companyId, (companyId) => {
+  if (form.branchId != null && !branchOptions.value.some((branch) => branch.id === form.branchId)) form.branchId = null;
+  if (form.branchId == null && companyId != null && branchOptions.value.length === 1) form.branchId = branchOptions.value[0].id;
+});
 const window = globalThis.window;
 function newLine() {
   form.items.push({
@@ -175,8 +183,8 @@ function newService() {
 function openCreate() {
   editingId.value = null;
   Object.assign(form, {
-    companyId: null,
-    branchId: null,
+    companyId: organizationContext.companyId,
+    branchId: organizationContext.branchId,
     customerId: null,
     saleType: "CASH",
     currency: "IRR",
@@ -187,6 +195,8 @@ function openCreate() {
   });
   newLine();
   editor.value = true;
+  if (form.companyId == null && companyOptions.value.length === 1) form.companyId = companyOptions.value[0].id;
+  if (form.branchId == null && branchOptions.value.length === 1) form.branchId = branchOptions.value[0].id;
   loadLookups().catch(error.set);
 }
 async function openEdit() {
@@ -493,15 +503,21 @@ onMounted(load);
         ><v-card-text
           ><v-row
             ><v-col cols="12" md="4"
-              ><v-text-field
-                v-model.number="form.companyId"
-                type="number"
-                :label="t('sales.company')" /></v-col
+              ><v-select
+                v-model="form.companyId"
+                :items="companyOptions"
+                item-title="name"
+                item-value="id"
+                :label="t('sales.company')"
+                :disabled="companyOptions.length === 0" /></v-col
             ><v-col cols="12" md="4"
-              ><v-text-field
-                v-model.number="form.branchId"
-                type="number"
-                :label="t('sales.branch')" /></v-col
+              ><v-select
+                v-model="form.branchId"
+                :items="branchOptions"
+                item-title="name"
+                item-value="id"
+                :label="t('sales.branch')"
+                :disabled="!form.companyId || branchOptions.length === 0" /></v-col
             ><v-col cols="12" md="4"
               ><v-autocomplete
                 v-model="form.customerId"
@@ -631,7 +647,7 @@ onMounted(load);
           ><v-btn
             color="primary"
             :loading="saving"
-            :disabled="!form.customerId"
+            :disabled="saving || !form.companyId || !form.branchId || !form.customerId || !form.items.length || form.items.some((item) => !item.productId || item.quantity <= 0)"
             @click="save"
             >{{ t("common.save") }}</v-btn
           ></v-card-actions
