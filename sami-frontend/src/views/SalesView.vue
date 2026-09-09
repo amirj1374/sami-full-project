@@ -20,6 +20,7 @@ import { salesApi } from "@/api/sales";
 import { hamtaApi } from "@/api/hamta";
 import { customersApi } from "@/api/customers";
 import { productsApi } from "@/api/products";
+import { organizationApi, type Branch } from "@/api/organization";
 import { useApiError } from "@/composables/useApiError";
 import { usePermission } from "@/composables/usePermission";
 import { useOrganizationContextStore } from "@/stores/organizationContext";
@@ -70,6 +71,7 @@ type DraftService = {
 const quickCustomerOpen = ref(false);
 const quickProductOpen = ref(false);
 const quickProductLine = ref<DraftLine | null>(null);
+const adminBranches = ref<Branch[]>([]);
 function selectCreatedCustomer(detail: import("@/types/models").CustomerDetail) {
   const customer = detail.customer;
   if (!customers.value.some((item) => item.id === customer.id)) customers.value.push(customer);
@@ -121,9 +123,16 @@ const statusColor = (s: string) =>
   })[s] || "grey";
 const label = (code: string) => t(`sales.values.${code}`, code);
 const companyOptions = computed(() => organizationContext.context?.companies ?? []);
-const branchOptions = computed(() => (organizationContext.context?.branches ?? []).filter((branch) => branch.companyId === form.companyId));
-watch(() => form.companyId, (companyId) => {
+const branchOptions = computed(() => {
+  const source = organizationContext.context?.branches?.length ? organizationContext.context.branches : adminBranches.value;
+  return source.filter((branch) => branch.companyId === form.companyId);
+});
+watch(() => form.companyId, async (companyId) => {
+  adminBranches.value = [];
   if (form.branchId != null && !branchOptions.value.some((branch) => branch.id === form.branchId)) form.branchId = null;
+  if (can("organization:view") && companyId != null && branchOptions.value.length === 0) {
+    try { adminBranches.value = await organizationApi.branches(companyId); } catch (e) { error.set(e); }
+  }
   if (form.branchId == null && companyId != null && branchOptions.value.length === 1) form.branchId = branchOptions.value[0].id;
 });
 const window = globalThis.window;
@@ -191,7 +200,7 @@ async function openCreate() {
   }
   editingId.value = null;
   Object.assign(form, {
-    companyId: organizationContext.companyId,
+    companyId: organizationContext.companyId ?? companyOptions.value[0]?.id ?? null,
     branchId: organizationContext.branchId,
     customerId: null,
     saleType: "CASH",
@@ -203,7 +212,13 @@ async function openCreate() {
   });
   newLine();
   editor.value = true;
-  if (form.companyId == null && companyOptions.value.length === 1) form.companyId = companyOptions.value[0].id;
+  if (can("organization:view") && form.companyId != null && branchOptions.value.length === 0) {
+    try {
+      adminBranches.value = await organizationApi.branches(form.companyId);
+    } catch (e) {
+      error.set(e);
+    }
+  }
   if (form.branchId == null && branchOptions.value.length === 1) form.branchId = branchOptions.value[0].id;
   loadLookups().catch(error.set);
 }
