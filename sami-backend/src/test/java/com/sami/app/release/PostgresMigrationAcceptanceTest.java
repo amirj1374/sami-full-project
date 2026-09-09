@@ -58,7 +58,7 @@ class PostgresMigrationAcceptanceTest {
     private static void assertLatestVersion() throws Exception {
         try (Connection c = DriverManager.getConnection(url, user, password); Statement s = c.createStatement(); ResultSet rs = s.executeQuery("select version from flyway_schema_history where success=true order by installed_rank desc limit 1")) {
             assertTrue(rs.next());
-            assertEquals("59", rs.getString(1));
+            assertEquals("63", rs.getString(1));
         }
     }
 }
