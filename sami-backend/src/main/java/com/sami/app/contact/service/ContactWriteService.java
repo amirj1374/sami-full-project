@@ -22,6 +22,21 @@ public class ContactWriteService {
     private final TenantContext tenantContext;
     private final FoundationAuditService audit;
 
+    /** Creates the canonical Contact bridge for a newly-created Customer. */
+    @Transactional
+    public Long createCustomerContact(Long customerId, String displayName) {
+        Long tenant = tenantContext.requireTenantId();
+        requireLegacy("customers", customerId, tenant);
+        Long contactId = jdbc.queryForObject("insert into contacts(tenant_id,identity_type,display_name,is_active) values(?,?,?,true) returning id",
+                Long.class, tenant, "LEGAL", displayName == null || displayName.isBlank() ? "Customer " + customerId : displayName);
+        jdbc.update("insert into contact_customer_roles(tenant_id,contact_id,customer_id) values(?,?,?)", tenant, contactId, customerId);
+        jdbc.update("insert into legacy_contact_mappings(tenant_id,legacy_type,legacy_id,contact_id,match_method,review_required) values(?,?,?,?,?,false)",
+                tenant, "CUSTOMER", customerId, contactId, "CUSTOMER_SOURCE");
+        audit.record(tenant, null, null, "CONTACT_ROLE", contactId, "CUSTOMER_CONTACT_CREATED", null,
+                Map.of("customerId", customerId));
+        return contactId;
+    }
+
     @Transactional
     public void addRole(Long contactId, RoleRequest request) {
         Long tenant = tenantContext.requireTenantId();

@@ -13,6 +13,7 @@ import com.sami.app.crm.dto.CustomerRequest;
 import com.sami.app.crm.dto.LookupRequests.TypeRequest;
 import com.sami.app.crm.service.CrmConfigService;
 import com.sami.app.crm.service.CustomerService;
+import com.sami.app.contact.service.ContactWriteService;
 import com.sami.app.inventory.dto.InventoryDtos.WarehouseRequest;
 import com.sami.app.inventory.service.InventoryWarehouseService;
 import com.sami.app.product.dto.CreateProductRequest;
@@ -42,6 +43,7 @@ public class SalesBusinessFixturePostgresIT extends PostgresApplicationFixture {
     @Autowired OrganizationGrantService grants;
     @Autowired CrmConfigService crmConfig;
     @Autowired CustomerService customers;
+    @Autowired ContactWriteService contactWrites;
     @Autowired ProductService products;
     @Autowired InventoryWarehouseService warehouses;
     @Autowired TreasuryService treasury;
@@ -61,6 +63,7 @@ public class SalesBusinessFixturePostgresIT extends PostgresApplicationFixture {
         var assignment = grants.assign( new AssignmentRequest(1L, company.id(), role)); grants.grant(assignment.id(), new BranchGrantRequest(branch.id()));
         var type = crmConfig.createType(new TypeRequest("fixture-customer-" + tenant.getId(), "Fixture Customer", null, true, 1));
         var customer = customers.create(new CustomerRequest(null, null, "Fixture Customer", null, null, null, null, null, null, null, type.id(), null, null, null, null, null, false, null));
+        contactWrites.createCustomerContact(customer.customer().id(), customer.customer().displayName());
         var warehouse = warehouses.create(new WarehouseRequest(null, null, "FIX-WH-" + tenant.getId(), "Fixture Warehouse", null, "STANDARD", true, true, 1));
         var product = products.create(new CreateProductRequest("Fixture Product", "FIX-" + tenant.getId(), null, new BigDecimal("100.00"), 1, true, false));
         var location = warehouses.locations(warehouse.id()).getFirst();
@@ -118,6 +121,7 @@ public class SalesBusinessFixturePostgresIT extends PostgresApplicationFixture {
         // organization grant foreign-key/scope checks can execute.
         jdbc.update("delete from user_branch_grants where assignment_id in (select id from user_company_roles where user_id=?)", 1L);
         jdbc.update("delete from user_company_roles where user_id=?", 1L);
+        jdbc.update("delete from user_organization_contexts where user_id=?", 1L);
         jdbc.update("update users set tenant_id=? where id=?", activated.getId(), 1L);
         return activated;
     }
