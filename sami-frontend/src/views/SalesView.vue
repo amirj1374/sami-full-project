@@ -180,7 +180,15 @@ function newService() {
     employeeId: null,
   });
 }
-function openCreate() {
+async function openCreate() {
+  // Refresh grants immediately before opening the form so stale/missing branch
+  // context cannot leave the Save action silently disabled.
+  try {
+    await organizationContext.refresh();
+  } catch (e) {
+    error.set(e);
+    return;
+  }
   editingId.value = null;
   Object.assign(form, {
     companyId: organizationContext.companyId,
