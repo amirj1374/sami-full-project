@@ -73,6 +73,12 @@ class SalesBusinessFixturePostgresIT extends PostgresApplicationFixture {
         Tenant created = tenants.create(code, "SAMI Integration Tenant", "", "platform@sami.test", Map.of());
         assertNotNull(created.getId());
         Tenant activated = tenants.activate(created.getId());
+        // The V16 bootstrap user is seeded for the initial tenant. Re-home that
+        // disposable test actor to the tenant created by this test so the real
+        // organization grant foreign-key/scope checks can execute.
+        jdbc.update("delete from user_branch_grants where assignment_id in (select id from user_company_roles where user_id=?)", 1L);
+        jdbc.update("delete from user_company_roles where user_id=?", 1L);
+        jdbc.update("update users set tenant_id=? where id=?", activated.getId(), 1L);
         return activated;
     }
 }
