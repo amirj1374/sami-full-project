@@ -2,7 +2,7 @@
 
 # Packages a separately verified SAMI Spring Boot JAR. This Dockerfile never
 # compiles source and must only be used after Maven package/verify has produced
-# target/sami-backend-0.2.0.jar with matching build-info metadata.
+# target/sami-backend-0.3.0.jar with matching build-info metadata.
 FROM eclipse-temurin:21-jre-jammy AS runtime
 ARG BUILD_BRANCH=unknown
 ARG BUILD_COMMIT=unknown
@@ -20,7 +20,7 @@ RUN apt-get update && apt-get install --yes --no-install-recommends curl \
     && chown -R spring:spring /app/data
 USER spring:spring
 
-COPY --chown=spring:spring target/sami-backend-0.2.0.jar app.jar
+COPY --chown=spring:spring target/sami-backend-0.3.0.jar app.jar
 
 EXPOSE 8080
 ENV JAVA_OPTS=""

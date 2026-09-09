@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {onMounted,ref,computed} from 'vue'; import {useI18n} from 'vue-i18n'; import {customersApi} from '@/api/customers'; import {treasuryApi} from '@/api/treasury'; import {salesInvoicesApi} from '@/api/salesInvoices'; import {salesReceiptsApi} from '@/api/salesReceipts'; import {useOrganizationContextStore} from '@/stores/organizationContext';
+import {onMounted,ref} from 'vue'; import {useI18n} from 'vue-i18n'; import {customersApi} from '@/api/customers'; import {treasuryApi} from '@/api/treasury'; import {salesInvoicesApi} from '@/api/salesInvoices'; import {salesReceiptsApi} from '@/api/salesReceipts'; import {useOrganizationContextStore} from '@/stores/organizationContext';
 const {t}=useI18n();
 const org=useOrganizationContextStore(),customers=ref<any[]>([]),accounts=ref<any[]>([]),invoices=ref<any[]>([]),customerId=ref<number>(),accountId=ref<number>(),amount=ref(0),allocation=ref(0),invoiceId=ref<number>(),result=ref<any>(),error=ref('');
 async function load(){customers.value=(await customersApi.list({size:100})).content;accounts.value=await treasuryApi.accounts();invoices.value=await salesInvoicesApi.list(org.companyId!,org.branchId!)}
