@@ -70,7 +70,7 @@ class SalesBusinessTestFixturePostgresIT extends PostgresApplicationFixture {
         var product = products.create(new CreateProductRequest("Fixture Product", "FIX-" + tenant.getId(),
                 null, new BigDecimal("10.00"), 3, true, false));
         Long accountType = treasury.accountTypes().stream().filter(x -> x.active()).findFirst().orElseThrow().id();
-        var account = treasury.createAccount(new AccountRequest(accountType, "FIX-" + tenant.getId(),
+        var account = treasury.createAccount(new AccountRequest(company.id(), branch.id(), accountType, "FIX-" + tenant.getId(),
                 "Fixture Cash", "IRR", BigDecimal.ZERO, true, 1L,
                 null, null, null, null, null, null, null, true));
 
