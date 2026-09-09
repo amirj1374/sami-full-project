@@ -154,6 +154,7 @@
     </dependencies>
 
     <build>
+        <finalName>sami-backend</finalName>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>

@@ -2,11 +2,13 @@
 
 # Packages a separately verified SAMI Spring Boot JAR. This Dockerfile never
 # compiles source and must only be used after Maven package/verify has produced
-# target/sami-backend-0.3.0.jar with matching build-info metadata.
+# target/sami-backend.jar with matching build-info metadata. Maven intentionally
+# emits this stable final name so runtime packaging does not change per release.
 FROM eclipse-temurin:21-jre-jammy AS runtime
 ARG BUILD_BRANCH=unknown
 ARG BUILD_COMMIT=unknown
-ARG APP_VERSION=0.2.0
+ARG APP_VERSION=0.3.0
+ARG JAR_FILE=target/sami-backend.jar
 LABEL org.opencontainers.image.revision=$BUILD_COMMIT \
       org.opencontainers.image.version=$APP_VERSION \
       org.opencontainers.image.source-branch=$BUILD_BRANCH
@@ -20,7 +22,7 @@ RUN apt-get update && apt-get install --yes --no-install-recommends curl \
     && chown -R spring:spring /app/data
 USER spring:spring
 
-COPY --chown=spring:spring target/sami-backend-0.3.0.jar app.jar
+COPY --chown=spring:spring ${JAR_FILE} app.jar
 
 EXPOSE 8080
 ENV JAVA_OPTS=""
