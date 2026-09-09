@@ -62,7 +62,7 @@ param(
     [string]$BackendImageTag = 'sami-backend:test',
     [string]$FrontendImageTag = 'sami-frontend:test',
     [string]$FrontendApiBaseUrl = '/api',
-    [string]$ApplicationVersion = '0.1.0',
+    [string]$ApplicationVersion = '0.2.0',
     [string]$ApplicationUrl,
     [switch]$AllowDirtyWorkingTree,
     [switch]$NoCache,
