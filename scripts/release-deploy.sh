@@ -10,7 +10,7 @@ fi
 
 VERSION="$1"
 
-if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
+if [[ "$VERSION" == "0.0.0" || ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
   echo "Usage: $0 <semver> (for example: 0.4.0)" >&2
   exit 2
 fi

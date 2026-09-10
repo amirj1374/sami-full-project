@@ -6,6 +6,26 @@
 ./scripts/release-deploy.sh 0.4.0
 ```
 
+## Windows launcher
+
+From the repository root on Windows, run the portable launcher with exactly one
+release version. The launcher uses the project's Git Bash wrapper and keeps all
+validation, deployment, and rollback logic in `scripts/release-deploy.sh`.
+
+```bat
+release.bat 0.5.0
+```
+
+The equivalent Git Bash command is:
+
+```bash
+./scripts/release-deploy.sh 0.5.0
+```
+
+The launcher does not store credentials, enable password authentication, commit,
+push, or perform version validation itself. Use the existing dry-run and release
+procedures before any real deployment.
+
 این دستور ابتدا وضعیت Git و validationهای backend/frontend را بررسی می‌کند، imageهای `linux/amd64` را با revision و version می‌سازد، آن‌ها را export و checksum می‌کند، به سرور منتقل می‌کند، قبل از جایگزینی از PostgreSQL backup می‌گیرد، فقط سرویس‌های backend/frontend را recreate می‌کند و health، Flyway، Spring Boot، nginx، login و API محافظت‌شده را smoke-test می‌کند. خطای critical باعث توقف فوری می‌شود.
 
 ## پیش‌نیاز و تنظیمات
