@@ -657,8 +657,9 @@ function Invoke-LocalComposeSmoke {
     }
     finally {
         if ($started) {
-            & $script:DockerExecutable compose --project-name $projectName --env-file $environmentPath -f $composePath down --remove-orphans --volumes 2>$null | Out-Null
-            if ($LASTEXITCODE -eq 0) {
+            $cleanupOutput = @(& $script:DockerExecutable compose --project-name $projectName --env-file $environmentPath -f $composePath down --remove-orphans --volumes 2>&1)
+            $cleanupExitCode = $LASTEXITCODE
+            if ($cleanupExitCode -eq 0) {
                 Write-RunLog INFO "Removed disposable validation containers, network, and named volumes for $projectName."
             }
             else {
