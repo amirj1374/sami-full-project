@@ -94,7 +94,7 @@ async function openAdjustment() {
 }
 
 async function saveAdjustment() {
-  if (!form.warehouseId || !form.reason.trim() || form.lines.some((line) => !line.productId || line.quantity === 0)) return
+  if (saving.value || !form.warehouseId || !form.reason.trim() || form.lines.some((line) => !line.productId || line.quantity === 0)) return
   saving.value = true
   try {
     await inventoryApi.adjust({

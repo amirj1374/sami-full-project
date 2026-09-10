@@ -82,6 +82,7 @@ function requestClose() {
 }
 
 const onSubmit = handleSubmit(async (values) => {
+  if (loading.value) return
   loading.value = true
   clearError()
   try {

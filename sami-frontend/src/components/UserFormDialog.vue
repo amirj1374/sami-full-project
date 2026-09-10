@@ -96,6 +96,7 @@ watch(open, (isOpen) => {
 })
 
 const submit = handleSubmit(async (values) => {
+  if (saving.value) return
   // Create-mode presence checks (format is covered by the schema).
   if (!isEdit.value) {
     if (!values.email) {

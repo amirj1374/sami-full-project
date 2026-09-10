@@ -55,7 +55,7 @@ function openCreate() {
 }
 
 async function create() {
-  if (!form.warehouseId) return
+  if (saving.value || !form.warehouseId) return
   saving.value = true
   try { const result = await inventoryApi.createCount({ warehouseId: form.warehouseId, locationId: form.locationId ?? undefined, notes: form.notes || undefined }); createOpen.value = false; await show(result); notifications.success(t('inventory.countCreated')); await load(); emit('changed') }
   catch (reason) { error.set(reason) } finally { saving.value = false }
@@ -72,14 +72,14 @@ async function show(item: InventoryCount) {
 }
 
 async function submit() {
-  if (!selected.value) return
+  if (!selected.value || saving.value) return
   saving.value = true
   try { selected.value = await inventoryApi.submitCount(selected.value.id, selected.value.lines.map((line) => ({ productId: line.productId, countedQuantity: counted[line.productId] ?? 0 }))); notifications.success(t('inventory.countSubmitted')); await load() }
   catch (reason) { error.set(reason) } finally { saving.value = false }
 }
 
 async function act(action: 'post' | 'cancel') {
-  if (!selected.value) return
+  if (!selected.value || saving.value) return
   saving.value = true
   try { selected.value = action === 'post' ? await inventoryApi.postCount(selected.value.id) : await inventoryApi.cancelCount(selected.value.id); notifications.success(t('inventory.countUpdated')); await load(); emit('changed') }
   catch (reason) { error.set(reason) } finally { saving.value = false }

@@ -173,6 +173,7 @@ function single<T>(list: T[], index: number, key: keyof T) {
 }
 
 async function submit(ignoreDuplicates = false) {
+  if (saving.value) return
   if (!form.companyName.trim() || !form.displayName.trim() || !form.typeId) {
     setFormError({ code: 'VALIDATION', message: t('suppliers.validation.requiredFields') })
     tab.value = 'company'

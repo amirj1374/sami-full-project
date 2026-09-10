@@ -9,7 +9,7 @@ const ctx=ref<any>(null), supplier=ref<number|null>(null), notes=ref(''), lines=
 const total=computed(()=>lines.value.reduce((s,l)=>s+l.quantity*l.unitPrice,0))
 async function load(){loading.value=true;try{orders.value=await purchaseOrdersApi.list(); const [s,p,c]=await Promise.all([suppliersApi.list({size:200}),productsApi.list({size:200,active:true}),organizationContextApi.current()]);suppliers.value=s.content;products.value=p.content;ctx.value=c}catch(e){error.value='Unable to load purchase orders'}finally{loading.value=false}}
 function add(){lines.value.push({productId:0,quantity:1,unitPrice:0})}
-async function create(){if(!ctx.value?.companyId||!ctx.value?.branchId||!supplier.value||lines.value.some(l=>!l.productId||l.quantity<=0)){error.value='Complete company, branch, supplier and lines';return} saving.value=true;try{await purchaseOrdersApi.create(ctx.value.companyId,ctx.value.branchId,supplier.value,lines.value,notes.value||undefined);dialog.value=false;await load()}catch(e){error.value='Could not create purchase order'}finally{saving.value=false}}
+async function create(){if(saving.value)return;if(!ctx.value?.companyId||!ctx.value?.branchId||!supplier.value||lines.value.some(l=>!l.productId||l.quantity<=0)){error.value='Complete company, branch, supplier and lines';return} saving.value=true;try{await purchaseOrdersApi.create(ctx.value.companyId,ctx.value.branchId,supplier.value,lines.value,notes.value||undefined);dialog.value=false;await load()}catch(e){error.value='Could not create purchase order'}finally{saving.value=false}}
 async function action(id:number,kind:'submit'|'approve'|'cancel'){try{await purchaseOrdersApi[kind](id);await load()}catch(e){error.value='Action rejected by server'}}
 onMounted(load)
 </script>

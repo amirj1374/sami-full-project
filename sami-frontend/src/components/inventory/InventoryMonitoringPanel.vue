@@ -52,14 +52,14 @@ watch([search, warehouseId, status], reload)
 watch(tab, () => { search.value = ''; status.value = ''; warehouseId.value = null; page.value = 1; void load() })
 
 async function release() {
-  if (!releaseTarget.value) return
+  if (!releaseTarget.value || loading.value) return
   loading.value = true
   try { await inventoryApi.releaseReservation(releaseTarget.value.id, reason.value || undefined); releaseTarget.value = null; reason.value = ''; notifications.success(t('inventory.reservationReleased')); await load(); emit('changed') }
   catch (value) { error.set(value) } finally { loading.value = false }
 }
 
 async function updateSerial(statusValue: 'AVAILABLE' | 'QUARANTINED') {
-  if (!serialTarget.value) return
+  if (!serialTarget.value || loading.value) return
   loading.value = true
   try { await inventoryApi.updateSerialStatus(serialTarget.value.id, statusValue, reason.value || undefined); serialTarget.value = null; reason.value = ''; notifications.success(t('inventory.serialUpdated')); await load() }
   catch (value) { error.set(value) } finally { loading.value = false }

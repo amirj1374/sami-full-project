@@ -88,6 +88,7 @@ watch(open, async (isOpen) => {
 })
 
 async function save(): Promise<void> {
+  if (saving.value) return
   clearFormError()
   let config: Record<string, unknown>
   try {

@@ -119,7 +119,7 @@ function payload(): CrmSegmentPayload {
 }
 
 async function save() {
-  if (!form.name.trim()) return
+  if (saving.value || !form.name.trim()) return
   saving.value = true
   error.clear()
   try {
@@ -136,7 +136,7 @@ async function save() {
 }
 
 async function remove() {
-  if (!deleteTarget.value) return
+  if (!deleteTarget.value || saving.value) return
   saving.value = true
   error.clear()
   try {

@@ -107,7 +107,7 @@ function close() {
 }
 
 async function save() {
-  if (!props.role || isSuperAdmin.value) return
+  if (!props.role || isSuperAdmin.value || saving.value) return
   saving.value = true
   clearError()
   try {

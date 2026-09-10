@@ -38,7 +38,7 @@ function openWarehouse(item?: Warehouse) {
 }
 
 async function saveWarehouse() {
-  if (!warehouseForm.code.trim() || !warehouseForm.name.trim()) return
+  if (saving.value || !warehouseForm.code.trim() || !warehouseForm.name.trim()) return
   saving.value = true
   try {
     const payload = { ...warehouseForm, companyId: warehouseForm.companyId || undefined, branchId: warehouseForm.branchId || undefined, code: warehouseForm.code.trim(), name: warehouseForm.name.trim(), description: warehouseForm.description?.trim() || undefined }
@@ -49,7 +49,7 @@ async function saveWarehouse() {
 }
 
 async function removeWarehouse() {
-  if (!deleteWarehouseTarget.value) return
+  if (!deleteWarehouseTarget.value || saving.value) return
   saving.value = true
   try { await inventoryApi.deleteWarehouse(deleteWarehouseTarget.value.id); deleteWarehouseTarget.value = null; notifications.success(t('inventory.warehouseDeleted')); emit('changed') }
   catch (reason) { error.set(reason) } finally { saving.value = false }
@@ -67,7 +67,7 @@ function openLocation(item?: InventoryLocation) {
 }
 
 async function saveLocation() {
-  if (!selectedWarehouse.value || !locationForm.code.trim() || !locationForm.name.trim()) return
+  if (saving.value || !selectedWarehouse.value || !locationForm.code.trim() || !locationForm.name.trim()) return
   saving.value = true
   try {
     const payload = { ...locationForm, code: locationForm.code.trim(), name: locationForm.name.trim(), description: locationForm.description.trim() || undefined }
@@ -78,7 +78,7 @@ async function saveLocation() {
 }
 
 async function removeLocation() {
-  if (!selectedWarehouse.value || !deleteLocationTarget.value) return
+  if (!selectedWarehouse.value || !deleteLocationTarget.value || saving.value) return
   saving.value = true
   try { await inventoryApi.deleteLocation(selectedWarehouse.value.id, deleteLocationTarget.value.id); locations.value = await inventoryApi.locations(selectedWarehouse.value.id); deleteLocationTarget.value = null; notifications.success(t('inventory.locationDeleted')) }
   catch (reason) { error.set(reason) } finally { saving.value = false }

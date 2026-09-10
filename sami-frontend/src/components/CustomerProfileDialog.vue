@@ -165,7 +165,7 @@ async function loadNotes() {
 watch(notesPage, () => void loadNotes())
 
 async function addNote() {
-  if (!props.customer || !noteBody.value.trim()) return
+  if (!props.customer || noteBusy.value || !noteBody.value.trim()) return
   noteBusy.value = true
   try {
     await customersApi.addNote(props.customer.id, {
@@ -185,13 +185,16 @@ async function addNote() {
 }
 
 async function deleteNote(note: CustomerNote) {
-  if (!props.customer) return
+  if (!props.customer || noteBusy.value) return
+  noteBusy.value = true
   try {
     await customersApi.deleteNote(props.customer.id, note.id)
     await loadNotes()
     notifications.success(t('customers.profile.notes.deleted'))
   } catch (err) {
     setError(err)
+  } finally {
+    noteBusy.value = false
   }
 }
 
@@ -235,7 +238,7 @@ watch(relationSearch, () => {
 })
 
 async function addRelation() {
-  if (!props.customer || !relationTarget.value || relationTypeId.value === null) return
+  if (!props.customer || relationBusy.value || !relationTarget.value || relationTypeId.value === null) return
   relationBusy.value = true
   try {
     await customersApi.addRelation(props.customer.id, {
@@ -256,13 +259,16 @@ async function addRelation() {
 }
 
 async function removeRelation(relation: CustomerRelation) {
-  if (!props.customer) return
+  if (!props.customer || relationBusy.value) return
+  relationBusy.value = true
   try {
     await customersApi.removeRelation(props.customer.id, relation.id)
     await loadRelations()
     notifications.success(t('customers.profile.relations.deleted'))
   } catch (err) {
     setError(err)
+  } finally {
+    relationBusy.value = false
   }
 }
 

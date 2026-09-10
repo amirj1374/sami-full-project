@@ -208,6 +208,7 @@ function validate(): boolean {
 }
 
 async function submit(ignoreDuplicates = false) {
+  if (saving.value) return
   if (!validate()) {
     tab.value = 'identity'
     return

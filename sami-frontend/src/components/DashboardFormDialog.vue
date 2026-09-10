@@ -58,6 +58,7 @@ watch(open, async (isOpen) => {
 })
 
 async function save(): Promise<void> {
+  if (saving.value) return
   clearFormError()
   saving.value = true
   const payload = {

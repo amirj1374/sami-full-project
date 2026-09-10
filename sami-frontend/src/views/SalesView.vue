@@ -257,14 +257,17 @@ async function openEdit() {
   await loadLookups();
 }
 async function save() {
+  if (saving.value) return;
   if (
     !form.companyId ||
     !form.branchId ||
     !form.customerId ||
     !form.items.length ||
     form.items.some((x) => !x.productId || x.quantity <= 0)
-  )
+  ) {
+    error.set({ code: "VALIDATION", message: "Required sale fields are missing" });
     return;
+  }
   saving.value = true;
   try {
     const payload: SalePayload = {
@@ -329,7 +332,7 @@ async function show(s: Sale) {
   }
 }
 async function act(action: "confirm" | "complete" | "cancel") {
-  if (!selected.value) return;
+  if (!selected.value || saving.value) return;
   saving.value = true;
   try {
     selected.value =
@@ -351,7 +354,7 @@ function hamtaLine(imei: string | null | undefined) {
   return hamtaInvoice.value.find((line) => line.imei === imei);
 }
 async function deliverHamta() {
-  if (!selected.value) return;
+  if (!selected.value || saving.value) return;
   saving.value = true;
   try {
     await hamtaApi.deliver(selected.value.id);

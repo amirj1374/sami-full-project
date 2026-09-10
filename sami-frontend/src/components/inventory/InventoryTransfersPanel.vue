@@ -67,7 +67,7 @@ async function openCreate() {
 }
 
 async function save() {
-  if (!form.fromWarehouseId || !form.toWarehouseId || form.fromWarehouseId === form.toWarehouseId || form.lines.some((line) => !line.productId || line.quantity <= 0)) return
+  if (saving.value || !form.fromWarehouseId || !form.toWarehouseId || form.fromWarehouseId === form.toWarehouseId || form.lines.some((line) => !line.productId || line.quantity <= 0)) return
   saving.value = true
   try {
     const created = await inventoryApi.createTransfer({
@@ -93,7 +93,7 @@ async function show(item: InventoryTransfer) {
 }
 
 async function act(action: 'ship' | 'receive' | 'cancel') {
-  if (!selected.value) return
+  if (!selected.value || saving.value) return
   saving.value = true
   try {
     selected.value = action === 'ship' ? await inventoryApi.shipTransfer(selected.value.id) : action === 'receive' ? await inventoryApi.receiveTransfer(selected.value.id) : await inventoryApi.cancelTransfer(selected.value.id)

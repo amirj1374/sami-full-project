@@ -61,7 +61,7 @@ watch(open, (isOpen) => {
 })
 
 async function addShare(): Promise<void> {
-  if (!props.dashboard) return
+  if (!props.dashboard || busy.value) return
   busy.value = true
   clearError()
   try {
@@ -80,12 +80,15 @@ async function addShare(): Promise<void> {
 }
 
 async function removeShare(share: DashboardShare): Promise<void> {
-  if (!props.dashboard) return
+  if (!props.dashboard || busy.value) return
+  busy.value = true
   try {
     await dashboardsApi.unshare(props.dashboard.id, share.id)
     await load()
   } catch (err) {
     setError(err)
+  } finally {
+    busy.value = false
   }
 }
 </script>

@@ -235,6 +235,7 @@ const total = computed(() =>
 )
 
 async function submit() {
+  if (saving.value) return
   const hasSeller = form.sellerType === 'SUPPLIER' ? !!supplier.value : !!customer.value
   if (!form.typeId || !hasSeller) {
     setFormError({ code: 'VALIDATION', message: t('purchases.validation.typeSupplierRequired') })

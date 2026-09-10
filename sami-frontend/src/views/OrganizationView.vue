@@ -73,7 +73,10 @@ function payload(): CompanyPayload {
 }
 
 async function save() {
-  if (!form.code.trim() || !form.name.trim()) return
+  if (saving.value || !form.code.trim() || !form.name.trim()) {
+    if (!form.code.trim() || !form.name.trim()) apiError.set({ code: 'VALIDATION', message: t('apiError.validation') })
+    return
+  }
   saving.value = true
   apiError.clear()
   try {
