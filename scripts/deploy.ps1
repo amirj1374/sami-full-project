@@ -543,13 +543,14 @@ function Invoke-LocalBackendVerify {
     $nonce = [Guid]::NewGuid().ToString('N')
     $cacheVolume = "sami-release-validation-m2-$nonce"
     $containerName = "sami-release-validation-maven-$nonce"
+    $repositoryRoot = $script:RepositoryRoot
     Invoke-Native $script:DockerExecutable @('volume', 'create', $cacheVolume) 'Creating disposable Maven validation cache volume.'
     try {
         Invoke-Native $script:DockerExecutable @(
             'run', '--rm', '--name', $containerName,
-            '--mount', "type=bind,source=$backendContext,target=/workspace",
+            '--mount', "type=bind,source=$repositoryRoot,target=/workspace",
             '--mount', "type=volume,source=$cacheVolume,target=/root/.m2",
-            '--workdir', '/workspace',
+            '--workdir', '/workspace/sami-backend',
             'maven:3.9-eclipse-temurin-21', 'mvn', '-U', '-B', '--no-transfer-progress', 'clean', 'verify'
         ) 'Running backend Maven clean verify in a disposable container.'
     }
