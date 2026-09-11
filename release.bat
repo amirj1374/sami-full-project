@@ -24,5 +24,5 @@ if not exist "%ROOT_DIR%scripts\release-deploy.sh" (
   exit /b 1
 )
 
-"%GIT_BASH%" -lc "cd \"$(cygpath -u '%ROOT_DIR%')\" && exec ./scripts/release-deploy.sh \"$1\"" -- "%~1"
+"%GIT_BASH%" -lc "cd \"$(cygpath -u '%ROOT_DIR%')\" && exec ./scripts/release-deploy.sh \"$1\" --interactive-auth" -- "%~1"
 exit /b %errorlevel%

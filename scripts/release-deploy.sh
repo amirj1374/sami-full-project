@@ -3,15 +3,24 @@ set -Eeuo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 
-if [[ "$#" -ne 1 ]]; then
-  echo "Usage: $0 <semver> (for example: 0.4.0)" >&2
+if [[ "$#" -lt 1 || "$#" -gt 2 ]]; then
+  echo "Usage: $0 <semver> [--interactive-auth] (for example: 0.4.0)" >&2
   exit 2
 fi
 
 VERSION="$1"
+INTERACTIVE_AUTH=false
+
+if [[ "$#" -eq 2 ]]; then
+  if [[ "$2" != "--interactive-auth" ]]; then
+    echo "Usage: $0 <semver> [--interactive-auth] (for example: 0.4.0)" >&2
+    exit 2
+  fi
+  INTERACTIVE_AUTH=true
+fi
 
 if [[ "$VERSION" == "0.0.0" || ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
-  echo "Usage: $0 <semver> (for example: 0.4.0)" >&2
+  echo "Usage: $0 <semver> [--interactive-auth] (for example: 0.4.0)" >&2
   exit 2
 fi
 
@@ -33,6 +42,9 @@ fi
 ARGS=(-NoProfile -ExecutionPolicy Bypass -File "$DEPLOY_SCRIPT" -Mode Full -ApplicationVersion "$VERSION")
 if [[ -f "$ROOT_DIR/scripts/release-config.ps1" ]]; then
   ARGS+=( -ConfigFile "$ROOT_DIR/scripts/release-config.ps1" )
+fi
+if [[ "$INTERACTIVE_AUTH" == true ]]; then
+  ARGS+=( -AllowInteractiveAuth )
 fi
 
 exec "$POWERSHELL" "${ARGS[@]}"
