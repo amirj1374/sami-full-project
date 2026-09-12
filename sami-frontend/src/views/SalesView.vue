@@ -332,21 +332,24 @@ async function show(s: Sale) {
 }
 async function act(action: "confirm" | "complete" | "cancel") {
   if (!selected.value || saving.value) return;
+  const saleId = selected.value.id;
+  let updated: Sale | undefined;
   saving.value = true;
   try {
-    selected.value =
+    updated =
       action === "cancel"
         ? await salesApi.cancel(
-            selected.value.id,
+            saleId,
             t("sales.cancelReasonDefault"),
           )
-        : await salesApi[action](selected.value.id);
+        : await salesApi[action](saleId);
     notice.value = t("sales.actionDone");
     await load();
   } catch (e) {
     error.set(e);
   } finally {
     saving.value = false;
+    if (updated) selected.value = updated;
   }
 }
 function hamtaLine(imei: string | null | undefined) {
@@ -788,11 +791,15 @@ onMounted(load);
           ><v-btn
             v-if="selected.status === 'DRAFT' && canAction('confirm')"
             color="info"
+            :disabled="saving"
+            :loading="saving"
             @click="act('confirm')"
             >{{ t("sales.confirm") }}</v-btn
           ><v-btn
             v-if="selected.status === 'CONFIRMED' && canAction('complete')"
             color="success"
+            :disabled="saving"
+            :loading="saving"
             @click="act('complete')"
             >{{ t("sales.complete") }}</v-btn
           ><v-btn
@@ -802,6 +809,8 @@ onMounted(load);
             "
             color="error"
             variant="tonal"
+            :disabled="saving"
+            :loading="saving"
             @click="act('cancel')"
             >{{ t("sales.cancelSale") }}</v-btn
           ><v-btn

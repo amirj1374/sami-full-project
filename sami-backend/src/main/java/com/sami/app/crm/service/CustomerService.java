@@ -7,6 +7,7 @@ import com.sami.app.common.storage.FileStorage;
 import com.sami.app.common.storage.ImageUploads;
 import com.sami.app.common.storage.StorageProperties;
 import com.sami.app.common.tenancy.TenantContext;
+import com.sami.app.contact.service.ContactWriteService;
 import com.sami.app.crm.CrmProperties;
 import com.sami.app.crm.domain.Customer;
 import com.sami.app.crm.domain.CustomerAddress;
@@ -70,6 +71,7 @@ public class CustomerService {
     private final StorageProperties storageProperties;
     private final CrmProperties crmProperties;
     private final TenantContext tenantContext;
+    private final ContactWriteService contactWriteService;
 
     // ----------------------------------------------------------------- reads
 
@@ -126,6 +128,7 @@ public class CustomerService {
         applySource(customer, request.sourceId());
         applyTags(customer, request.tagIds());
         customerRepository.save(customer);
+        contactWriteService.createCustomerContact(customer.getId(), customer.getDisplayName());
         applyContacts(customer, request.contacts());
         applyAddresses(customer, request.addresses());
 
