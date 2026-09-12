@@ -7,6 +7,7 @@ import axios, {
 import type { ApiResponse } from '@/types/api'
 import type { AuthResult, CurrentUser } from '@/types/models'
 import { tokenStorage } from './tokenStorage'
+import { browserStorage } from '@/services/browserStorage'
 
 /**
  * Central Axios instance.
@@ -28,8 +29,8 @@ http.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
-  const companyId = localStorage.getItem('sami.activeCompanyId')
-  const branchId = localStorage.getItem('sami.activeBranchId')
+  const companyId = browserStorage.getItem('sami.activeCompanyId')
+  const branchId = browserStorage.getItem('sami.activeBranchId')
   if (companyId) config.headers['X-Active-Company-Id'] = companyId
   if (branchId) config.headers['X-Active-Branch-Id'] = branchId
   return config

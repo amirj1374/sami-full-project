@@ -18,6 +18,6 @@ environment-file contents, or private-key contents in this file.
     BackendImageTag         = 'sami-backend:test'
     FrontendImageTag        = 'sami-frontend:test'
     FrontendApiBaseUrl      = '/api'
-    ApplicationVersion      = '0.2.0'
+    ApplicationVersion      = '0.5.0'
     ApplicationUrl          = 'http://87.248.131.157'
 }

@@ -89,8 +89,13 @@ async function bootstrap(): Promise<void> {
           void router.push(message.url)
         }
       })
-    } catch {
-      // The application remains fully functional when service-worker registration is unavailable.
+    } catch (cause) {
+      // Service workers require a secure context (except localhost). Keep the
+      // business app available, but leave an explicit diagnostic for operators.
+      console.warn(
+        '[SAMI compatibility] Service-worker registration is unavailable in this browser context; PWA update/push features are disabled.',
+        cause instanceof Error ? cause.message : cause,
+      )
     }
   }
 }

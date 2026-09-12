@@ -15,7 +15,7 @@ ARG VITE_API_BASE_URL=/api
 ARG VITE_BUILD_BRANCH=unknown
 ARG VITE_BUILD_COMMIT=unknown
 ARG VITE_BUILD_TIMESTAMP=unknown
-ARG VITE_APP_VERSION=0.2.0
+ARG VITE_APP_VERSION=0.5.0
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 ENV VITE_BUILD_BRANCH=$VITE_BUILD_BRANCH \
     VITE_BUILD_COMMIT=$VITE_BUILD_COMMIT \
@@ -27,7 +27,7 @@ RUN npm run build
 # Serves the static bundle with nginx and proxies /api to the backend.
 FROM nginx:1.27-alpine AS runtime
 ARG VITE_BUILD_COMMIT=unknown
-ARG VITE_APP_VERSION=0.2.0
+ARG VITE_APP_VERSION=0.5.0
 LABEL org.opencontainers.image.revision=$VITE_BUILD_COMMIT \
       org.opencontainers.image.version=$VITE_APP_VERSION
 COPY nginx.conf /etc/nginx/conf.d/default.conf

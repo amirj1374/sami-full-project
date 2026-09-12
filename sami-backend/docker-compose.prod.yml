@@ -51,7 +51,7 @@ services:
       args:
         BUILD_BRANCH: ${BUILD_BRANCH:-unknown}
         BUILD_COMMIT: ${BUILD_COMMIT:-unknown}
-        APP_VERSION: ${APP_VERSION:-0.2.0}
+        APP_VERSION: ${APP_VERSION:-0.5.0}
     restart: unless-stopped
     depends_on:
       db:
@@ -93,7 +93,7 @@ services:
         VITE_BUILD_BRANCH: ${BUILD_BRANCH:-unknown}
         VITE_BUILD_COMMIT: ${BUILD_COMMIT:-unknown}
         VITE_BUILD_TIMESTAMP: ${BUILD_TIMESTAMP:-unknown}
-        VITE_APP_VERSION: ${APP_VERSION:-0.2.0}
+        VITE_APP_VERSION: ${APP_VERSION:-0.5.0}
     restart: unless-stopped
     depends_on:
       backend:

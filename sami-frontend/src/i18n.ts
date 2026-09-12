@@ -2,6 +2,7 @@ import { createI18n } from 'vue-i18n'
 import { en as vuetifyEn, fa as vuetifyFa } from 'vuetify/locale'
 import en from './locales/en.json'
 import fa from './locales/fa.json'
+import { browserStorage } from './services/browserStorage'
 
 /**
  * Application internationalization. English is the complete base catalogue;
@@ -42,7 +43,7 @@ export function isRtl(locale: AppLocale): boolean {
 }
 
 export function getStoredLocale(): AppLocale {
-  const stored = localStorage.getItem(STORAGE_KEY)
+  const stored = browserStorage.getItem(STORAGE_KEY)
   return stored === 'fa' || stored === 'en' ? stored : 'fa'
 }
 
@@ -50,7 +51,7 @@ export function getStoredLocale(): AppLocale {
 export function setLocale(locale: AppLocale): void {
   // The composition-mode global exposes `locale` as a writable ref.
   ;(i18n.global.locale as unknown as { value: AppLocale }).value = locale
-  localStorage.setItem(STORAGE_KEY, locale)
+  browserStorage.setItem(STORAGE_KEY, locale)
   const html = document.documentElement
   html.setAttribute('lang', locale)
   html.setAttribute('dir', isRtl(locale) ? 'rtl' : 'ltr')

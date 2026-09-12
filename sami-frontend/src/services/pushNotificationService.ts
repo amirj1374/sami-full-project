@@ -3,6 +3,7 @@ import type {
   PushNotificationPreferences,
   PushSubscriptionModel,
 } from '@/types/pushNotifications'
+import { browserStorage } from '@/services/browserStorage'
 
 const PREFERENCES_KEY = 'sami.push.preferences.v1'
 const DEFAULT_PREFERENCES: PushNotificationPreferences = { enabled: false }
@@ -41,7 +42,7 @@ export const pushNotificationService = {
     const notifications = browser && 'Notification' in window
     const secureContext = browser && window.isSecureContext
     const installed = browser && (
-      window.matchMedia('(display-mode: standalone)').matches
+      (typeof window.matchMedia === 'function' && window.matchMedia('(display-mode: standalone)').matches)
       || ('standalone' in navigator && (navigator as Navigator & { standalone?: boolean }).standalone === true)
     )
     return {
@@ -90,7 +91,7 @@ export const pushNotificationService = {
 
   preferences(): PushNotificationPreferences {
     try {
-      const stored = localStorage.getItem(PREFERENCES_KEY)
+      const stored = browserStorage.getItem(PREFERENCES_KEY)
       if (!stored) return { ...DEFAULT_PREFERENCES }
       const parsed = JSON.parse(stored) as Partial<PushNotificationPreferences>
       return { enabled: parsed.enabled === true }
@@ -100,6 +101,6 @@ export const pushNotificationService = {
   },
 
   savePreferences(preferences: PushNotificationPreferences): void {
-    localStorage.setItem(PREFERENCES_KEY, JSON.stringify(preferences))
+    browserStorage.setItem(PREFERENCES_KEY, JSON.stringify(preferences))
   },
 }

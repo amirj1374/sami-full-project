@@ -16,7 +16,8 @@ Use -AllowInteractiveAuth only for an explicitly supervised setup/emergency run;
 the script never accepts or passes a password.
 
 .PARAMETER Mode
-Build, Validate, Export, Upload, Deploy, Full, Rollback, or Cleanup. Default: Build.
+Build, Smoke, Validate, Export, Upload, Deploy, Full, Rollback, or Cleanup. Smoke
+reuses already-built images for targeted disposable-stack diagnosis. Default: Build.
 
 .PARAMETER ConfigFile
 Optional local PowerShell file returning a hashtable of non-secret settings.
@@ -44,7 +45,7 @@ cleaning, or connecting to the VPS.
 #requires -Version 5.1
 [CmdletBinding()]
 param(
-    [ValidateSet('Build', 'Validate', 'Export', 'Upload', 'Deploy', 'Full', 'Rollback', 'Cleanup')]
+    [ValidateSet('Build', 'Smoke', 'Validate', 'Export', 'Upload', 'Deploy', 'Full', 'Rollback', 'Cleanup')]
     [string]$Mode = 'Build',
     [string]$ConfigFile,
     [string]$SshHost = '87.248.131.157',
@@ -62,7 +63,7 @@ param(
     [string]$BackendImageTag = 'sami-backend:test',
     [string]$FrontendImageTag = 'sami-frontend:test',
     [string]$FrontendApiBaseUrl = '/api',
-    [string]$ApplicationVersion = '0.2.0',
+    [string]$ApplicationVersion = '0.5.0',
     [string]$ApplicationUrl,
     [switch]$AllowDirtyWorkingTree,
     [switch]$NoCache,
@@ -523,6 +524,474 @@ function Invoke-LocalHttpCheck {
     return $response
 }
 
+function Invoke-LocalApiRequest {
+    param(
+        [string]$Uri,
+        [ValidateSet('Get', 'Post', 'Put', 'Delete')][string]$Method = 'Get',
+        [hashtable]$Headers = @{},
+        [AllowNull()][object]$Body,
+        [string]$Description
+    )
+    $request = @{
+        UseBasicParsing = $true
+        Uri              = $Uri
+        Method           = $Method
+        Headers          = $Headers
+        TimeoutSec       = 30
+    }
+    if ($null -ne $Body) {
+        $request.ContentType = 'application/json'
+        $request.Body = $Body | ConvertTo-Json -Depth 12 -Compress
+    }
+    try {
+        return Invoke-RestMethod @request
+    }
+    catch {
+        throw "$Description failed: $($_.Exception.Message)"
+    }
+}
+
+function Get-LocalApiData {
+    param([object]$Envelope, [string]$Description)
+    $success = Get-ObjectPropertyValue $Envelope 'success'
+    if ($success -ne $true) {
+        $apiError = Get-ObjectPropertyValue $Envelope 'error'
+        $message = Get-ObjectPropertyValue $apiError 'message'
+        if (-not $message) { $message = 'The API returned an unsuccessful envelope.' }
+        throw "$Description failed: $message"
+    }
+    $data = Get-ObjectPropertyValue $Envelope 'data'
+    if ($null -eq $data) { throw "$Description returned an empty data payload." }
+    return $data
+}
+
+function Assert-LocalApiSuccess {
+    param([object]$Envelope, [string]$Description)
+    $success = Get-ObjectPropertyValue $Envelope 'success'
+    if ($success -eq $true) { return }
+    $apiError = Get-ObjectPropertyValue $Envelope 'error'
+    $message = Get-ObjectPropertyValue $apiError 'message'
+    if (-not $message) { $message = 'The API returned an unsuccessful envelope.' }
+    throw "$Description failed: $message"
+}
+
+function Invoke-LocalProductionHttpMutationSmoke {
+    param(
+        [string]$BaseUrl,
+        [string]$AccessToken,
+        [string]$Nonce
+    )
+    Write-RunLog INFO 'PRODUCTION_HTTP_COMPATIBILITY: exercising authenticated mutations through nginx over HTTP.'
+    $headers = @{ Authorization = "Bearer $AccessToken" }
+
+    $context = Get-LocalApiData (Invoke-LocalApiRequest "$BaseUrl/api/v1/organization/context" -Headers $headers -Description 'Organization context request') 'Organization context'
+    $contextCompanyId = Get-ObjectPropertyValue $context 'companyId'
+    $contextBranchId = Get-ObjectPropertyValue $context 'branchId'
+    if ($null -eq $contextCompanyId) {
+        $companyChoices = @(Get-ObjectPropertyValue $context 'companies')
+        $selectedCompany = $companyChoices | Select-Object -First 1
+        if ($null -eq $selectedCompany) {
+            throw 'PRODUCTION_HTTP_COMPATIBILITY failed: authenticated bootstrap user has no company scope.'
+        }
+        $contextCompanyId = Get-ObjectPropertyValue $selectedCompany 'id'
+    }
+    if ($null -eq $contextCompanyId) {
+        throw 'PRODUCTION_HTTP_COMPATIBILITY failed: organization context returned no selectable company.'
+    }
+    $availableBranches = @(Get-ObjectPropertyValue $context 'branches')
+    if ($null -eq $contextBranchId -or $availableBranches.Count -eq 0) {
+        $availableBranches = @(Get-LocalApiData (Invoke-LocalApiRequest "$BaseUrl/api/v1/organization/companies/$contextCompanyId/branches" -Headers $headers -Description 'Organization branch lookup') 'Organization branch lookup')
+    }
+    if ($null -eq $contextBranchId) {
+        $selectedBranch = $availableBranches | Where-Object { (Get-ObjectPropertyValue $_ 'active') -ne $false } | Select-Object -First 1
+        if ($null -eq $selectedBranch) {
+            throw 'PRODUCTION_HTTP_COMPATIBILITY failed: authenticated bootstrap user has no active branch scope.'
+        }
+        $contextBranchId = Get-ObjectPropertyValue $selectedBranch 'id'
+        $context = Get-LocalApiData (Invoke-LocalApiRequest "$BaseUrl/api/v1/organization/context" -Method Put -Headers $headers -Body @{ companyId = [long]$contextCompanyId; branchId = [long]$contextBranchId } -Description 'Organization context selection') 'Organization context selection'
+        $contextCompanyId = Get-ObjectPropertyValue $context 'companyId'
+        $contextBranchId = Get-ObjectPropertyValue $context 'branchId'
+    }
+    if ($null -eq $contextCompanyId -or $null -eq $contextBranchId) {
+        throw 'PRODUCTION_HTTP_COMPATIBILITY failed: organization context selection returned no company/branch scope.'
+    }
+    $companyId = [long]$contextCompanyId
+    $branchId = [long]$contextBranchId
+
+    $types = @(Get-LocalApiData (Invoke-LocalApiRequest "$BaseUrl/api/v1/crm/types" -Headers $headers -Description 'Customer type lookup') 'Customer type lookup')
+    $customerType = $types | Where-Object { (Get-ObjectPropertyValue $_ 'active') -ne $false } | Select-Object -First 1
+    if ($null -eq $customerType) { throw 'PRODUCTION_HTTP_COMPATIBILITY failed: no active customer type is available.' }
+    $customerTypeId = [long](Get-ObjectPropertyValue $customerType 'id')
+
+    $marker = "SAMI-PARITY-$($script:ShortCommitSha)-$($Nonce.Substring(0, 8))"
+    $customerPayload = [ordered]@{
+        displayName     = $marker
+        typeId          = $customerTypeId
+        contacts        = @(@{ kind = 'PHONE'; value = "090000$($Nonce.Substring(0, 6))"; label = 'Parity validation'; isDefault = $true })
+        addresses       = @()
+        ignoreDuplicates = $true
+    }
+    $customer = Get-LocalApiData (Invoke-LocalApiRequest "$BaseUrl/api/v1/customers" -Method Post -Headers $headers -Body $customerPayload -Description 'Customer create mutation') 'Customer create mutation'
+    $customerRow = Get-ObjectPropertyValue $customer 'customer'
+    $customerIdValue = Get-ObjectPropertyValue $customerRow 'id'
+    if ($null -eq $customerIdValue) { throw 'PRODUCTION_HTTP_COMPATIBILITY failed: customer create returned no id.' }
+    $customerId = [long]$customerIdValue
+    $customerVersion = Get-ObjectPropertyValue $customerRow 'version'
+
+    $updatedCustomerPayload = [ordered]@{
+        displayName      = "$marker-UPDATED"
+        typeId           = $customerTypeId
+        contacts         = $customerPayload.contacts
+        addresses        = @()
+        ignoreDuplicates = $true
+        expectedVersion  = [long]$customerVersion
+    }
+    $updatedCustomer = Get-LocalApiData (Invoke-LocalApiRequest "$BaseUrl/api/v1/customers/$customerId" -Method Put -Headers $headers -Body $updatedCustomerPayload -Description 'Customer update mutation') 'Customer update mutation'
+    $updatedCustomerRow = Get-ObjectPropertyValue $updatedCustomer 'customer'
+    if ((Get-ObjectPropertyValue $updatedCustomerRow 'displayName') -ne "$marker-UPDATED") {
+        throw 'PRODUCTION_HTTP_COMPATIBILITY failed: customer update response did not contain the new display name.'
+    }
+    $persistedCustomer = Get-LocalApiData (Invoke-LocalApiRequest "$BaseUrl/api/v1/customers/$customerId" -Headers $headers -Description 'Customer persistence readback') 'Customer persistence readback'
+    if ((Get-ObjectPropertyValue (Get-ObjectPropertyValue $persistedCustomer 'customer') 'displayName') -ne "$marker-UPDATED") {
+        throw 'PRODUCTION_HTTP_COMPATIBILITY failed: updated customer was not persisted after a fresh GET.'
+    }
+
+    $productPayload = [ordered]@{
+        name          = "$marker Product"
+        sku           = "PAR-$($Nonce.Substring(0, 12))"
+        description   = 'Disposable production parity validation product'
+        price         = 1000
+        stockQuantity = 10
+        active        = $true
+        hamtaEligible = $false
+    }
+    $product = Get-LocalApiData (Invoke-LocalApiRequest "$BaseUrl/api/v1/products" -Method Post -Headers $headers -Body $productPayload -Description 'Product create mutation') 'Product create mutation'
+    $productIdValue = Get-ObjectPropertyValue $product 'id'
+    if ($null -eq $productIdValue) { throw 'PRODUCTION_HTTP_COMPATIBILITY failed: product create returned no id.' }
+    $productId = [long]$productIdValue
+
+    $warehousePayload = [ordered]@{
+        companyId        = $companyId
+        branchId         = $branchId
+        code             = "PAR$($Nonce.Substring(0, 12))"
+        name             = "$marker Warehouse"
+        description      = 'Disposable production parity validation warehouse'
+        warehouseType    = 'STANDARD'
+        defaultWarehouse = $false
+        active            = $true
+        displayOrder      = 100
+    }
+    $warehouse = Get-LocalApiData (Invoke-LocalApiRequest "$BaseUrl/api/v1/inventory/warehouses" -Method Post -Headers $headers -Body $warehousePayload -Description 'Inventory warehouse create mutation') 'Inventory warehouse create mutation'
+    $warehouseIdValue = Get-ObjectPropertyValue $warehouse 'id'
+    if ($null -eq $warehouseIdValue) { throw 'PRODUCTION_HTTP_COMPATIBILITY failed: warehouse create returned no id.' }
+    $warehouseId = [long]$warehouseIdValue
+
+    $adjustmentPayload = [ordered]@{
+        warehouseId   = $warehouseId
+        locationId    = $null
+        reason        = "$marker opening parity stock"
+        idempotencyKey = "parity-adjustment-$Nonce"
+        lines         = @(@{ productId = $productId; quantity = 10; unitCost = 100 })
+    }
+    $adjustment = Get-LocalApiData (Invoke-LocalApiRequest "$BaseUrl/api/v1/inventory/adjustments" -Method Post -Headers $headers -Body $adjustmentPayload -Description 'Inventory adjustment mutation') 'Inventory adjustment mutation'
+    if ([int](Get-ObjectPropertyValue $adjustment 'lines') -ne 1) {
+        throw 'PRODUCTION_HTTP_COMPATIBILITY failed: inventory adjustment did not post its line.'
+    }
+    $balanceData = Get-LocalApiData (Invoke-LocalApiRequest "$BaseUrl/api/v1/inventory/balances?warehouseId=$warehouseId&size=100" -Headers $headers -Description 'Inventory balance persistence readback') 'Inventory balance persistence readback'
+    $persistedBalance = @(Get-ObjectPropertyValue $balanceData 'content') | Where-Object { [long](Get-ObjectPropertyValue $_ 'productId') -eq $productId } | Select-Object -First 1
+    if ($null -eq $persistedBalance -or [decimal](Get-ObjectPropertyValue $persistedBalance 'onHand') -lt 10) {
+        throw 'PRODUCTION_HTTP_COMPATIBILITY failed: inventory adjustment was not persisted after a fresh GET.'
+    }
+
+    $accountTypes = @(Get-LocalApiData (Invoke-LocalApiRequest "$BaseUrl/api/v1/treasury/account-types" -Headers $headers -Description 'Treasury account type lookup') 'Treasury account type lookup')
+    $accountType = $accountTypes | Where-Object { (Get-ObjectPropertyValue $_ 'active') -ne $false } | Select-Object -First 1
+    if ($null -eq $accountType) { throw 'PRODUCTION_HTTP_COMPATIBILITY failed: no active treasury account type is available.' }
+    $accountPayload = [ordered]@{
+        companyId            = $companyId
+        branchId             = $branchId
+        accountTypeId        = [long](Get-ObjectPropertyValue $accountType 'id')
+        code                 = "parity-$($Nonce.Substring(0, 12))"
+        name                 = "$marker Treasury"
+        currencyCode         = 'IRR'
+        openingBalance       = 100000
+        allowNegativeBalance = $false
+        responsibleUserId    = $null
+        bankName             = if ((Get-ObjectPropertyValue $accountType 'requiresBankDetails') -eq $true) { 'Parity Bank' } else { $null }
+        bankBranch           = $null
+        iban                 = $null
+        accountNumber        = $null
+        cardNumber           = $null
+        accountHolder        = $null
+        description          = 'Disposable production parity validation treasury account'
+        active               = $true
+    }
+    $treasuryAccount = Get-LocalApiData (Invoke-LocalApiRequest "$BaseUrl/api/v1/treasury/accounts" -Method Post -Headers $headers -Body $accountPayload -Description 'Treasury account create mutation') 'Treasury account create mutation'
+    $treasuryAccountIdValue = Get-ObjectPropertyValue $treasuryAccount 'id'
+    if ($null -eq $treasuryAccountIdValue) { throw 'PRODUCTION_HTTP_COMPATIBILITY failed: treasury account create returned no id.' }
+    $treasuryAccountId = [long]$treasuryAccountIdValue
+
+    $salePayload = [ordered]@{
+        companyId      = $companyId
+        branchId       = $branchId
+        customerId     = $customerId
+        saleType       = 'RETAIL'
+        currency       = 'IRR'
+        notes          = $marker
+        items          = @(@{ productId = $productId; quantity = 1; unitPrice = 1000; costPrice = 100; discount = 0; tax = 0 })
+        services       = @()
+        idempotencyKey = "parity-sale-$Nonce"
+    }
+    $sale = Get-LocalApiData (Invoke-LocalApiRequest "$BaseUrl/api/v1/sales" -Method Post -Headers $headers -Body $salePayload -Description 'Sales create mutation') 'Sales create mutation'
+    $saleIdValue = Get-ObjectPropertyValue $sale 'id'
+    if ($null -eq $saleIdValue) { throw 'PRODUCTION_HTTP_COMPATIBILITY failed: sales create returned no id.' }
+    $saleId = [long]$saleIdValue
+    $sameSale = Get-LocalApiData (Invoke-LocalApiRequest "$BaseUrl/api/v1/sales" -Method Post -Headers $headers -Body $salePayload -Description 'Sales idempotency replay') 'Sales idempotency replay'
+    if ([long](Get-ObjectPropertyValue $sameSale 'id') -ne $saleId) {
+        throw 'PRODUCTION_HTTP_COMPATIBILITY failed: sales idempotency replay returned a different record.'
+    }
+    $persistedSale = Get-LocalApiData (Invoke-LocalApiRequest "$BaseUrl/api/v1/sales/$saleId" -Headers $headers -Description 'Sales persistence readback') 'Sales persistence readback'
+    if ((Get-ObjectPropertyValue $persistedSale 'notes') -ne $marker) {
+        throw 'PRODUCTION_HTTP_COMPATIBILITY failed: created sale was not persisted after a fresh GET.'
+    }
+
+    $quotationPayload = [ordered]@{
+        companyId    = $companyId
+        branchId     = $branchId
+        customerId   = $customerId
+        documentType = 'QUOTATION'
+        currency     = 'IRR'
+        notes        = "$marker quotation"
+        lines        = @(@{ productId = $productId; quantity = 1; unitPrice = 1000; discount = 0 })
+        expectedVersion = $null
+    }
+    $quotation = Get-LocalApiData (Invoke-LocalApiRequest "$BaseUrl/api/v1/sales-documents" -Method Post -Headers $headers -Body $quotationPayload -Description 'Sales quotation create mutation') 'Sales quotation create mutation'
+    $quotationId = [long](Get-ObjectPropertyValue $quotation 'id')
+    $quotation = Get-LocalApiData (Invoke-LocalApiRequest "$BaseUrl/api/v1/sales-documents/$quotationId/issue" -Method Post -Headers $headers -Description 'Sales quotation issue mutation') 'Sales quotation issue mutation'
+    if ((Get-ObjectPropertyValue $quotation 'status') -ne 'ISSUED') {
+        throw 'PRODUCTION_HTTP_COMPATIBILITY failed: quotation did not reach ISSUED.'
+    }
+
+    $salesOrder = Get-LocalApiData (Invoke-LocalApiRequest "$BaseUrl/api/v1/sales-orders/from-quotation/$quotationId" -Method Post -Headers $headers -Description 'Sales order conversion mutation') 'Sales order conversion mutation'
+    $salesOrderId = [long](Get-ObjectPropertyValue $salesOrder 'id')
+    $salesOrder = Get-LocalApiData (Invoke-LocalApiRequest "$BaseUrl/api/v1/sales-orders/$salesOrderId/confirm" -Method Post -Headers $headers -Description 'Sales order confirm mutation') 'Sales order confirm mutation'
+    $salesOrderLine = @(Get-ObjectPropertyValue $salesOrder 'lines') | Select-Object -First 1
+    if ((Get-ObjectPropertyValue $salesOrder 'status') -ne 'CONFIRMED' -or [decimal](Get-ObjectPropertyValue $salesOrderLine 'reservedQuantity') -lt 1) {
+        throw 'PRODUCTION_HTTP_COMPATIBILITY failed: sales order did not confirm with persisted stock reservation.'
+    }
+    $salesOrderLineId = [long](Get-ObjectPropertyValue $salesOrderLine 'id')
+
+    $deliveryPayload = [ordered]@{
+        companyId = $companyId
+        branchId  = $branchId
+        notes     = "$marker delivery"
+        lines     = @(@{ orderLineId = $salesOrderLineId; quantity = 1 })
+    }
+    $delivery = Get-LocalApiData (Invoke-LocalApiRequest "$BaseUrl/api/v1/sales-deliveries/from-order/$salesOrderId" -Method Post -Headers $headers -Body $deliveryPayload -Description 'Sales delivery create mutation') 'Sales delivery create mutation'
+    $deliveryId = [long](Get-ObjectPropertyValue $delivery 'id')
+    $delivery = Get-LocalApiData (Invoke-LocalApiRequest "$BaseUrl/api/v1/sales-deliveries/$deliveryId/confirm" -Method Post -Headers $headers -Description 'Sales delivery confirm mutation') 'Sales delivery confirm mutation'
+    if ((Get-ObjectPropertyValue $delivery 'status') -ne 'CONFIRMED') {
+        throw 'PRODUCTION_HTTP_COMPATIBILITY failed: sales delivery did not reach CONFIRMED.'
+    }
+    $deliveryLine = @(Get-ObjectPropertyValue $delivery 'lines') | Select-Object -First 1
+    $deliveryLineId = [long](Get-ObjectPropertyValue $deliveryLine 'id')
+
+    $salesInvoicePayload = [ordered]@{
+        orderId  = $salesOrderId
+        companyId = $companyId
+        branchId = $branchId
+        currency = 'IRR'
+        notes    = "$marker sales invoice"
+        lines    = @(@{ deliveryLineId = $deliveryLineId; quantity = 1 })
+    }
+    $salesInvoice = Get-LocalApiData (Invoke-LocalApiRequest "$BaseUrl/api/v1/sales-invoices" -Method Post -Headers $headers -Body $salesInvoicePayload -Description 'Sales invoice create mutation') 'Sales invoice create mutation'
+    $salesInvoiceId = [long](Get-ObjectPropertyValue $salesInvoice 'id')
+    $salesInvoice = Get-LocalApiData (Invoke-LocalApiRequest "$BaseUrl/api/v1/sales-invoices/$salesInvoiceId/issue" -Method Post -Headers $headers -Description 'Sales invoice issue mutation') 'Sales invoice issue mutation'
+    $receivablePostingKey = Get-ObjectPropertyValue $salesInvoice 'receivablePostingKey'
+    if ((Get-ObjectPropertyValue $salesInvoice 'status') -ne 'ISSUED' -or -not $receivablePostingKey) {
+        throw 'PRODUCTION_HTTP_COMPATIBILITY failed: sales invoice did not issue with an accounting receivable posting.'
+    }
+    $persistedSalesInvoice = Get-LocalApiData (Invoke-LocalApiRequest "$BaseUrl/api/v1/sales-invoices/$salesInvoiceId" -Headers $headers -Description 'Sales invoice persistence readback') 'Sales invoice persistence readback'
+    if ((Get-ObjectPropertyValue $persistedSalesInvoice 'status') -ne 'ISSUED' -or (Get-ObjectPropertyValue $persistedSalesInvoice 'receivablePostingKey') -ne $receivablePostingKey) {
+        throw 'PRODUCTION_HTTP_COMPATIBILITY failed: issued sales invoice/accounting reference was not persisted after a fresh GET.'
+    }
+
+    $receiptKey = "parity-receipt-$Nonce"
+    $reference = [Uri]::EscapeDataString($marker)
+    $receiptAmount = [decimal](Get-ObjectPropertyValue $salesInvoice 'finalAmount')
+    $receiptAmountText = $receiptAmount.ToString([Globalization.CultureInfo]::InvariantCulture)
+    $receiptUri = "$BaseUrl/api/v1/sales-receipts?companyId=$companyId&branchId=$branchId&customerId=$customerId&amount=$receiptAmountText&paymentMethod=CASH&reference=$reference"
+    $receiptHeaders = @{ Authorization = "Bearer $AccessToken"; 'Idempotency-Key' = $receiptKey }
+    $receipt = Get-LocalApiData (Invoke-LocalApiRequest $receiptUri -Method Post -Headers $receiptHeaders -Description 'Sales receipt create mutation') 'Sales receipt create mutation'
+    $receiptIdValue = Get-ObjectPropertyValue $receipt 'id'
+    if ($null -eq $receiptIdValue) { throw 'PRODUCTION_HTTP_COMPATIBILITY failed: receipt create returned no id.' }
+    $receiptId = [long]$receiptIdValue
+    $sameReceipt = Get-LocalApiData (Invoke-LocalApiRequest $receiptUri -Method Post -Headers $receiptHeaders -Description 'Sales receipt idempotency replay') 'Sales receipt idempotency replay'
+    if ([long](Get-ObjectPropertyValue $sameReceipt 'id') -ne $receiptId) {
+        throw 'PRODUCTION_HTTP_COMPATIBILITY failed: receipt idempotency replay returned a different record.'
+    }
+    $allocationUri = "$BaseUrl/api/v1/sales-receipts/$receiptId/allocations?invoiceId=$salesInvoiceId&amount=$receiptAmountText"
+    Assert-LocalApiSuccess (Invoke-LocalApiRequest $allocationUri -Method Post -Headers $headers -Description 'Sales receipt allocation mutation') 'Sales receipt allocation mutation'
+    $confirmationUri = "$BaseUrl/api/v1/sales-receipts/$receiptId/confirm-now?treasuryAccountId=$treasuryAccountId"
+    $confirmedReceipt = Get-LocalApiData (Invoke-LocalApiRequest $confirmationUri -Method Post -Headers $headers -Description 'Sales receipt confirmation mutation') 'Sales receipt confirmation mutation'
+    $receiptTreasuryTransactionId = Get-ObjectPropertyValue $confirmedReceipt 'treasury_transaction_id'
+    $receiptAccountingReference = Get-ObjectPropertyValue $confirmedReceipt 'accounting_posting_reference'
+    if ((Get-ObjectPropertyValue $confirmedReceipt 'status') -ne 'CONFIRMED' -or $null -eq $receiptTreasuryTransactionId -or -not $receiptAccountingReference) {
+        throw 'PRODUCTION_HTTP_COMPATIBILITY failed: receipt confirmation did not persist treasury and accounting references.'
+    }
+    $replayedConfirmation = Get-LocalApiData (Invoke-LocalApiRequest $confirmationUri -Method Post -Headers $headers -Description 'Sales receipt confirmation replay') 'Sales receipt confirmation replay'
+    if ((Get-ObjectPropertyValue $replayedConfirmation 'status') -ne 'CONFIRMED' -or [long](Get-ObjectPropertyValue $replayedConfirmation 'treasury_transaction_id') -ne [long]$receiptTreasuryTransactionId -or (Get-ObjectPropertyValue $replayedConfirmation 'accounting_posting_reference') -ne $receiptAccountingReference) {
+        throw 'PRODUCTION_HTTP_COMPATIBILITY failed: receipt confirmation replay did not return the persisted confirmation.'
+    }
+
+    $supplierTypes = @(Get-LocalApiData (Invoke-LocalApiRequest "$BaseUrl/api/v1/supplier-config/types" -Headers $headers -Description 'Supplier type lookup') 'Supplier type lookup')
+    $supplierType = $supplierTypes | Where-Object { (Get-ObjectPropertyValue $_ 'active') -ne $false } | Select-Object -First 1
+    if ($null -eq $supplierType) { throw 'PRODUCTION_HTTP_COMPATIBILITY failed: no active supplier type is available.' }
+    $supplierPayload = [ordered]@{
+        companyName      = "$marker Supplier"
+        displayName      = "$marker Supplier"
+        typeId           = [long](Get-ObjectPropertyValue $supplierType 'id')
+        creditLimit      = 0
+        tagIds           = @()
+        categoryIds      = @()
+        channels         = @()
+        addresses        = @()
+        contacts         = @()
+        bankAccounts     = @()
+        ignoreDuplicates = $true
+        expectedVersion  = $null
+    }
+    $supplier = Get-LocalApiData (Invoke-LocalApiRequest "$BaseUrl/api/v1/suppliers" -Method Post -Headers $headers -Body $supplierPayload -Description 'Supplier create mutation') 'Supplier create mutation'
+    $supplierRow = Get-ObjectPropertyValue $supplier 'supplier'
+    $supplierId = [long](Get-ObjectPropertyValue $supplierRow 'id')
+
+    $purchaseOrderNotes = [Uri]::EscapeDataString("$marker purchase order")
+    $purchaseOrderUri = "$BaseUrl/api/v1/purchase-orders?companyId=$companyId&branchId=$branchId&supplierId=$supplierId&notes=$purchaseOrderNotes"
+    $purchaseOrder = Get-LocalApiData (Invoke-LocalApiRequest $purchaseOrderUri -Method Post -Headers $headers -Body @(@{ productId = $productId; quantity = 2; unitPrice = 500 }) -Description 'Purchase order create mutation') 'Purchase order create mutation'
+    $purchaseOrderId = [long](Get-ObjectPropertyValue $purchaseOrder 'id')
+    Assert-LocalApiSuccess (Invoke-LocalApiRequest "$BaseUrl/api/v1/purchase-orders/$purchaseOrderId/submit" -Method Post -Headers $headers -Description 'Purchase order submit mutation') 'Purchase order submit mutation'
+    Assert-LocalApiSuccess (Invoke-LocalApiRequest "$BaseUrl/api/v1/purchase-orders/$purchaseOrderId/approve" -Method Post -Headers $headers -Description 'Purchase order approve mutation') 'Purchase order approve mutation'
+    $persistedPurchaseOrder = Get-LocalApiData (Invoke-LocalApiRequest "$BaseUrl/api/v1/purchase-orders/$purchaseOrderId" -Headers $headers -Description 'Purchase order persistence readback') 'Purchase order persistence readback'
+    if ((Get-ObjectPropertyValue $persistedPurchaseOrder 'status') -ne 'APPROVED') {
+        throw 'PRODUCTION_HTTP_COMPATIBILITY failed: approved purchase order was not persisted after a fresh GET.'
+    }
+    $purchaseOrderLine = @(Get-ObjectPropertyValue $persistedPurchaseOrder 'lines') | Select-Object -First 1
+    $purchaseOrderLineId = [long](Get-ObjectPropertyValue $purchaseOrderLine 'id')
+
+    $goodsReceiptUri = "$BaseUrl/api/v1/goods-receipts?companyId=$companyId&branchId=$branchId&purchaseOrderId=$purchaseOrderId&warehouseId=$warehouseId"
+    $goodsReceiptPayload = [ordered]@{
+        lines = @(@{ purchaseOrderLineId = $purchaseOrderLineId; receivedQuantity = 2; unitCost = 500 })
+        notes = "$marker goods receipt"
+    }
+    $goodsReceipt = Get-LocalApiData (Invoke-LocalApiRequest $goodsReceiptUri -Method Post -Headers $headers -Body $goodsReceiptPayload -Description 'Goods receipt create mutation') 'Goods receipt create mutation'
+    $goodsReceiptId = [long](Get-ObjectPropertyValue $goodsReceipt 'id')
+    $persistedGoodsReceipt = Get-LocalApiData (Invoke-LocalApiRequest "$BaseUrl/api/v1/goods-receipts/$goodsReceiptId" -Headers $headers -Description 'Goods receipt persistence readback') 'Goods receipt persistence readback'
+    if ((Get-ObjectPropertyValue $persistedGoodsReceipt 'status') -ne 'CONFIRMED') {
+        throw 'PRODUCTION_HTTP_COMPATIBILITY failed: goods receipt was not persisted after a fresh GET.'
+    }
+    $goodsReceiptLine = @(Get-ObjectPropertyValue $persistedGoodsReceipt 'lines') | Select-Object -First 1
+    $goodsReceiptLineId = [long](Get-ObjectPropertyValue $goodsReceiptLine 'id')
+
+    $supplierInvoiceUri = "$BaseUrl/api/v1/supplier-invoices?companyId=$companyId&branchId=$branchId&purchaseOrderId=$purchaseOrderId&goodsReceiptId=$goodsReceiptId"
+    $supplierInvoicePayload = [ordered]@{
+        lines = @(@{ goodsReceiptLineId = $goodsReceiptLineId; quantity = 2; unitPrice = 500 })
+        notes = "$marker supplier invoice"
+    }
+    $supplierInvoice = Get-LocalApiData (Invoke-LocalApiRequest $supplierInvoiceUri -Method Post -Headers $headers -Body $supplierInvoicePayload -Description 'Supplier invoice create mutation') 'Supplier invoice create mutation'
+    $supplierInvoiceId = [long](Get-ObjectPropertyValue $supplierInvoice 'id')
+    $supplierInvoice = Get-LocalApiData (Invoke-LocalApiRequest "$BaseUrl/api/v1/supplier-invoices/$supplierInvoiceId/issue" -Method Post -Headers $headers -Description 'Supplier invoice issue mutation') 'Supplier invoice issue mutation'
+    $payablePostingReference = Get-ObjectPropertyValue $supplierInvoice 'payable_posting_reference'
+    if ((Get-ObjectPropertyValue $supplierInvoice 'status') -ne 'ISSUED' -or -not $payablePostingReference) {
+        throw 'PRODUCTION_HTTP_COMPATIBILITY failed: supplier invoice did not issue with an accounting payable posting.'
+    }
+    $persistedSupplierInvoice = Get-LocalApiData (Invoke-LocalApiRequest "$BaseUrl/api/v1/supplier-invoices/$supplierInvoiceId" -Headers $headers -Description 'Supplier invoice persistence readback') 'Supplier invoice persistence readback'
+    if ((Get-ObjectPropertyValue $persistedSupplierInvoice 'payable_posting_reference') -ne $payablePostingReference) {
+        throw 'PRODUCTION_HTTP_COMPATIBILITY failed: supplier invoice/accounting reference was not persisted after a fresh GET.'
+    }
+
+    $paymentRequestPayload = [ordered]@{
+        amount            = 500
+        purpose           = "$marker supplier settlement"
+        supplierName      = Get-ObjectPropertyValue $supplierRow 'displayName'
+        documentReference = Get-ObjectPropertyValue $supplierInvoice 'invoice_number'
+        attachmentFileId  = $null
+    }
+    $paymentRequest = Get-LocalApiData (Invoke-LocalApiRequest "$BaseUrl/api/v1/purchase-payment-requests" -Method Post -Headers $headers -Body $paymentRequestPayload -Description 'Purchase payment request mutation') 'Purchase payment request mutation'
+    $paymentRequestId = [long](Get-ObjectPropertyValue $paymentRequest 'id')
+    if ((Get-ObjectPropertyValue $paymentRequest 'status') -eq 'WAITING_MANAGER') {
+        $paymentRequest = Get-LocalApiData (Invoke-LocalApiRequest "$BaseUrl/api/v1/purchase-payment-requests/$paymentRequestId/decision" -Method Post -Headers $headers -Body @{ approved = $true; rejectionReason = $null; accountantId = $null } -Description 'Purchase payment approval mutation') 'Purchase payment approval mutation'
+    }
+    if (@('APPROVED', 'WAITING_PAYMENT') -notcontains (Get-ObjectPropertyValue $paymentRequest 'status')) {
+        throw 'PRODUCTION_HTTP_COMPATIBILITY failed: purchase payment request did not reach a payable state.'
+    }
+    $paymentDate = [DateTime]::UtcNow.ToString('yyyy-MM-dd', [Globalization.CultureInfo]::InvariantCulture)
+    $paidAt = "$paymentDate`T12:00:00Z"
+    $limitPayload = [ordered]@{
+        treasuryAccountId = $treasuryAccountId
+        paymentDate       = $paymentDate
+        method            = 'ACCOUNT_TRANSFER'
+        limitAmount       = 500
+    }
+    $null = Get-LocalApiData (Invoke-LocalApiRequest "$BaseUrl/api/v1/purchase-payment-requests/limits" -Method Put -Headers $headers -Body $limitPayload -Description 'Purchase payment limit mutation') 'Purchase payment limit mutation'
+    $paymentPayload = [ordered]@{
+        treasuryAccountId       = $treasuryAccountId
+        method                  = 'ACCOUNT_TRANSFER'
+        amount                  = 500
+        paidAt                  = $paidAt
+        referenceNumber         = "PAY-$($Nonce.Substring(0, 12))"
+        receiptFileId           = $null
+        note                    = "$marker settlement"
+        completeWithPartialAmount = $false
+    }
+    $paymentRequest = Get-LocalApiData (Invoke-LocalApiRequest "$BaseUrl/api/v1/purchase-payment-requests/$paymentRequestId/payments" -Method Post -Headers $headers -Body $paymentPayload -Description 'Purchase payment settlement mutation') 'Purchase payment settlement mutation'
+    if ((Get-ObjectPropertyValue $paymentRequest 'status') -ne 'PAID') {
+        throw 'PRODUCTION_HTTP_COMPATIBILITY failed: purchase payment request did not reach PAID.'
+    }
+    $persistedPaymentRequest = Get-LocalApiData (Invoke-LocalApiRequest "$BaseUrl/api/v1/purchase-payment-requests/$paymentRequestId" -Headers $headers -Description 'Purchase payment persistence readback') 'Purchase payment persistence readback'
+    if ((Get-ObjectPropertyValue $persistedPaymentRequest 'status') -ne 'PAID' -or @(Get-ObjectPropertyValue $persistedPaymentRequest 'receipts').Count -lt 1) {
+        throw 'PRODUCTION_HTTP_COMPATIBILITY failed: purchase payment settlement was not persisted after a fresh GET.'
+    }
+
+    $transactionTypes = @(Get-LocalApiData (Invoke-LocalApiRequest "$BaseUrl/api/v1/treasury/transaction-types" -Headers $headers -Description 'Treasury transaction type lookup') 'Treasury transaction type lookup')
+    $inflowType = $transactionTypes | Where-Object { (Get-ObjectPropertyValue $_ 'active') -ne $false -and (Get-ObjectPropertyValue $_ 'direction') -eq 'INFLOW' } | Select-Object -First 1
+    if ($null -eq $inflowType) { throw 'PRODUCTION_HTTP_COMPATIBILITY failed: no active treasury inflow type is available.' }
+    $treasuryTransactionPayload = [ordered]@{
+        transactionTypeId = [long](Get-ObjectPropertyValue $inflowType 'id')
+        categoryId         = $null
+        sourceAccountId    = $null
+        destinationAccountId = $treasuryAccountId
+        amount             = 250
+        currencyCode       = 'IRR'
+        occurredAt         = $paidAt
+        referenceModule    = 'production-parity'
+        referenceNumber    = "TRS-$($Nonce.Substring(0, 12))"
+        description        = "$marker treasury transaction"
+    }
+    $treasuryTransaction = Get-LocalApiData (Invoke-LocalApiRequest "$BaseUrl/api/v1/treasury/transactions" -Method Post -Headers $headers -Body $treasuryTransactionPayload -Description 'Treasury transaction create mutation') 'Treasury transaction create mutation'
+    $treasuryTransactionId = [long](Get-ObjectPropertyValue $treasuryTransaction 'id')
+    $treasuryTransaction = Get-LocalApiData (Invoke-LocalApiRequest "$BaseUrl/api/v1/treasury/transactions/$treasuryTransactionId/complete" -Method Post -Headers $headers -Description 'Treasury transaction completion mutation') 'Treasury transaction completion mutation'
+    if ((Get-ObjectPropertyValue $treasuryTransaction 'statusCode') -ne 'completed') {
+        throw 'PRODUCTION_HTTP_COMPATIBILITY failed: treasury transaction did not reach completed.'
+    }
+    $treasuryTransactions = Get-LocalApiData (Invoke-LocalApiRequest "$BaseUrl/api/v1/treasury/transactions?size=100" -Headers $headers -Description 'Treasury transaction persistence readback') 'Treasury transaction persistence readback'
+    $persistedTreasuryTransaction = @(Get-ObjectPropertyValue $treasuryTransactions 'content') | Where-Object { [long](Get-ObjectPropertyValue $_ 'id') -eq $treasuryTransactionId } | Select-Object -First 1
+    if ($null -eq $persistedTreasuryTransaction -or (Get-ObjectPropertyValue $persistedTreasuryTransaction 'statusCode') -ne 'completed') {
+        throw 'PRODUCTION_HTTP_COMPATIBILITY failed: completed treasury transaction was not persisted after a fresh GET.'
+    }
+    $treasuryMovements = Get-LocalApiData (Invoke-LocalApiRequest "$BaseUrl/api/v1/treasury/accounts/$treasuryAccountId/movements?size=100" -Headers $headers -Description 'Treasury movement persistence readback') 'Treasury movement persistence readback'
+    $persistedTreasuryMovement = @(Get-ObjectPropertyValue $treasuryMovements 'content') | Where-Object { [long](Get-ObjectPropertyValue $_ 'transactionId') -eq $treasuryTransactionId } | Select-Object -First 1
+    if ($null -eq $persistedTreasuryMovement) {
+        throw 'PRODUCTION_HTTP_COMPATIBILITY failed: treasury movement was not persisted after a fresh GET.'
+    }
+
+    $finalBalanceData = Get-LocalApiData (Invoke-LocalApiRequest "$BaseUrl/api/v1/inventory/balances?warehouseId=$warehouseId&size=100" -Headers $headers -Description 'Final inventory persistence readback') 'Final inventory persistence readback'
+    $finalBalance = @(Get-ObjectPropertyValue $finalBalanceData 'content') | Where-Object { [long](Get-ObjectPropertyValue $_ 'productId') -eq $productId } | Select-Object -First 1
+    if ($null -eq $finalBalance -or [decimal](Get-ObjectPropertyValue $finalBalance 'onHand') -ne 11) {
+        throw 'PRODUCTION_HTTP_COMPATIBILITY failed: inventory mutations were not durable after sales delivery and goods receipt.'
+    }
+
+    Write-RunLog SUCCESS 'PRODUCTION_HTTP_COMPATIBILITY passed: authenticated Sales, Purchasing, Customer, Inventory, Treasury, and indirect Accounting mutations completed through nginx over HTTP with API readback/idempotency evidence.'
+}
+
 function Invoke-LocalBackendVerify {
     $backendContext = Join-Path $script:RepositoryRoot 'sami-backend'
     $nativeMaven = Get-Command -Name 'mvn' -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
@@ -571,6 +1040,7 @@ function Invoke-LocalFrontendVerify {
     Push-Location $frontendContext
     try {
         Invoke-Native $npm @('ci') 'Installing locked frontend dependencies.'
+        Invoke-Native $npm @('audit', '--audit-level=high') 'Running frontend dependency security audit.'
         Invoke-Native $npm @('test') 'Running frontend tests.'
         Invoke-Native $npm @('run', 'type-check') 'Running frontend type check.'
         Invoke-Native $npm @('run', 'build') 'Running frontend production build.'
@@ -653,7 +1123,8 @@ function Invoke-LocalComposeSmoke {
             throw "Authenticated inventory smoke check failed: $($_.Exception.Message)"
         }
         if ($inventory.StatusCode -ne 200) { throw "Authenticated inventory smoke check returned HTTP $($inventory.StatusCode)." }
-        Write-RunLog SUCCESS 'Disposable production-like Compose, nginx, authentication, and protected API smoke checks passed.'
+        Invoke-LocalProductionHttpMutationSmoke $baseUrl $accessToken $nonce
+        Write-RunLog SUCCESS 'Disposable production-like Compose, nginx, authentication, protected API, and HTTP mutation smoke checks passed.'
     }
     finally {
         if ($started) {
@@ -679,9 +1150,9 @@ function Invoke-LocalComposeSmoke {
 }
 
 function Invoke-ValidationPhase {
-    Write-RunLog INFO 'PHASE: Run the local release gate before artifact export or deployment.'
+    Write-RunLog INFO 'PHASE: Run the production-parity release gate before artifact export or deployment.'
     if ($DryRun) {
-        Write-RunLog PLAN 'Would run backend clean verify, frontend locked tests/type-check/build, build verified linux/amd64 images, start a disposable PostgreSQL/Compose stack, smoke nginx/authenticated API/PWA endpoints, then remove all temporary containers, network, and volumes.'
+        Write-RunLog PLAN 'Would run backend clean verify, frontend locked dependency audit/tests/type-check/build, production-parity contract checks, build verified linux/amd64 images, start a disposable PostgreSQL/Compose stack over HTTP, exercise authenticated mutations/idempotency/fresh-read persistence through nginx, then remove all temporary containers, network, and volumes.'
         Invoke-BuildPhase
         return
     }
@@ -689,7 +1160,7 @@ function Invoke-ValidationPhase {
     Invoke-LocalFrontendVerify
     Invoke-BuildPhase
     Invoke-LocalComposeSmoke
-    Write-RunLog SUCCESS 'Local release gate passed.'
+    Write-RunLog SUCCESS 'Production-parity release gate passed.'
 }
 
 function Publish-AtomicFile {
@@ -1154,11 +1625,15 @@ try {
     Write-RunLog INFO "Starting SAMI deployment automation in $Mode mode$(if ($DryRun) { ' (dry run)' } else { '' })."
     Initialize-RepositoryState
 
-    if (@('Build', 'Validate', 'Export', 'Full', 'Cleanup') -contains $Mode) { Initialize-Docker }
+    if (@('Build', 'Smoke', 'Validate', 'Export', 'Full', 'Cleanup') -contains $Mode) { Initialize-Docker }
     if (@('Upload', 'Deploy', 'Full', 'Rollback') -contains $Mode) { Initialize-SshTools }
 
     switch ($Mode) {
         'Build' { Invoke-BuildPhase }
+        'Smoke' {
+            if ($DryRun) { Write-RunLog PLAN 'Would reuse the configured local images for the disposable production-like HTTP mutation smoke only.' }
+            else { Invoke-LocalComposeSmoke }
+        }
         'Validate' { Invoke-ValidationPhase }
         'Export' { Invoke-ExportPhase }
         'Upload' { Invoke-UploadPhase }

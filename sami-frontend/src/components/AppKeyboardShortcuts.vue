@@ -128,15 +128,17 @@ function mutationNeedsRefresh(mutations: MutationRecord[]): boolean {
 
 onMounted(async () => {
   await nextTick()
-  observer = new MutationObserver((mutations) => {
-    if (mutationNeedsRefresh(mutations)) scheduleRefresh()
-  })
-  observer.observe(document.body, {
-    subtree: true,
-    childList: true,
-    attributes: true,
-    attributeFilter: ['disabled', 'aria-disabled', 'aria-hidden', 'hidden'],
-  })
+  if (typeof MutationObserver === 'function') {
+    observer = new MutationObserver((mutations) => {
+      if (mutationNeedsRefresh(mutations)) scheduleRefresh()
+    })
+    observer.observe(document.body, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ['disabled', 'aria-disabled', 'aria-hidden', 'hidden'],
+    })
+  }
   window.addEventListener('keydown', onKeydown, true)
   window.addEventListener('resize', scheduleRefresh)
   scheduleRefresh()

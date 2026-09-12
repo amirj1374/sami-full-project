@@ -1,4 +1,5 @@
 import { ref } from 'vue'
+import { browserStorage } from '@/services/browserStorage'
 
 /**
  * Sidebar personalization: favourite (pinned) menu items and a short
@@ -15,7 +16,7 @@ const recent = ref<string[]>(read(RECENT_KEY))
 
 function read(key: string): string[] {
   try {
-    const raw = localStorage.getItem(key)
+    const raw = browserStorage.getItem(key)
     const parsed = raw ? (JSON.parse(raw) as unknown) : []
     return Array.isArray(parsed) ? parsed.filter((v): v is string => typeof v === 'string') : []
   } catch {
@@ -24,7 +25,7 @@ function read(key: string): string[] {
 }
 
 function persist(key: string, value: string[]): void {
-  localStorage.setItem(key, JSON.stringify(value))
+  browserStorage.setItem(key, JSON.stringify(value))
 }
 
 export function useNavHistory() {

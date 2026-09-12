@@ -1,13 +1,13 @@
 # SAMI ERP — reusable development context
 
-Last repository inspection: 2026-09-06. Source/configuration is authoritative; current operational state is in `docs/25-overnight-handoff.md`.
+Last repository inspection: 2026-09-12. Source/configuration is authoritative; current operational state is in `docs/25-overnight-handoff.md`.
 
 ## Repository and stack
 
 - Monorepo; sami-backend and sami-frontend are tracked directories. development is the integration branch and is never assumed Live. production, when explicitly baselined by the Product Owner, is the approved Live-release branch; promotion requires explicit release approval and validated release gates.
 - Backend: Java 21, Spring Boot 3.5.3, PostgreSQL 16 target, Flyway, Maven 3.9+. Phase 0 foundation is in V51; validate it on PostgreSQL before extending Contact cutover work.
 - Frontend: Node 22 image, Vue 3.5, TypeScript 5.7, Vite 8, Vuetify 3, Pinia, Vue Router, Axios and Vue I18n.
-- Containers: PostgreSQL 16, JDK/JRE 21 backend, Node 22/nginx frontend; production Compose is under `sami-backend`.
+- Containers: PostgreSQL 16, JDK/JRE 21 backend, Node 22/nginx frontend; production Compose is under `sami-backend`. The repository-backed production-like topology is HTTP with same-origin `/api` reverse-proxying through nginx; the VPS runtime is not assumed to match it until read-only parity is obtained.
 
 ## Canonical owners
 
@@ -18,6 +18,9 @@ Last repository inspection: 2026-09-06. Source/configuration is authoritative; c
 - Design system: `src/plugins/vuetify.ts`, `src/styles/global.css`, `AppFormSection.vue`; PWA: `usePwa`, service worker and Settings.
 - Authenticated-page keyboard operation is owned globally by `AppKeyboardShortcuts.vue` and `DefaultLayout.vue`: buttons, links, menu actions and tabs receive direct shortcuts, route transitions restore main-content focus, and a skip control bypasses navigation. Per-user enablement and badge visibility are persisted through `UserExperiencePreference` and the Profile settings UI.
 - Real browser business-journey validation is owned by the repository-scoped `sami-ui-workflow-tester` skill; it covers isolated test data, persisted cross-module flows, RBAC login, keyboard operation, RTL/LTR, responsive widths, network/console evidence and cleanup reporting.
+- Browser compatibility boundary: staff authentication is cookieless Bearer JWT; storage access is mediated by `src/services/browserStorage.ts`; idempotency keys use Web Crypto capability detection with a non-cryptographic monotonic fallback; secure-context-only PWA/Notification capabilities fail closed and do not gate business mutations.
+- Production-like HTTP compatibility is owned by `scripts/deploy.ps1 -Mode Validate`. It builds the production frontend/backend images for `linux/amd64`, runs the prod-profile Compose stack with PostgreSQL 16 and nginx, authenticates, selects organization scope, and verifies Customer/Product/Sales/Receipt mutations, idempotency replay and fresh-read persistence through nginx.
+- Purchasing client paths are relative to the Axios `/api` base (`/v1/...`), and goods-receipt payloads follow the backend `{lines, notes}` contract. This path/body parity is locked by `sami-frontend/tests/production-parity-contract.test.mjs`.
 
 ## Current capability state
 
@@ -42,7 +45,8 @@ Last repository inspection: 2026-09-06. Source/configuration is authoritative; c
 ## Validation and priorities
 
 - Local Java 21/Maven full backend gates and frontend tests/type-check/build pass for the end-of-day revision; exact evidence is in `END_OF_DAY_HANDOFF_REPORT.md`.
-- `scripts/deploy.ps1 -Mode Validate` is the reusable local release gate: it runs backend/frontend checks, builds exact `linux/amd64` images, and smoke-tests a generated-credential, disposable PostgreSQL/backend/nginx Compose stack before cleaning only its own resources. `Full` invokes it before artifact export or any VPS connection.
+- `scripts/deploy.ps1 -Mode Validate` is the reusable local release gate: it runs backend/frontend checks, a high-severity frontend dependency audit, builds exact `linux/amd64` images, and smoke-tests a generated-credential, disposable PostgreSQL/backend/nginx Compose stack before cleaning only its own resources. The frontend lockfile is regenerated/verified in the Linux image so optional native dependencies are not host-platform-only. `Full` invokes it before artifact export or any VPS connection.
+- `docs/22-production-parity.md` is the current evidence-based environment/browser/contract audit. It records the unavailable VPS SSH parity as blocked and does not infer production runtime values.
 - Next priority: repeat authenticated exact-viewport browser QA on a runner without the local API-blocking limitation, then obtain official Market Sync contracts. Do not start Web Push or speculative business modules without the required approval.
 
 ## Commands

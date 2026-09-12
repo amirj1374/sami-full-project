@@ -1,4 +1,5 @@
 import { computed, ref } from 'vue'
+import { browserStorage } from '@/services/browserStorage'
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>
@@ -9,13 +10,13 @@ const online = ref(typeof navigator === 'undefined' ? true : navigator.onLine)
 const installEvent = ref<BeforeInstallPromptEvent | null>(null)
 const updateRegistration = ref<ServiceWorkerRegistration | null>(null)
 const installed = ref(typeof window !== 'undefined' && (
-  window.matchMedia('(display-mode: standalone)').matches
+  (typeof window.matchMedia === 'function' && window.matchMedia('(display-mode: standalone)').matches)
   || ('standalone' in navigator && (navigator as Navigator & { standalone?: boolean }).standalone === true)
 ))
 const installBusy = ref(false)
 const installError = ref<string | null>(null)
 const BANNER_DISMISSED_KEY = 'sami.pwa.install-banner-dismissed.v1'
-const bannerDismissed = ref(typeof localStorage !== 'undefined' && localStorage.getItem(BANNER_DISMISSED_KEY) === '1')
+const bannerDismissed = ref(browserStorage.getItem(BANNER_DISMISSED_KEY) === '1')
 let initialized = false
 
 export type PwaInstallInstruction = 'ios-safari' | 'browser-menu' | 'unsupported'
@@ -83,7 +84,7 @@ export function usePwa() {
 
   function dismissInstallBanner(): void {
     bannerDismissed.value = true
-    localStorage.setItem(BANNER_DISMISSED_KEY, '1')
+    browserStorage.setItem(BANNER_DISMISSED_KEY, '1')
   }
 
   function applyUpdate(): void {

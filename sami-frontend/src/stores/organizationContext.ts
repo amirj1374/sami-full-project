@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { organizationContextApi, type OrganizationContext } from '@/api/organizationContext'
+import { browserStorage } from '@/services/browserStorage'
 const companyKey = 'sami.activeCompanyId'
 const branchKey = 'sami.activeBranchId'
 export const useOrganizationContextStore = defineStore('organizationContext', () => {
@@ -10,7 +11,7 @@ export const useOrganizationContextStore = defineStore('organizationContext', ()
   const branchId = computed(() => context.value?.branchId ?? null)
   async function refresh() { loading.value = true; try { context.value = await organizationContextApi.current(); persist() } finally { loading.value = false } }
   async function select(nextCompanyId: number, nextBranchId: number | null) { context.value = await organizationContextApi.select({ companyId: nextCompanyId, branchId: nextBranchId }); persist() }
-  function persist() { if (companyId.value === null) localStorage.removeItem(companyKey); else localStorage.setItem(companyKey, String(companyId.value)); if (branchId.value === null) localStorage.removeItem(branchKey); else localStorage.setItem(branchKey, String(branchId.value)); }
-  function reset() { context.value = null; localStorage.removeItem(companyKey); localStorage.removeItem(branchKey) }
+  function persist() { if (companyId.value === null) browserStorage.removeItem(companyKey); else browserStorage.setItem(companyKey, String(companyId.value)); if (branchId.value === null) browserStorage.removeItem(branchKey); else browserStorage.setItem(branchKey, String(branchId.value)); }
+  function reset() { context.value = null; browserStorage.removeItem(companyKey); browserStorage.removeItem(branchKey) }
   return { context, loading, companyId, branchId, refresh, select, reset }
 })

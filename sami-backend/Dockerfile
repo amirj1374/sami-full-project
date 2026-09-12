@@ -42,7 +42,7 @@ RUN --mount=type=cache,id=sami-maven-m2,target=/root/.m2,sharing=locked \
 # Minimal JRE image, non-root user, only the jar is carried over.
 FROM eclipse-temurin:21-jre-jammy AS runtime
 ARG BUILD_COMMIT=unknown
-ARG APP_VERSION=0.2.0
+ARG APP_VERSION=0.5.0
 LABEL org.opencontainers.image.revision=$BUILD_COMMIT \
       org.opencontainers.image.version=$APP_VERSION
 WORKDIR /app

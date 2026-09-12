@@ -6,7 +6,7 @@ export interface BuildInfo {
 }
 
 export const buildInfo: Readonly<BuildInfo> = Object.freeze({
-  version: import.meta.env.VITE_APP_VERSION || '0.2.0',
+  version: import.meta.env.VITE_APP_VERSION || '0.5.0',
   branch: import.meta.env.VITE_BUILD_BRANCH || 'local',
   commit: import.meta.env.VITE_BUILD_COMMIT || 'unknown',
   timestamp: import.meta.env.VITE_BUILD_TIMESTAMP || 'unknown',

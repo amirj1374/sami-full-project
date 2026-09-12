@@ -10,6 +10,7 @@ import { useOrganizationContextStore } from '@/stores/organizationContext'
 import { useNavHistory } from '@/composables/useNavHistory'
 import { useServerLabel } from '@/composables/useServerLabel'
 import { useThemeMode, type ThemeMode } from '@/composables/useThemeMode'
+import { browserStorage } from '@/services/browserStorage'
 import type { MenuItem } from '@/types/models'
 import ChangePasswordDialog from '@/components/ChangePasswordDialog.vue'
 import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
@@ -32,7 +33,7 @@ const { mode: themeMode, isDark, apply: applyTheme } = useThemeMode()
 
 const RAIL_KEY = 'sami.sidebar.rail'
 const drawer = ref(!mobile.value)
-const rail = ref(localStorage.getItem(RAIL_KEY) === '1')
+const rail = ref(browserStorage.getItem(RAIL_KEY) === '1')
 const navQuery = ref('')
 const paletteOpen = ref(false)
 const changePasswordOpen = ref(false)
@@ -110,7 +111,7 @@ const initials = computed(() => {
 
 function toggleRail(): void {
   rail.value = !rail.value
-  localStorage.setItem(RAIL_KEY, rail.value ? '1' : '0')
+  browserStorage.setItem(RAIL_KEY, rail.value ? '1' : '0')
 }
 
 function onGlobalKey(e: KeyboardEvent): void {

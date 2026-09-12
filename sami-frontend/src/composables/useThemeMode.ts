@@ -1,5 +1,6 @@
 import { computed, ref } from 'vue'
 import { useTheme } from 'vuetify'
+import { browserStorage } from '@/services/browserStorage'
 
 /**
  * Theme mode controller: light / dark / system, persisted to localStorage and
@@ -11,11 +12,13 @@ export type ThemeMode = 'light' | 'dark' | 'system'
 
 const STORAGE_KEY = 'sami.theme'
 const mode = ref<ThemeMode>(readStored())
-const media = typeof window !== 'undefined' ? window.matchMedia('(prefers-color-scheme: dark)') : null
+const media = typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+  ? window.matchMedia('(prefers-color-scheme: dark)')
+  : null
 let systemListenerBound = false
 
 function readStored(): ThemeMode {
-  const v = typeof localStorage !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null
+  const v = browserStorage.getItem(STORAGE_KEY)
   return v === 'light' || v === 'dark' || v === 'system' ? v : 'dark'
 }
 
@@ -29,7 +32,7 @@ export function useThemeMode() {
 
   function apply(m: ThemeMode): void {
     mode.value = m
-    localStorage.setItem(STORAGE_KEY, m)
+    browserStorage.setItem(STORAGE_KEY, m)
     theme.change(resolve(m))
   }
 
