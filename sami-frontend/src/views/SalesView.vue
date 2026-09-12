@@ -295,7 +295,6 @@ async function save() {
         employeeId: x.employeeId || undefined,
       })),
       expectedVersion: form.expectedVersion,
-      idempotencyKey: editingId.value ? undefined : crypto.randomUUID(),
     };
     await (editingId.value
       ? salesApi.update(editingId.value, payload)

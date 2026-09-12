@@ -101,7 +101,6 @@ async function saveAdjustment() {
       warehouseId: form.warehouseId,
       locationId: form.locationId ?? undefined,
       reason: form.reason.trim(),
-      idempotencyKey: crypto.randomUUID(),
       lines: form.lines.map((line) => ({ productId: line.productId!, quantity: line.quantity, unitCost: line.unitCost })),
     })
     adjustmentOpen.value = false
