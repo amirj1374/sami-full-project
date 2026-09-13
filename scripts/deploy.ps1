@@ -19,6 +19,11 @@ the script never accepts or passes a password.
 Build, Smoke, Validate, Export, Upload, Deploy, Full, Rollback, or Cleanup. Smoke
 reuses already-built images for targeted disposable-stack diagnosis. Default: Build.
 
+.PARAMETER KeepValidationStack
+Keeps the disposable Smoke stack running after the API checks so an external
+browser can verify the production-built HTTP frontend. Use only with Smoke;
+the stack is disposable and must be cleaned up explicitly afterward.
+
 .PARAMETER ConfigFile
 Optional local PowerShell file returning a hashtable of non-secret settings.
 
@@ -63,9 +68,10 @@ param(
     [string]$BackendImageTag = 'sami-backend:test',
     [string]$FrontendImageTag = 'sami-frontend:test',
     [string]$FrontendApiBaseUrl = '/api',
-    [string]$ApplicationVersion = '0.5.0',
+    [string]$ApplicationVersion = '0.7.0',
     [string]$ApplicationUrl,
     [switch]$AllowDirtyWorkingTree,
+    [switch]$KeepValidationStack,
     [switch]$NoCache,
     [switch]$SkipUpload,
     [switch]$DryRun,
@@ -192,6 +198,9 @@ function Get-ObjectPropertyValue {
 }
 
 function Initialize-Configuration {
+    if ($KeepValidationStack -and $Mode -ne 'Smoke') {
+        throw '-KeepValidationStack is supported only with -Mode Smoke.'
+    }
     $boundNames = $script:InitialBoundParameterNames
     if ($ConfigFile) {
         $resolvedConfig = (Resolve-Path -LiteralPath $ConfigFile -ErrorAction Stop).Path
@@ -541,12 +550,14 @@ function Invoke-LocalApiRequest {
     }
     if ($null -ne $Body) {
         $request.ContentType = 'application/json'
-        $request.Body = $Body | ConvertTo-Json -Depth 12 -Compress
+        $request.Body = ConvertTo-Json -InputObject $Body -Depth 12 -Compress
     }
     try {
         return Invoke-RestMethod @request
     }
     catch {
+        $responseDetail = $_.ErrorDetails.Message
+        if ($responseDetail) { throw "$Description failed: $($_.Exception.Message) Response: $responseDetail" }
         throw "$Description failed: $($_.Exception.Message)"
     }
 }
@@ -794,6 +805,16 @@ function Invoke-LocalProductionHttpMutationSmoke {
     }
     $deliveryLine = @(Get-ObjectPropertyValue $delivery 'lines') | Select-Object -First 1
     $deliveryLineId = [long](Get-ObjectPropertyValue $deliveryLine 'id')
+    $deliveryMovements = Get-LocalApiData (Invoke-LocalApiRequest "$BaseUrl/api/v1/inventory/movements?sourceType=DELIVERY&size=100" -Headers $headers -Description 'Sales delivery inventory movement readback') 'Sales delivery inventory movement readback'
+    $deliveryMovement = @(Get-ObjectPropertyValue $deliveryMovements 'content') | Where-Object {
+        [long](Get-ObjectPropertyValue $_ 'productId') -eq $productId -and
+        [long](Get-ObjectPropertyValue $_ 'sourceId') -eq $deliveryId -and
+        (Get-ObjectPropertyValue $_ 'movementType') -eq 'ISSUE' -and
+        [decimal](Get-ObjectPropertyValue $_ 'quantity') -eq 1
+    } | Select-Object -First 1
+    if ($null -eq $deliveryMovement) {
+        throw 'PRODUCTION_HTTP_COMPATIBILITY failed: confirmed sales delivery did not persist its inventory issue movement.'
+    }
 
     $salesInvoicePayload = [ordered]@{
         orderId  = $salesOrderId
@@ -984,9 +1005,21 @@ function Invoke-LocalProductionHttpMutationSmoke {
     }
 
     $finalBalanceData = Get-LocalApiData (Invoke-LocalApiRequest "$BaseUrl/api/v1/inventory/balances?warehouseId=$warehouseId&size=100" -Headers $headers -Description 'Final inventory persistence readback') 'Final inventory persistence readback'
-    $finalBalance = @(Get-ObjectPropertyValue $finalBalanceData 'content') | Where-Object { [long](Get-ObjectPropertyValue $_ 'productId') -eq $productId } | Select-Object -First 1
-    if ($null -eq $finalBalance -or [decimal](Get-ObjectPropertyValue $finalBalance 'onHand') -ne 11) {
-        throw 'PRODUCTION_HTTP_COMPATIBILITY failed: inventory mutations were not durable after sales delivery and goods receipt.'
+    $finalBalances = @(
+        Get-ObjectPropertyValue $finalBalanceData 'content' | Where-Object {
+            [long](Get-ObjectPropertyValue $_ 'productId') -eq $productId -and
+            [long](Get-ObjectPropertyValue $_ 'warehouseId') -eq $warehouseId
+        }
+    )
+    $finalOnHand = if ($finalBalances.Count -eq 0) {
+        $null
+    } else {
+        [decimal](($finalBalances | ForEach-Object { [decimal](Get-ObjectPropertyValue $_ 'onHand') } | Measure-Object -Sum).Sum)
+    }
+    if ($finalBalances.Count -eq 0 -or $finalOnHand -ne 12) {
+        $observedOnHand = if ($finalBalances.Count -eq 0) { '<missing>' } else { $finalOnHand }
+        $observedBalances = @($finalBalanceData.content | ForEach-Object { "product=$((Get-ObjectPropertyValue $_ 'productId')) warehouse=$((Get-ObjectPropertyValue $_ 'warehouseId')) location=$((Get-ObjectPropertyValue $_ 'locationId')) onHand=$((Get-ObjectPropertyValue $_ 'onHand'))" }) -join '; '
+        throw "PRODUCTION_HTTP_COMPATIBILITY failed: inventory mutations were not durable after sales delivery and goods receipt. Expected testWarehouse onHand=12 (opening adjustment 10 + goods receipt 2); observed=$observedOnHand; balances=$observedBalances"
     }
 
     Write-RunLog SUCCESS 'PRODUCTION_HTTP_COMPATIBILITY passed: authenticated Sales, Purchasing, Customer, Inventory, Treasury, and indirect Accounting mutations completed through nginx over HTTP with API readback/idempotency evidence.'
@@ -1051,6 +1084,18 @@ function Invoke-LocalFrontendVerify {
 }
 
 function Invoke-LocalComposeSmoke {
+    if ($null -eq $script:BackendImage) {
+        $script:BackendImage = Get-ImageMetadata $BackendImageTag 'Backend'
+    }
+    if ($null -eq $script:FrontendImage) {
+        $script:FrontendImage = Get-ImageMetadata $FrontendImageTag 'Frontend'
+    }
+    $backendImageReference = Get-ObjectPropertyValue $script:BackendImage 'Id'
+    $frontendImageReference = Get-ObjectPropertyValue $script:FrontendImage 'Id'
+    if (-not $backendImageReference -or -not $frontendImageReference) {
+        throw 'Production-like Compose requires the immutable linux/amd64 image IDs captured by the current validation run.'
+    }
+    Write-RunLog INFO "Pinning disposable Compose to backend=$backendImageReference and frontend=$frontendImageReference."
     $nonce = [Guid]::NewGuid().ToString('N')
     $projectName = "sami-release-validation-$($script:ShortCommitSha)-$nonce"
     if ($projectName.Length -gt 63) { $projectName = $projectName.Substring(0, 63) }
@@ -1072,10 +1117,10 @@ function Invoke-LocalComposeSmoke {
         'BOOTSTRAP_ADMIN_EMAIL=admin@sami.local',
         "BOOTSTRAP_ADMIN_PASSWORD=$temporarySecret",
         'BOOTSTRAP_ADMIN_NAME=SAMI Release Validation',
-        "CORS_ALLOWED_ORIGINS=$baseUrl",
+        "CORS_ALLOWED_ORIGINS=$baseUrl,http://localhost:$frontendPort",
         "FRONTEND_PORT=$frontendPort",
-        "BACKEND_IMAGE=$BackendImageTag",
-        "FRONTEND_IMAGE=$FrontendImageTag",
+        "BACKEND_IMAGE=$backendImageReference",
+        "FRONTEND_IMAGE=$frontendImageReference",
         "BUILD_BRANCH=$($script:Branch)",
         "BUILD_COMMIT=$($script:CommitSha)",
         "APP_VERSION=$ApplicationVersion",
@@ -1127,7 +1172,11 @@ function Invoke-LocalComposeSmoke {
         Write-RunLog SUCCESS 'Disposable production-like Compose, nginx, authentication, protected API, and HTTP mutation smoke checks passed.'
     }
     finally {
-        if ($started) {
+        if ($started -and $KeepValidationStack) {
+            Write-RunLog WARN "Keeping disposable validation stack for browser verification at $baseUrl (project $projectName)."
+            Write-RunLog WARN "Cleanup command: docker compose --project-name $projectName --env-file $environmentPath -f $composePath down --remove-orphans --volumes"
+        }
+        elseif ($started) {
             $cleanupPreference = $ErrorActionPreference
             $ErrorActionPreference = 'Continue'
             try {
@@ -1144,7 +1193,9 @@ function Invoke-LocalComposeSmoke {
                 Write-RunLog WARN "Could not fully clean disposable validation resources for $projectName; inspect this project before another run."
             }
         }
-        Remove-Item -LiteralPath $temporaryRoot -Recurse -Force -ErrorAction SilentlyContinue
+        if (-not $KeepValidationStack) {
+            Remove-Item -LiteralPath $temporaryRoot -Recurse -Force -ErrorAction SilentlyContinue
+        }
         Write-RunLog INFO 'Preserved all pre-existing Docker containers, networks, volumes, images, and deployment artifacts.'
     }
 }

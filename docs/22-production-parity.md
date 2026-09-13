@@ -94,7 +94,7 @@ be read back from a new HTTP request.
 Run the official pre-release gate from a clean `development` checkout:
 
 ```powershell
-.\scripts\deploy.ps1 -Mode Validate -ApplicationVersion 0.5.0
+.\scripts\deploy.ps1 -Mode Validate -ApplicationVersion 0.7.0
 ```
 
 The gate is production-parity aware and must pass before any export/upload or
@@ -108,14 +108,31 @@ deployment phase. It runs:
 5. SPA fallback, asset/manifest MIME, nginx health and `/api` proxy checks;
 6. real authenticated login and a protected API request; and
 7. `PRODUCTION_HTTP_COMPATIBILITY`: real authenticated organization-context
-   selection, Customer create/update,
-   Product create, Sales create, Sales idempotency replay, Sales fresh GET,
-   Receipt create and Receipt idempotency replay through nginx.
+   selection, Customer create/update, Product create, Inventory warehouse and
+   adjustment readback, Sales create/idempotency/fresh GET, the quotation-to-
+   order-to-delivery-to-invoice chain with accounting and inventory readback,
+   Receipt create/allocation/confirmation/replay, Supplier-to-purchase-order-
+   to-goods-receipt-to-supplier-invoice-to-payment settlement, and Treasury
+   transaction/movement readback through nginx.
 
 The mutation smoke uses generated records through public APIs only; it never
 inserts business rows directly. The disposable Compose project, network and
 volumes are removed in `finally`, including failure paths. A failed gate stops
 the release before artifact export/upload.
+
+The current Smoke gate also exercises authenticated Supplier, purchase order,
+goods receipt, supplier invoice, purchase settlement, Treasury transaction and
+movement mutations, plus Inventory warehouse/adjustment and the canonical
+Sales quotation-to-receipt chain. Each exercised mutation is followed by an
+application read-back where that public endpoint exists. Receipt confirmation
+is verified through its replay response because the current public receipt API
+does not expose a standalone receipt GET/list endpoint.
+
+The disposable browser validation uses both loopback origins
+(`127.0.0.1:<port>` and `localhost:<port>`). This is required because the
+browser preview uses `localhost` while the PowerShell HTTP smoke uses
+`127.0.0.1`; omitting the second origin produces an application-level
+`Invalid CORS request` before login.
 
 The gate is not a substitute for manual browser evidence. It does not pretend
 that a Node contract test is Chromium. A release candidate still needs the
