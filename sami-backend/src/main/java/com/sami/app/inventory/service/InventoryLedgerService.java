@@ -5,6 +5,7 @@ import com.sami.app.common.exception.ErrorCode;
 import com.sami.app.common.exception.ResourceNotFoundException;
 import com.sami.app.inventory.domain.InventoryWarehouse;
 import com.sami.app.inventory.event.InventoryDomainEvent;
+import com.sami.app.inventory.publicapi.InventoryStockOperations.VariantPurchaseReceiptCommand;
 import com.sami.app.inventory.repository.InventoryWarehouseRepository;
 import com.sami.app.security.CurrentActor;
 import lombok.RequiredArgsConstructor;
@@ -178,6 +179,23 @@ public class InventoryLedgerService {
                 sourceLineId, "RESERVE-" + normalize(sourceType) + "-" + sourceId + "-" + sourceLineId,
                 null);
         return reservationId;
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void receiveVariant(Long tenantId, VariantPurchaseReceiptCommand command) {
+        requireProduct(tenantId, command.productId());
+        Integer valid = jdbc.queryForObject("select count(*) from product_variants where tenant_id=? and id=? and product_id=? and status='ACTIVE'", Integer.class, tenantId, command.variantId(), command.productId());
+        if (valid == null || valid != 1) throw new ApiException(ErrorCode.ACCESS_DENIED, "Variant does not belong to product and tenant");
+        requirePositive(command.enteredQuantity()); requirePositive(command.conversionFactor());
+        BigDecimal baseQuantity = command.enteredQuantity().multiply(command.conversionFactor());
+        InventoryWarehouse warehouse = requireWarehouse(tenantId, command.warehouseId());
+        Long location = requireLocation(tenantId, warehouse.getId(), null);
+        if (movementExists(tenantId, "PURCHASE-RECEIPT-" + command.receiptId())) return;
+        jdbc.update("insert into inventory_balances(tenant_id,warehouse_id,location_id,product_id,variant_id) values(?,?,?,?,?) on conflict do nothing", tenantId, warehouse.getId(), location, command.productId(), command.variantId());
+        BalanceState state = jdbc.query("select id,on_hand,reserved,average_unit_cost from inventory_balances where tenant_id=? and warehouse_id=? and location_id=? and product_id=? and variant_id=? for update", (rs,row)->new BalanceState(rs.getLong("id"),rs.getBigDecimal("on_hand"),rs.getBigDecimal("reserved"),rs.getBigDecimal("average_unit_cost")),tenantId,warehouse.getId(),location,command.productId(),command.variantId()).getFirst();
+        BigDecimal cost = nonNegative(command.unitCost()); BigDecimal onHand = state.onHand().add(baseQuantity); BigDecimal avg = cost.signum()>0 ? state.onHand().multiply(state.averageCost()).add(baseQuantity.multiply(cost)).divide(onHand,4,RoundingMode.HALF_UP) : state.averageCost(); updateBalance(state.id(),onHand,state.reserved(),avg);
+        jdbc.update("insert into inventory_movements(tenant_id,product_id,variant_id,to_warehouse_id,to_location_id,movement_type,quantity,unit_cost,source_type,source_id,operation_key,entered_quantity,entered_uom_id,conversion_factor,base_quantity,base_uom_id,actor_id,actor_email) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",tenantId,command.productId(),command.variantId(),warehouse.getId(),location,"RECEIPT",baseQuantity,cost,"PURCHASE",command.purchaseId(),"PURCHASE-RECEIPT-"+command.receiptId(),command.enteredQuantity(),command.enteredUomId(),command.conversionFactor(),baseQuantity,command.baseUomId(),CurrentActor.id(),CurrentActor.email());
+        syncProductProjection(tenantId, command.productId());
     }
 
     @Transactional(propagation = Propagation.MANDATORY)

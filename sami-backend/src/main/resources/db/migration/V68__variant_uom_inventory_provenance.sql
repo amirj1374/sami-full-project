@@ -1,0 +1,14 @@
+ALTER TABLE product_variants ADD CONSTRAINT uq_variant_tenant_id UNIQUE (tenant_id, id);
+ALTER TABLE inventory_balances ADD COLUMN variant_id BIGINT;
+ALTER TABLE inventory_balances ADD CONSTRAINT fk_balance_variant_tenant FOREIGN KEY (tenant_id, variant_id) REFERENCES product_variants(tenant_id, id) ON DELETE RESTRICT;
+CREATE UNIQUE INDEX uq_inventory_balance_variant ON inventory_balances(tenant_id, warehouse_id, location_id, product_id, COALESCE(variant_id, 0));
+ALTER TABLE inventory_movements ADD COLUMN variant_id BIGINT;
+ALTER TABLE inventory_movements ADD COLUMN entered_quantity NUMERIC(18,6);
+ALTER TABLE inventory_movements ADD COLUMN entered_uom_id BIGINT;
+ALTER TABLE inventory_movements ADD COLUMN conversion_factor NUMERIC(24,12);
+ALTER TABLE inventory_movements ADD COLUMN base_quantity NUMERIC(18,6);
+ALTER TABLE inventory_movements ADD COLUMN base_uom_id BIGINT;
+ALTER TABLE inventory_movements ADD CONSTRAINT fk_movement_variant_tenant FOREIGN KEY (tenant_id, variant_id) REFERENCES product_variants(tenant_id, id) ON DELETE RESTRICT;
+ALTER TABLE inventory_movements ADD CONSTRAINT fk_movement_entered_uom FOREIGN KEY (entered_uom_id) REFERENCES units_of_measure(id) ON DELETE RESTRICT;
+ALTER TABLE inventory_movements ADD CONSTRAINT fk_movement_base_uom FOREIGN KEY (base_uom_id) REFERENCES units_of_measure(id) ON DELETE RESTRICT;
+CREATE INDEX ix_inventory_movement_variant ON inventory_movements(tenant_id, variant_id, occurred_at DESC);

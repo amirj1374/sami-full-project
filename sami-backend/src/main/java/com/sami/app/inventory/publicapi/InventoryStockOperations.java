@@ -10,6 +10,7 @@ import java.util.List;
 public interface InventoryStockOperations {
 
     void receivePurchase(PurchaseReceiptCommand command);
+    void receiveVariantPurchase(VariantPurchaseReceiptCommand command);
 
     void returnToSupplier(SupplierReturnCommand command);
 
@@ -40,6 +41,10 @@ public interface InventoryStockOperations {
     record PurchaseReceiptCommand(Long warehouseId, Long purchaseId, Long receiptId,
                                   List<ReceiptLine> lines) {
     }
+    record VariantPurchaseReceiptCommand(Long warehouseId, Long purchaseId, Long receiptId,
+                                         Long productId, Long variantId, BigDecimal enteredQuantity,
+                                         Long enteredUomId, Long baseUomId, BigDecimal conversionFactor,
+                                         BigDecimal unitCost) {}
 
     record StockLine(Long sourceLineId, Long productId, BigDecimal quantity,
                      String serialNumber, String imei) {

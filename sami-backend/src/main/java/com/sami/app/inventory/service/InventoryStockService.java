@@ -111,6 +111,14 @@ public class InventoryStockService implements InventoryStockOperations {
 
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
+    public void receiveVariantPurchase(VariantPurchaseReceiptCommand command) {
+        Long tenantId = tenantContext.requireTenantId();
+        if (command.variantId() == null || command.productId() == null) throw new ApiException(ErrorCode.VALIDATION_FAILED, "Variant and product are required");
+        ledger.receiveVariant(tenantId, command);
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
     public ReservationResult reserveAvailable(ReservationCommand command) {
         Long tenantId = tenantContext.requireTenantId();
         InventoryWarehouse warehouse = ledger.salesWarehouse(tenantId, command.branchId());
