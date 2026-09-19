@@ -14,4 +14,5 @@ public class ProductVariant extends BaseEntity {
     @Column(nullable=false, length=255) private String name;
     @Column(length=64) private String sku;
     @Column(nullable=false, length=24) private String status;
+    @Column(name="base_uom_id") private Long baseUomId;
 }

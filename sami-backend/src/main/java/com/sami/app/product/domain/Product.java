@@ -51,4 +51,8 @@ public class Product extends BaseEntity {
 
     @Column(name = "hamta_eligible", nullable = false)
     private boolean hamtaEligible;
+
+    /** Optional until legacy products receive an approved UOM assignment. */
+    @Column(name = "base_uom_id")
+    private Long baseUomId;
 }
