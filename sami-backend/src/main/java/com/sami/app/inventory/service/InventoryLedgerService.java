@@ -400,7 +400,8 @@ public class InventoryLedgerService {
     private BalanceState lockBalance(Long tenantId, Long warehouseId, Long locationId, Long productId) {
         jdbc.update("""
                 insert into inventory_balances(tenant_id,warehouse_id,location_id,product_id)
-                values(?,?,?,?) on conflict(tenant_id,warehouse_id,location_id,product_id) do nothing
+                values(?,?,?,?) on conflict(tenant_id,warehouse_id,location_id,product_id)
+                where variant_id is null do nothing
                 """, tenantId, warehouseId, locationId, productId);
         return jdbc.query("""
                 select id,on_hand,reserved,average_unit_cost from inventory_balances
