@@ -1,6 +1,9 @@
 package com.sami.app.release;
 
 import org.flywaydb.core.Flyway;
+import org.flywaydb.core.api.MigrationInfo;
+import org.flywaydb.core.api.MigrationState;
+import org.flywaydb.core.api.MigrationVersion;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Assumptions;
@@ -11,6 +14,8 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.util.Arrays;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -56,9 +61,27 @@ class PostgresMigrationAcceptanceTest {
     }
 
     private static void assertLatestVersion() throws Exception {
-        try (Connection c = DriverManager.getConnection(url, user, password); Statement s = c.createStatement(); ResultSet rs = s.executeQuery("select version from flyway_schema_history where success=true order by installed_rank desc limit 1")) {
+        Flyway flyway = Flyway.configure().dataSource(url, user, password)
+                .locations("classpath:db/migration").load();
+        List<MigrationInfo> versioned = Arrays.stream(flyway.info().all())
+                .filter(info -> info.getVersion() != null)
+                .toList();
+        assertFalse(versioned.isEmpty(), "At least one versioned migration must be resolved");
+        MigrationVersion expectedLatest = versioned.stream()
+                .map(MigrationInfo::getVersion)
+                .max(MigrationVersion::compareTo)
+                .orElseThrow();
+        assertNotNull(flyway.info().current(), "Flyway schema history must have a current migration");
+        assertEquals(expectedLatest, flyway.info().current().getVersion());
+        assertTrue(versioned.stream().allMatch(info -> info.getState() == MigrationState.SUCCESS),
+                () -> "Every resolved versioned migration must be successful: " + versioned.stream()
+                        .map(info -> info.getVersion() + "=" + info.getState())
+                        .toList());
+        try (Connection c = DriverManager.getConnection(url, user, password);
+             Statement s = c.createStatement();
+             ResultSet rs = s.executeQuery("select count(*) from flyway_schema_history where success=true and version is not null")) {
             assertTrue(rs.next());
-            assertEquals("63", rs.getString(1));
+            assertEquals(versioned.size(), rs.getInt(1), "No versioned migration may be skipped");
         }
     }
 }
