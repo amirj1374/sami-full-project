@@ -166,10 +166,12 @@ public class InventoryLedgerService {
         Long reservationId = jdbc.queryForObject("""
                 insert into inventory_reservations(
                     tenant_id,product_id,warehouse_id,location_id,source_type,source_id,
-                    source_line_id,quantity,serial_unit_id,created_by)
-                values(?,?,?,?,?,?,?,?,?,?) returning id
+                    source_line_id,quantity,requested_quantity,reserved_quantity,backordered_quantity,backorder_status,base_quantity,
+                    serial_unit_id,created_by)
+                values(?,?,?,?,?,?,?,?,?,?,?,?,?,?) returning id
                 """, Long.class, tenantId, productId, warehouseId, location,
-                normalize(sourceType), sourceId, sourceLineId, quantity, serialId, CurrentActor.id());
+                normalize(sourceType), sourceId, sourceLineId, quantity, quantity, quantity, BigDecimal.ZERO,
+                quantity, serialId, CurrentActor.id());
         if (serialId != null) {
             jdbc.update("update inventory_serial_units set status='RESERVED',updated_at=now(),version=version+1 where id=?",
                     serialId);
@@ -202,10 +204,21 @@ public class InventoryLedgerService {
     public BigDecimal reserveAvailable(Long tenantId, Long productId, Long warehouseId, Long locationId,
                                        BigDecimal quantity, String sourceType, Long sourceId, Long sourceLineId,
                                        String serialNumber, String imei) {
+        return reserveAvailable(tenantId, productId, null, warehouseId, locationId, quantity,
+                sourceType, sourceId, sourceLineId, serialNumber, imei, null, null, null, null, null);
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public BigDecimal reserveAvailable(Long tenantId, Long productId, Long variantId, Long warehouseId, Long locationId,
+                                       BigDecimal quantity, String sourceType, Long sourceId, Long sourceLineId,
+                                       String serialNumber, String imei, BigDecimal enteredQuantity, Long enteredUomId,
+                                       BigDecimal conversionFactor, BigDecimal baseQuantity, Long baseUomId) {
         requirePositive(quantity);
         requireProduct(tenantId, productId);
+        if (variantId != null && jdbc.queryForObject("select count(*) from product_variants where tenant_id=? and id=? and product_id=? and status='ACTIVE'", Integer.class, tenantId, variantId, productId) != 1)
+            throw new ApiException(ErrorCode.ACCESS_DENIED, "Variant does not belong to product and tenant");
         Long location = requireLocation(tenantId, warehouseId, locationId);
-        BalanceState state = lockBalance(tenantId, warehouseId, location, productId);
+        BalanceState state = lockBalance(tenantId, warehouseId, location, productId, variantId);
         BigDecimal available = state.onHand().subtract(state.reserved()).max(BigDecimal.ZERO);
         BigDecimal reserved = available.min(quantity);
         if (reserved.signum() == 0) return BigDecimal.ZERO;
@@ -217,11 +230,14 @@ public class InventoryLedgerService {
         updateBalance(state.id(), state.onHand(), state.reserved().add(reserved), state.averageCost());
         jdbc.queryForObject("""
                 insert into inventory_reservations(
-                    tenant_id,product_id,warehouse_id,location_id,source_type,source_id,
-                    source_line_id,quantity,serial_unit_id,created_by)
-                values(?,?,?,?,?,?,?,?,?,?) returning id
-                """, Long.class, tenantId, productId, warehouseId, location,
-                normalize(sourceType), sourceId, sourceLineId, reserved, serialId, CurrentActor.id());
+                    tenant_id,product_id,variant_id,warehouse_id,location_id,source_type,source_id,
+                    source_line_id,quantity,requested_quantity,reserved_quantity,backordered_quantity,backorder_status,base_quantity,
+                    entered_quantity,entered_uom_id,conversion_factor,base_uom_id,serial_unit_id,created_by)
+                values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) returning id
+                """, Long.class, tenantId, productId, variantId, warehouseId, location,
+                normalize(sourceType), sourceId, sourceLineId, reserved, quantity, reserved, quantity.subtract(reserved),
+                quantity.subtract(reserved).signum() > 0 ? "OPEN" : "FULFILLED",
+                baseQuantity == null ? quantity : baseQuantity, enteredQuantity, enteredUomId, conversionFactor, baseUomId, serialId, CurrentActor.id());
         if (serialId != null) {
             jdbc.update("update inventory_serial_units set status='RESERVED',updated_at=now(),version=version+1 where id=?",
                     serialId);
@@ -236,7 +252,7 @@ public class InventoryLedgerService {
     @Transactional(propagation = Propagation.MANDATORY)
     public void releaseReservation(Long tenantId, ReservationState reservation, String reason) {
         BalanceState state = lockBalance(tenantId, reservation.warehouseId(),
-                reservation.locationId(), reservation.productId());
+                reservation.locationId(), reservation.productId(), reservation.variantId());
         BigDecimal remaining = reservation.quantity().subtract(reservation.fulfilledQuantity());
         if (remaining.signum() <= 0) {
             return;
@@ -273,7 +289,7 @@ public class InventoryLedgerService {
     public void issueReservation(Long tenantId, ReservationState reservation, BigDecimal quantity,
                                  String provenanceType, Long provenanceId, String operationKey) {
         BalanceState state = lockBalance(tenantId, reservation.warehouseId(),
-                reservation.locationId(), reservation.productId());
+                reservation.locationId(), reservation.productId(), reservation.variantId());
         BigDecimal remaining = reservation.quantity().subtract(reservation.fulfilledQuantity());
         if (quantity == null || quantity.signum() <= 0 || quantity.compareTo(remaining) > 0
                 || state.onHand().compareTo(quantity) < 0 || state.reserved().compareTo(quantity) < 0) {
@@ -305,13 +321,13 @@ public class InventoryLedgerService {
     @Transactional(propagation = Propagation.MANDATORY)
     public List<ReservationState> activeReservations(Long tenantId, String sourceType, Long sourceId) {
         return jdbc.query("""
-                select id,product_id,warehouse_id,location_id,source_type,source_id,source_line_id,
+                select id,product_id,variant_id,warehouse_id,location_id,source_type,source_id,source_line_id,
                        quantity,fulfilled_quantity,serial_unit_id
                 from inventory_reservations
                 where tenant_id=? and source_type=? and source_id=? and status='ACTIVE'
                 order by id for update
                 """, (rs, row) -> new ReservationState(rs.getLong("id"),
-                rs.getLong("product_id"), rs.getLong("warehouse_id"),
+                rs.getLong("product_id"), (Long) rs.getObject("variant_id"), rs.getLong("warehouse_id"),
                 rs.getLong("location_id"), rs.getString("source_type"),
                 rs.getLong("source_id"), (Long) rs.getObject("source_line_id"),
                 rs.getBigDecimal("quantity"), rs.getBigDecimal("fulfilled_quantity"),
@@ -398,6 +414,36 @@ public class InventoryLedgerService {
     }
 
     private BalanceState lockBalance(Long tenantId, Long warehouseId, Long locationId, Long productId) {
+        return lockBalance(tenantId, warehouseId, locationId, productId, null);
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public BigDecimal fulfillBackorder(Long tenantId, Long reservationId, BigDecimal requested) {
+        if (requested == null || requested.signum() <= 0) throw new ApiException(ErrorCode.VALIDATION_FAILED, "Fulfillment quantity must be positive");
+        Map<String,Object> row = jdbc.queryForMap("select product_id,variant_id,warehouse_id,location_id,backordered_quantity,reserved_quantity from inventory_reservations where id=? and tenant_id=? and backorder_status in ('OPEN','PARTIALLY_FULFILLED') for update", reservationId, tenantId);
+        Long productId = ((Number) row.get("product_id")).longValue();
+        Long variantId = row.get("variant_id") == null ? null : ((Number) row.get("variant_id")).longValue();
+        BalanceState state = lockBalance(tenantId, ((Number) row.get("warehouse_id")).longValue(), ((Number) row.get("location_id")).longValue(), productId, variantId);
+        BigDecimal available = state.onHand().subtract(state.reserved()).max(BigDecimal.ZERO);
+        BigDecimal allocated = available.min(requested).min((BigDecimal) row.get("backordered_quantity"));
+        if (allocated.signum() == 0) return BigDecimal.ZERO;
+        updateBalance(state.id(), state.onHand(), state.reserved().add(allocated), state.averageCost());
+        BigDecimal remaining = ((BigDecimal) row.get("backordered_quantity")).subtract(allocated);
+        BigDecimal reserved = ((BigDecimal) row.get("reserved_quantity")).add(allocated);
+        jdbc.update("update inventory_reservations set reserved_quantity=?,backordered_quantity=?,backorder_status=?,updated_at=now(),version=version+1 where id=? and tenant_id=?", reserved, remaining, remaining.signum()==0 ? "FULFILLED" : "PARTIALLY_FULFILLED", reservationId, tenantId);
+        return allocated;
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void cancelBackorders(Long tenantId, String sourceType, Long sourceId) {
+        jdbc.update("update inventory_reservations set requested_quantity=reserved_quantity,backorder_status='CANCELLED',backordered_quantity=0,updated_at=now(),version=version+1 where tenant_id=? and source_type=? and source_id=? and status='ACTIVE' and backordered_quantity > 0", tenantId, sourceType, sourceId);
+    }
+
+    private BalanceState lockBalance(Long tenantId, Long warehouseId, Long locationId, Long productId, Long variantId) {
+        if (variantId != null) {
+            jdbc.update("insert into inventory_balances(tenant_id,warehouse_id,location_id,product_id,variant_id) values(?,?,?,?,?) on conflict do nothing", tenantId, warehouseId, locationId, productId, variantId);
+            return jdbc.query("select id,on_hand,reserved,average_unit_cost from inventory_balances where tenant_id=? and warehouse_id=? and location_id=? and product_id=? and variant_id=? for update", (rs,row)->new BalanceState(rs.getLong("id"),rs.getBigDecimal("on_hand"),rs.getBigDecimal("reserved"),rs.getBigDecimal("average_unit_cost")), tenantId, warehouseId, locationId, productId, variantId).getFirst();
+        }
         jdbc.update("""
                 insert into inventory_balances(tenant_id,warehouse_id,location_id,product_id)
                 values(?,?,?,?) on conflict(tenant_id,warehouse_id,location_id,product_id)
@@ -518,7 +564,7 @@ public class InventoryLedgerService {
     public record ProductInfo(Long id, String sku, String name) {
     }
 
-    public record ReservationState(Long id, Long productId, Long warehouseId,
+    public record ReservationState(Long id, Long productId, Long variantId, Long warehouseId,
                                    Long locationId, String sourceType, Long sourceId,
                                    Long sourceLineId, BigDecimal quantity,
                                    BigDecimal fulfilledQuantity, Long serialUnitId) {

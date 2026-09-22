@@ -124,9 +124,9 @@ public class InventoryStockService implements InventoryStockOperations {
         InventoryWarehouse warehouse = ledger.salesWarehouse(tenantId, command.branchId());
         Long locationId = ledger.requireLocation(tenantId, warehouse.getId(), null);
         List<ReservationAllocation> allocations = requireLines(command.lines()).stream().map(line -> {
-            BigDecimal reserved = ledger.reserveAvailable(tenantId, line.productId(), warehouse.getId(), locationId,
+            BigDecimal reserved = ledger.reserveAvailable(tenantId, line.productId(), line.variantId(), warehouse.getId(), locationId,
                     line.quantity(), normalize(command.sourceType()), command.sourceId(), line.sourceLineId(),
-                    line.serialNumber(), line.imei());
+                    line.serialNumber(), line.imei(), line.quantity(), null, BigDecimal.ONE, line.quantity(), null);
             return new ReservationAllocation(line.sourceLineId(), line.quantity(), reserved,
                     line.quantity().subtract(reserved).max(BigDecimal.ZERO));
         }).toList();
@@ -177,7 +177,9 @@ public class InventoryStockService implements InventoryStockOperations {
         for (StockLine line : requireLines(command.lines())) {
             List<InventoryLedgerService.ReservationState> reservations = ledger.activeReservations(
                     tenantId, normalize(command.reservationSourceType()), command.reservationSourceId()).stream()
-                    .filter(r -> Objects.equals(r.sourceLineId(), line.sourceLineId()) && Objects.equals(r.productId(), line.productId()))
+                    .filter(r -> Objects.equals(r.sourceLineId(), line.sourceLineId())
+                            && Objects.equals(r.productId(), line.productId())
+                            && Objects.equals(r.variantId(), line.variantId()))
                     .toList();
             BigDecimal remaining = line.quantity();
             for (var reservation : reservations) {
@@ -194,6 +196,27 @@ public class InventoryStockService implements InventoryStockOperations {
         ledger.audit(tenantId, "DELIVERY", command.deliverySourceId(), "ISSUED", null,
                 Map.of("reservationSourceType", normalize(command.reservationSourceType()), "reservationSourceId", command.reservationSourceId(), "lines", command.lines().size()));
         ledger.publish(tenantId, "StockIssued", "DELIVERY", command.deliverySourceId(), Map.of("sourceType", normalize(command.deliverySourceType())));
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public BigDecimal fulfillBackorder(String sourceType, Long sourceId, BigDecimal quantity) {
+        Long tenantId = tenantContext.requireTenantId();
+        var reservations = ledger.activeReservations(tenantId, normalize(sourceType), sourceId);
+        BigDecimal remaining = quantity;
+        for (var reservation : reservations) {
+            if (remaining.signum() <= 0) break;
+            BigDecimal allocated = ledger.fulfillBackorder(tenantId, reservation.id(), remaining);
+            remaining = remaining.subtract(allocated);
+        }
+        return quantity.subtract(remaining);
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void cancelBackorder(String sourceType, Long sourceId) {
+        Long tenantId = tenantContext.requireTenantId();
+        ledger.cancelBackorders(tenantId, normalize(sourceType), sourceId);
     }
 
     @Override

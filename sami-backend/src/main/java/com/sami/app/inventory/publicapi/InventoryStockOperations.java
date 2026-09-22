@@ -24,6 +24,10 @@ public interface InventoryStockOperations {
 
     void issuePartial(PartialIssueCommand command);
 
+    BigDecimal fulfillBackorder(String sourceType, Long sourceId, BigDecimal quantity);
+
+    void cancelBackorder(String sourceType, Long sourceId);
+
     void customerReturn(CustomerReturnCommand command);
 
     void setMarketAvailability(MarketAvailabilityCommand command);
@@ -47,7 +51,11 @@ public interface InventoryStockOperations {
                                          BigDecimal unitCost) {}
 
     record StockLine(Long sourceLineId, Long productId, BigDecimal quantity,
-                     String serialNumber, String imei) {
+                     String serialNumber, String imei, Long variantId) {
+        public StockLine(Long sourceLineId, Long productId, BigDecimal quantity,
+                         String serialNumber, String imei) {
+            this(sourceLineId, productId, quantity, serialNumber, imei, null);
+        }
     }
 
     record SupplierReturnCommand(Long warehouseId, Long purchaseId, Long returnId,
