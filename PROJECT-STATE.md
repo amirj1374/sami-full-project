@@ -9,8 +9,8 @@ repository reality on every resume.
 - **State Version:** 1
 - **Last Reconciled:** 2026-09-23
 - **Repository Branch:** `development`
-- **Recorded HEAD:** `3aaeefd`
-- **State Status:** Phase 3 COMPLETE/ACCEPTED — Phase 4 AUTHORIZED; P4-S4 active
+- **Recorded HEAD:** `5cb7756`
+- **State Status:** Phase 3 COMPLETE/ACCEPTED — Phase 4 AUTHORIZED; P4-S5 active
 
 ## Authority References
 
@@ -50,7 +50,7 @@ authorized and do not expand the Step 6 application scope.
 ## Current Phase / Wave / Feature
 
 - **Phase:** Phase 4 — Accounting
-- **Step:** P4-S4 — AR/AP integration
+- **Step:** P4-S5 — Treasury, advances, cheques, returns/refunds, forgiveness and correction posting
 - **Feature:** Canonical Accounting foundation and posting contract
 
 ## Accepted Baseline
@@ -71,9 +71,11 @@ authorized and do not expand the Step 6 application scope.
   validation passed; Guardian review passed.
 - `docs/agent-system/contracts/AUTH-P4-S3-JOURNAL-GL-FOUNDATION.md` — COMPLETED
 - Run: `docs/agent-system/runs/RUN-P4-S3-001.md`
-- P4-S3 completion is a continuation checkpoint under the active Phase
-  authorization; P4-S4 must be activated and executed without yielding an
-  intermediate completion report.
+- `docs/agent-system/contracts/AUTH-P4-S4-AR-AP-INTEGRATION.md` — COMPLETED
+- Run: `docs/agent-system/runs/RUN-P4-S4-001.md`
+- P4-S3 and P4-S4 completion are continuation checkpoints under the active
+  Phase authorization; P4-S5 must be activated and executed without yielding
+  an intermediate completion report.
 - `docs/agent-system/contracts/AUTH-P3-S7-RESERVATION-TIMEOUT.md` — COMPLETED
 - Run: `docs/agent-system/runs/RUN-P3-S7-001.md`
 - `docs/agent-system/contracts/AUTH-P3-S9-PHASE3-CERTIFICATION.md` — COMPLETED
@@ -97,8 +99,8 @@ authorized and do not expand the Step 6 application scope.
 
 ## Work In Progress
 
-- Phase 3 final certification is complete. P4-S1, P4-S2 and P4-S3 are
-  complete; P4-S4 AR/AP integration is the active next Step.
+- Phase 3 final certification is complete. P4-S1 through P4-S4 are complete;
+  P4-S5 is the active next Step.
 
 ## Working Tree Preservation
 
@@ -145,6 +147,7 @@ authorized and do not expand the Step 6 application scope.
 - **PASS:** Docker Maven test compilation after the P4-S3 posting boundary.
 - **PASS:** Fresh V1→V74 migration on disposable PostgreSQL 16.15.
 - **PASS:** Supported V72→V74 migration on disposable PostgreSQL 16.15.
+- **PASS:** P4-S4 focused AR/AP validation: 11 tests, 0 failures, 0 errors.
 - **PASS:** Full backend regression in a repository-root-mounted Maven
   container: 310 tests, 0 failures, 0 errors. The earlier missing
   `../sami-frontend/vite.config.ts` error was a test-harness mount defect, not
@@ -193,9 +196,8 @@ silently resolve those decisions here.
 
 ## Next Authorized Action
 
-Activate P4-S4 AR/AP integration using the canonical Journal/GL posting port;
-preserve existing receivable/payable public ports and do not invent tax or
-provider behavior.
+Activate P4-S5 Treasury, returns and correction posting using the canonical
+Journal/GL posting port; preserve approved lifecycle and authorization rules.
 
 ## Resume Instructions
 
