@@ -9,8 +9,8 @@ repository reality on every resume.
 - **State Version:** 1
 - **Last Reconciled:** 2026-09-23
 - **Repository Branch:** `development`
-- **Recorded HEAD:** `2460a56`
-- **State Status:** Phase 3 COMPLETE/ACCEPTED — Phase 4 AUTHORIZED; P4-S5 active
+- **Recorded HEAD:** `1ca5566`
+- **State Status:** Phase 3 COMPLETE/ACCEPTED — Phase 4 AUTHORIZED; P4-S6 active
 
 ## Authority References
 
@@ -50,7 +50,7 @@ authorized and do not expand the Step 6 application scope.
 ## Current Phase / Wave / Feature
 
 - **Phase:** Phase 4 — Accounting
-- **Step:** P4-S5 — Treasury, advances, cheques, returns/refunds, forgiveness and correction posting
+- **Step:** P4-S6 — Finance-policy/tax configuration and whole-Toman rules
 - **Feature:** Canonical Accounting foundation and posting contract
 
 ## Accepted Baseline
@@ -75,6 +75,8 @@ authorized and do not expand the Step 6 application scope.
 - Run: `docs/agent-system/runs/RUN-P4-S4-001.md`
 - `docs/agent-system/contracts/AUTH-P4-S5-TREASURY-POSTING.md` — ACTIVE
 - Run: `docs/agent-system/runs/RUN-P4-S5-001.md`
+- `docs/agent-system/contracts/AUTH-P4-S6-TAX-POLICY.md` — ACTIVE
+- Run: `docs/agent-system/runs/RUN-P4-S6-001.md`
 - P4-S3 and P4-S4 completion are continuation checkpoints under the active
   Phase authorization; P4-S5 must be activated and executed without yielding
   an intermediate completion report.
@@ -102,8 +104,8 @@ authorized and do not expand the Step 6 application scope.
 ## Work In Progress
 
 - Phase 3 final certification is complete. P4-S1 through P4-S4 are complete;
-  P4-S5 is active and its V75 Treasury-to-Accounting boundary implementation
-  is complete pending final acceptance evidence.
+  P4-S5 is complete and pushed. P4-S6 is active at the V76 tax-policy
+  implementation checkpoint.
 
 ## Working Tree Preservation
 
@@ -156,6 +158,9 @@ authorized and do not expand the Step 6 application scope.
 - **PASS:** V75 Treasury mapping/posting SQL applied with ON_ERROR_STOP=1 to
   disposable PostgreSQL 16 database `sami_p4s5_v75`; mapping and posting tables
   were created successfully.
+- **PASS:** P4-S6 Docker Maven test compilation after tax-policy service.
+- **PASS:** V76 tax-policy SQL applied with ON_ERROR_STOP=1 to disposable
+  PostgreSQL 16 database `sami_p4s6_v76`.
 - **PASS:** Full backend regression in a repository-root-mounted Maven
   container: 310 tests, 0 failures, 0 errors. The earlier missing
   `../sami-frontend/vite.config.ts` error was a test-harness mount defect, not
@@ -206,8 +211,9 @@ silently resolve those decisions here.
 
 ## Next Authorized Action
 
-Complete P4-S5 acceptance/Guardian evidence, then activate the next dependency-
-valid Phase 4 Step without returning an intermediate status report.
+Complete P4-S6 effective-date/tenant acceptance and Guardian review, then
+activate the next dependency-valid Phase 4 Step without returning an
+intermediate status report.
 
 ## Resume Instructions
 
