@@ -77,6 +77,8 @@ authorized and do not expand the Step 6 application scope.
 - Run: `docs/agent-system/runs/RUN-P4-S5-001.md`
 - `docs/agent-system/contracts/AUTH-P4-S6-TAX-POLICY.md` — ACTIVE
 - Run: `docs/agent-system/runs/RUN-P4-S6-001.md`
+- `docs/agent-system/contracts/AUTH-P4-S7-ACCOUNTING-REPORTS-UI.md` — ACTIVE
+- Run: `docs/agent-system/runs/RUN-P4-S7-001.md`
 - P4-S3 and P4-S4 completion are continuation checkpoints under the active
   Phase authorization; P4-S5 must be activated and executed without yielding
   an intermediate completion report.
