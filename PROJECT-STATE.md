@@ -10,7 +10,7 @@ repository reality on every resume.
 - **Last Reconciled:** 2026-09-23
 - **Repository Branch:** `development`
 - **Recorded HEAD:** `5cb7756`
-- **State Status:** Phase 3 COMPLETE/ACCEPTED — Phase 4 AUTHORIZED; P4-S5 active
+- **State Status:** Phase 3 COMPLETE/ACCEPTED — Phase 4 AUTHORIZED; P4-S5 BLOCKED
 
 ## Authority References
 
@@ -73,6 +73,8 @@ authorized and do not expand the Step 6 application scope.
 - Run: `docs/agent-system/runs/RUN-P4-S3-001.md`
 - `docs/agent-system/contracts/AUTH-P4-S4-AR-AP-INTEGRATION.md` — COMPLETED
 - Run: `docs/agent-system/runs/RUN-P4-S4-001.md`
+- `docs/agent-system/contracts/AUTH-P4-S5-TREASURY-POSTING.md` — BLOCKED
+- Run: `docs/agent-system/runs/RUN-P4-S5-001.md`
 - P4-S3 and P4-S4 completion are continuation checkpoints under the active
   Phase authorization; P4-S5 must be activated and executed without yielding
   an intermediate completion report.
@@ -166,6 +168,9 @@ in `RUN-P3-S7-001.md`.
 - **TECHNICAL BLOCKER:** None proven in V73 SQL.
 - **ENVIRONMENT BLOCKER:** None for the completed evidence.
 - **TECHNICAL BLOCKER:** None proven; independent planning is complete.
+- **OWNER BLOCKER:** Treasury operational-to-Accounting CoA mapping/posting
+  boundary is not approved. Treasury migration explicitly forbids Treasury
+  journal creation, while P4-S5 requires canonical posting.
 
 ## Environment Limitations
 
@@ -196,8 +201,8 @@ silently resolve those decisions here.
 
 ## Next Authorized Action
 
-Activate P4-S5 Treasury, returns and correction posting using the canonical
-Journal/GL posting port; preserve approved lifecycle and authorization rules.
+Owner decision required: approve the minimum Treasury-to-CoA mapping and
+finalized-movement posting boundary, or defer Treasury journal integration.
 
 ## Resume Instructions
 
