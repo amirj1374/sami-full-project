@@ -10,6 +10,22 @@
     "validation": "Some information needs your attention. Review the highlighted fields.",
     "server": "The server could not complete the request. Please try again shortly."
   },
+  "salesError": {
+    "operationNotAllowed": "This sales action is not available in the current state.",
+    "capturedPaymentsMustEqualFinal": "The sale cannot be completed; the captured amount must equal the final sale amount.",
+    "paymentsCannotExceedFinal": "The total payment amount cannot exceed the final sale amount.",
+    "saleCannotAcceptPayments": "This sale cannot accept payments in its current state.",
+    "onlyConfirmedOrdersCanBeDelivered": "The sales order must be confirmed before a delivery can be created.",
+    "deliveryQuantityExceedsReserved": "The delivery quantity exceeds the reserved quantity available for delivery.",
+    "onlyConfirmedOrdersCanBeInvoiced": "The sales order must be confirmed before an invoice can be created.",
+    "invoiceQuantityExceedsInvoiceable": "The invoice quantity exceeds the delivered quantity available for invoicing.",
+    "onlyDraftInvoicesCanBeIssued": "Only a draft invoice can be issued.",
+    "accountingReceivableUnavailable": "The invoice cannot be issued because receivable accounting is unavailable.",
+    "onlyDraftReceiptsCanBeAllocated": "Only a draft receipt can be allocated.",
+    "allocationExceedsOutstanding": "The allocated amount exceeds the outstanding receipt or invoice amount.",
+    "receiptAllocationsInvalid": "The receipt allocations are not valid. Review the allocated amounts.",
+    "accountingSettlementUnavailable": "The receipt cannot be confirmed because accounting settlement is unavailable."
+  },
   "errors": {
     "forbiddenMessage": "You don’t have permission to view this page.",
     "notFoundMessage": "The page you’re looking for doesn’t exist."
@@ -62,6 +78,7 @@
       "today": "Today"
     }
   },
+  "accounting": {"title":"Accounting journals","subtitle":"Read-only canonical journal and ledger evidence","loadError":"Accounting report could not be loaded.","empty":"No journal entries yet.","reference":"Reference","description":"Description","debit":"Debit","credit":"Credit","date":"Date"},
   "shell": {
     "tagline": "Retail ERP",
     "searchNav": "Filter menu…",
@@ -1436,6 +1453,7 @@
     "tax": "Tax",
     "confirm": "Confirm",
     "complete": "Complete",
+    "completePaymentRequired": "To complete the sale, first receive and record the remaining amount.",
     "cancelSale": "Cancel sale",
     "print": "Print invoice",
     "payment": "Payment",

@@ -10,6 +10,22 @@
     "validation": "بخشی از اطلاعات نیاز به بررسی دارد. فیلدهای مشخص‌شده را اصلاح کنید.",
     "server": "سرور نتوانست درخواست را انجام دهد. کمی بعد دوباره تلاش کنید."
   },
+  "salesError": {
+    "operationNotAllowed": "انجام این عملیات فروش در وضعیت فعلی امکان‌پذیر نیست.",
+    "capturedPaymentsMustEqualFinal": "امکان تکمیل فروش وجود ندارد؛ مبلغ پرداخت‌شده باید با مبلغ نهایی فروش برابر باشد.",
+    "paymentsCannotExceedFinal": "مجموع پرداخت‌ها نمی‌تواند بیشتر از مبلغ نهایی فروش باشد.",
+    "saleCannotAcceptPayments": "در وضعیت فعلی فروش، ثبت پرداخت امکان‌پذیر نیست.",
+    "onlyConfirmedOrdersCanBeDelivered": "برای ثبت تحویل، سفارش فروش باید تأیید شده باشد.",
+    "deliveryQuantityExceedsReserved": "مقدار تحویل از مقدار رزروشده و قابل‌تحویل سفارش بیشتر است.",
+    "onlyConfirmedOrdersCanBeInvoiced": "برای صدور فاکتور، سفارش فروش باید تأیید شده باشد.",
+    "invoiceQuantityExceedsInvoiceable": "مقدار فاکتور از مقدار تحویل‌شده و قابل‌صورتحساب بیشتر است.",
+    "onlyDraftInvoicesCanBeIssued": "فقط فاکتور پیش‌نویس قابل صدور است.",
+    "accountingReceivableUnavailable": "صدور فاکتور ممکن نیست؛ سرویس ثبت حساب دریافتنی در دسترس نیست.",
+    "onlyDraftReceiptsCanBeAllocated": "فقط رسید پیش‌نویس قابل تخصیص است.",
+    "allocationExceedsOutstanding": "مبلغ تخصیص‌یافته از مانده رسید یا مانده فاکتور بیشتر است.",
+    "receiptAllocationsInvalid": "تخصیص‌های رسید معتبر نیستند؛ مبالغ تخصیص را بررسی کنید.",
+    "accountingSettlementUnavailable": "تأیید رسید ممکن نیست؛ سرویس تسویه حسابداری در دسترس نیست."
+  },
   "errors": {
     "forbiddenMessage": "شما اجازهٔ دسترسی به این صفحه را ندارید.",
     "notFoundMessage": "صفحه‌ای که به دنبال آن هستید وجود ندارد."
@@ -62,6 +78,7 @@
       "today": "امروز"
     }
   },
+  "accounting": {"title":"دفاتر حسابداری","subtitle":"نمایش خواندنی اسناد دفتر کل","loadError":"گزارش حسابداری بارگذاری نشد.","empty":"هنوز سندی ثبت نشده است.","reference":"مرجع","description":"شرح","debit":"بدهکار","credit":"بستانکار","date":"تاریخ"},
   "shell": {
     "tagline": "سامانه مدیریت فروشگاه",
     "searchNav": "جست‌وجوی منو…",
@@ -1436,6 +1453,7 @@
     "tax": "مالیات",
     "confirm": "تأیید فروش",
     "complete": "تکمیل فروش",
+    "completePaymentRequired": "برای تکمیل فروش، ابتدا مبلغ باقی‌مانده را دریافت و ثبت کنید.",
     "cancelSale": "لغو فروش",
     "print": "چاپ فاکتور",
     "payment": "پرداخت",
