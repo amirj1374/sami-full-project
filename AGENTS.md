@@ -23,6 +23,10 @@ applicable, evaluates DoD, updates state, and continues until a valid stop
 condition. Ordinary build, test, migration, fixture, API, and integration
 failures stay inside execution. See `docs/agent-system/GOVERNANCE.md` for the
 full authority, interruption, escalation, parallelism, and evidence rules.
+For PHASE or WAVE authorization, completion of an individual Step is only a
+checkpoint: reconcile state, activate the next dependency-valid Step, and
+continue automatically. Do not return an intermediate status report while the
+parent authorization remains ACTIVE.
 
 Preserve dirty worktree changes and unrelated work. Never rewrite approved
 business truth to match code, resolve Product TBDs silently, expand scope, or

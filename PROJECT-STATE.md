@@ -9,7 +9,7 @@ repository reality on every resume.
 - **State Version:** 1
 - **Last Reconciled:** 2026-09-23
 - **Repository Branch:** `development`
-- **Recorded HEAD:** `f265e0c`
+- **Recorded HEAD:** `c674253`
 - **State Status:** Phase 3 COMPLETE/ACCEPTED — Phase 4 AUTHORIZED; P4-S4 active
 
 ## Authority References
@@ -71,6 +71,9 @@ authorized and do not expand the Step 6 application scope.
   validation passed; Guardian review passed.
 - `docs/agent-system/contracts/AUTH-P4-S3-JOURNAL-GL-FOUNDATION.md` — COMPLETED
 - Run: `docs/agent-system/runs/RUN-P4-S3-001.md`
+- P4-S3 completion is a continuation checkpoint under the active Phase
+  authorization; P4-S4 must be activated and executed without yielding an
+  intermediate completion report.
 - `docs/agent-system/contracts/AUTH-P3-S7-RESERVATION-TIMEOUT.md` — COMPLETED
 - Run: `docs/agent-system/runs/RUN-P3-S7-001.md`
 - `docs/agent-system/contracts/AUTH-P3-S9-PHASE3-CERTIFICATION.md` — COMPLETED
@@ -95,7 +98,7 @@ authorized and do not expand the Step 6 application scope.
 ## Work In Progress
 
 - Phase 3 final certification is complete. P4-S1, P4-S2 and P4-S3 are
-  complete; P4-S4 AR/AP integration is next.
+  complete; P4-S4 AR/AP integration is the active next Step.
 
 ## Working Tree Preservation
 

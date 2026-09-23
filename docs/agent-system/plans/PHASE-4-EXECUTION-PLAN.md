@@ -58,6 +58,8 @@ permitted commit/push is synchronized. Release/deployment is out of scope.
 
 ## Current execution decision
 
-P4-S1 is the next candidate, but it cannot be completed autonomously while
-HIGH-009 remains `needs-decision`. No speculative Accounting implementation is
-authorized by this plan.
+P4-S1 through P4-S3 are complete. The active Phase authorization continues at
+P4-S4. A completed Step is a checkpoint, not a terminal condition: after state
+and evidence update, Lead activates the next dependency-valid Step and
+continues until the Phase reaches DoD, a genuine Owner blocker, or an explicit
+Owner interruption.

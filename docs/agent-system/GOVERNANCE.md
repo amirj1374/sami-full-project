@@ -84,6 +84,14 @@ continuation, or an explicit interruption. Compile errors, test failures,
 migration defects, API mismatches, fixture defects, and ordinary regressions
 are execution work, not automatic owner escalations.
 
+For `PHASE` and `WAVE` scopes, an individual Step reaching DoD is never a
+terminal condition by itself. It is a continuation checkpoint: Lead must update
+state/evidence, commit or push when permitted, select and activate the next
+dependency-valid authorized Step, and continue execution in the same run. A
+user-facing final report is permitted only when the parent scope reaches its
+Definition of Done, encounters a genuine Owner-level blocker, or is explicitly
+interrupted/reprioritized by the Owner.
+
 Commit and push may be autonomous only when the active authorization includes
 implementation through DoD, repository policy permits it, required gates pass,
 and the contract permits mutation. Unrelated changes must never be included.
