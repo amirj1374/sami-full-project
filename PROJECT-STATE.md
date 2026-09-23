@@ -9,7 +9,7 @@ repository reality on every resume.
 - **State Version:** 1
 - **Last Reconciled:** 2026-09-23
 - **Repository Branch:** `development`
-- **Recorded HEAD:** `7202f1d`
+- **Recorded HEAD:** `0dad4d1`
 - **State Status:** Phase 3 COMPLETE/ACCEPTED — Phase 4 AUTHORIZED; P4-S6 active
 
 ## Authority References
@@ -164,6 +164,10 @@ authorized and do not expand the Step 6 application scope.
 - **PASS:** P4-S6 Docker Maven test compilation after tax-policy service.
 - **PASS:** V76 tax-policy SQL applied with ON_ERROR_STOP=1 to disposable
   PostgreSQL 16 database `sami_p4s6_v76`.
+- **PASS:** Final backend Maven regression: 310 tests, 0 failures, 0 errors,
+  0 skipped.
+- **PASS:** Authenticated application startup on PostgreSQL 16.15 validated
+  Flyway through V76; Accounting reports route rendered under bootstrap admin.
 - **PASS:** Full backend regression in a repository-root-mounted Maven
   container: 310 tests, 0 failures, 0 errors. The earlier missing
   `../sami-frontend/vite.config.ts` error was a test-harness mount defect, not
