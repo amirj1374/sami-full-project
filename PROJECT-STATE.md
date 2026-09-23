@@ -9,8 +9,8 @@ repository reality on every resume.
 - **State Version:** 1
 - **Last Reconciled:** 2026-09-23
 - **Repository Branch:** `development`
-- **Recorded HEAD:** `0dad4d1`
-- **State Status:** Phase 3 COMPLETE/ACCEPTED — Phase 4 AUTHORIZED; P4-S6 active
+- **Recorded HEAD:** `b1772b7`
+- **State Status:** Phase 3 COMPLETE/ACCEPTED — Phase 4 COMPLETE/ACCEPTED
 
 ## Authority References
 
@@ -30,7 +30,7 @@ repository reality on every resume.
 - **Scope:** Phase 4 — Accounting, per `docs/IMPLEMENTATION_ROADMAP.md` and `docs/agent-system/plans/PHASE-4-EXECUTION-PLAN.md`
 - **Objective:** Execute the approved Phase 4 Accounting plan through applicable
   DoD without inventing unresolved finance policy.
-- **Status:** ACTIVE — P4-S1 completed; implementation sequence may proceed
+- **Status:** COMPLETED — Phase 4 certified and closed
 - **Allowed Change Area:** Phase 4 planning, approved Accounting implementation, tests, migrations, contracts, evidence and state artifacts.
 - **Forbidden Change Area:** Phase 5; unrelated
   frontend/documentation work;
@@ -73,12 +73,14 @@ authorized and do not expand the Step 6 application scope.
 - Run: `docs/agent-system/runs/RUN-P4-S3-001.md`
 - `docs/agent-system/contracts/AUTH-P4-S4-AR-AP-INTEGRATION.md` — COMPLETED
 - Run: `docs/agent-system/runs/RUN-P4-S4-001.md`
-- `docs/agent-system/contracts/AUTH-P4-S5-TREASURY-POSTING.md` — ACTIVE
+- `docs/agent-system/contracts/AUTH-P4-S5-TREASURY-POSTING.md` — COMPLETED
 - Run: `docs/agent-system/runs/RUN-P4-S5-001.md`
-- `docs/agent-system/contracts/AUTH-P4-S6-TAX-POLICY.md` — ACTIVE
+- `docs/agent-system/contracts/AUTH-P4-S6-TAX-POLICY.md` — COMPLETED
 - Run: `docs/agent-system/runs/RUN-P4-S6-001.md`
-- `docs/agent-system/contracts/AUTH-P4-S7-ACCOUNTING-REPORTS-UI.md` — ACTIVE
+- `docs/agent-system/contracts/AUTH-P4-S7-ACCOUNTING-REPORTS-UI.md` — COMPLETED WITH UI LIMITATION
 - Run: `docs/agent-system/runs/RUN-P4-S7-001.md`
+- `docs/agent-system/contracts/AUTH-P4-S8-PHASE4-CERTIFICATION.md` — COMPLETED
+- Run: `docs/agent-system/runs/RUN-P4-S8-001.md`
 - P4-S3 and P4-S4 completion are continuation checkpoints under the active
   Phase authorization; P4-S5 must be activated and executed without yielding
   an intermediate completion report.
@@ -105,10 +107,8 @@ authorized and do not expand the Step 6 application scope.
 
 ## Work In Progress
 
-- Phase 3 final certification is complete. P4-S1 through P4-S4 are complete;
-  P4-S5 and P4-S6 are complete and pushed. P4-S7 is the active next Step;
-  its reports/API/UI contract requires bounded technical planning before
-  implementation.
+- Phase 3 final certification is complete. P4-S1 through P4-S8 are complete;
+  Phase 4 Accounting is COMPLETE/ACCEPTED. No Phase 4 work remains active.
 
 ## Working Tree Preservation
 
@@ -176,6 +176,9 @@ authorized and do not expand the Step 6 application scope.
 
 ## Known Failures
 
+- None in final Phase 4 certification. The external acceptance fixture path
+  passed all permanent PostgreSQL assertions.
+
 Earlier non-empty external-database evidence was discarded. The governing
 P3-S7 evidence is the final disposable empty PostgreSQL database run recorded
 in `RUN-P3-S7-001.md`.
@@ -218,8 +221,7 @@ silently resolve those decisions here.
 
 ## Next Authorized Action
 
-Execute P4-S8 final fresh PostgreSQL, supported upgrade, regression, Guardian
-and Phase 4 closure gates.
+No Phase 4 action remains. Phase 5 requires a new explicit authorization.
 
 ## Resume Instructions
 
