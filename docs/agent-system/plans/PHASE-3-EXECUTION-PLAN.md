@@ -81,5 +81,5 @@ release/deployment work is included.
 
 ## Current Candidate
 
-`P3-S7` is the next authorized candidate. It is not ACTIVE until its Contract
+`P3-S9` is the next authorized candidate. It is not ACTIVE until its Contract
 is activated; no later Step may start in the same execution.

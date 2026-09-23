@@ -8,15 +8,19 @@ import java.util.*;
 
 public final class SalesOrderDtos {
     private SalesOrderDtos() {}
-    public record LineRequest(@NotNull Long productId, @NotNull @DecimalMin("0.001") BigDecimal quantity,
-                              @NotNull @DecimalMin("0") BigDecimal unitPrice, @DecimalMin("0") BigDecimal discount) {}
+    public record LineRequest(@NotNull Long productId, Long variantId, @NotNull @DecimalMin("0.001") BigDecimal quantity,
+                              @NotNull @DecimalMin("0") BigDecimal unitPrice, @DecimalMin("0") BigDecimal discount) {
+        public LineRequest(Long productId, BigDecimal quantity, BigDecimal unitPrice, BigDecimal discount) {
+            this(productId, null, quantity, unitPrice, discount);
+        }
+    }
     public record Request(@NotNull Long companyId, @NotNull Long branchId, @NotNull Long customerId,
                           @Size(min=3,max=3) String currency, @Size(max=2000) String notes,
                           @NotEmpty @Valid List<LineRequest> lines, Long expectedVersion) {}
-    public record LineResponse(Long id, Long sourceLineId, Long productId, String sku, String name,
+    public record LineResponse(Long id, Long sourceLineId, Long productId, Long variantId, String sku, String name,
                                BigDecimal quantity, BigDecimal unitPrice, BigDecimal discount, BigDecimal lineTotal,
                                BigDecimal reservedQuantity, BigDecimal backorderedQuantity, BigDecimal fulfilledQuantity) {
-        static LineResponse from(SalesOrderLine l) { return new LineResponse(l.getId(),l.getSourceLineId(),l.getProductId(),l.getProductSku(),l.getProductName(),l.getQuantity(),l.getUnitPrice(),l.getDiscount(),l.getLineTotal(),l.getReservedQuantity(),l.getBackorderedQuantity(),l.getFulfilledQuantity()); }
+        static LineResponse from(SalesOrderLine l) { return new LineResponse(l.getId(),l.getSourceLineId(),l.getProductId(),l.getVariantId(),l.getProductSku(),l.getProductName(),l.getQuantity(),l.getUnitPrice(),l.getDiscount(),l.getLineTotal(),l.getReservedQuantity(),l.getBackorderedQuantity(),l.getFulfilledQuantity()); }
     }
     public record Response(Long id, String number, SalesOrderStatus status, Long companyId, Long branchId,
                            Long customerId, Long contactId, Long sourceDocumentId, String currency,

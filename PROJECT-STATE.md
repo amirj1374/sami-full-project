@@ -9,8 +9,8 @@ repository reality on every resume.
 - **State Version:** 1
 - **Last Reconciled:** 2026-09-23
 - **Repository Branch:** `development`
-- **Recorded HEAD:** `6f3b5c6`
-- **State Status:** P3-S7 COMPLETE — next candidate P3-S8 is not active
+- **Recorded HEAD:** `5082c68` (reconcile after scoped commit)
+- **State Status:** P3-S8 COMPLETE — next candidate P3-S9 is not active
 
 ## Authority References
 
@@ -25,16 +25,14 @@ repository reality on every resume.
 
 ## Current Authorization
 
-- **Authorization ID:** `AUTH-P3-S7-RESERVATION-TIMEOUT`
+- **Authorization ID:** `AUTH-P3-S8-CROSS-MODULE-VARIANT-UOM`
 - **Scope Type:** FEATURE
-- **Scope:** Phase 3 Step 7 — configurable reservation timeout and expiry
-  lifecycle
-- **Objective:** Complete P3-S7 through implementation, acceptance, regression,
+- **Scope:** Phase 3 Step 8 — cross-module Variant/UOM integration and UI/API evidence
+- **Objective:** Complete P3-S8 through implementation, acceptance, regression,
   Guardian, state update, and permitted commit/push gates.
 - **Status:** COMPLETED
-- **Allowed Change Area:** Reservation timeout/expiry implementation, directly
-  related tests, migrations/configuration and validation evidence.
-- **Forbidden Change Area:** P3-S8 and later; Phase 4; unrelated
+- **Allowed Change Area:** Directly related Sales/Purchasing/Inventory propagation, API/frontend contracts, migrations, tests and validation.
+- **Forbidden Change Area:** P3-S9 and later; Phase 4; unrelated
   frontend/documentation work;
   business-rule redesign; architecture redesign; release/deployment; changing
   accepted Step 5 behavior without regression evidence.
@@ -51,9 +49,8 @@ authorized and do not expand the Step 6 application scope.
 ## Current Phase / Wave / Feature
 
 - **Phase:** Phase 3 — Inventory
-- **Step:** P3-S7 — Reservation timeout and expiry lifecycle
-- **Feature:** Configurable reservation timeout while preserving accepted
-  Variant/UOM, backorder and Serial/IMEI foundations
+- **Step:** P3-S8 — Cross-module Variant/UOM integration and UI/API evidence
+- **Feature:** Preserve Variant/UOM identity across approved module boundaries
 
 ## Accepted Baseline
 
@@ -74,6 +71,8 @@ authorized and do not expand the Step 6 application scope.
   `docs/agent-system/runs/RUN-P3-S6-001.md` is green.
 - `CONTRACT-P3-S7-RESERVATION-TIMEOUT` — completed; run
   `docs/agent-system/runs/RUN-P3-S7-001.md` is green.
+- `CONTRACT-P3-S8-CROSS-MODULE-VARIANT-UOM` — completed; run
+  `docs/agent-system/runs/RUN-P3-S8-001.md` is green.
 
 ## Completed Foundations
 
@@ -83,16 +82,16 @@ authorized and do not expand the Step 6 application scope.
 
 ## Work In Progress
 
-- P3-S7 reservation timeout implementation and acceptance are complete under
-  the Contract above. P3-S4–S6 remain accepted and must not be reopened absent
-  regression evidence. P3-S8 is the next technical candidate, not active.
+- P3-S8 cross-module Variant/UOM implementation and acceptance are complete
+  under the Contract above. P3-S4–S7 remain accepted and must not be reopened
+  absent regression evidence. P3-S9 is the next candidate, not active.
 
 ## Working Tree Preservation
 
 ### Authorized active changes
 
-- P3-S7 timeout implementation, configuration, acceptance test, Contract, run,
-  plan and state updates listed in this run.
+- P3-S8 cross-module implementation, directly related tests, Contract, run and
+  state updates listed in this run.
 
 ### Unrelated pre-existing changes to preserve
 
@@ -118,6 +117,11 @@ authorized and do not expand the Step 6 application scope.
   0 errors.
 - **PASS:** P3-S7 final fresh combined PostgreSQL acceptance: 14 tests, 0
   failures, 0 errors (Step 4: 1; Step 5: 13).
+- **PASS:** P3-S8 fresh V1→V72 PostgreSQL acceptance: 14 tests, 0 failures,
+  0 errors (Step 4: 1; Step 5: 13).
+- **PASS:** Frontend type-check and 56 frontend tests.
+- **PASS:** Full backend regression after P3-S8: 310 tests, 0 failures,
+  0 errors.
 
 ## Known Failures
 
@@ -161,10 +165,8 @@ silently resolve those decisions here.
 
 ## Next Authorized Action
 
-P3-S7 is complete under `CONTRACT-P3-S7-RESERVATION-TIMEOUT`. The next
-candidate is P3-S8 (cross-module Variant/UOM integration and UI evidence) as
-defined in `docs/agent-system/plans/PHASE-3-EXECUTION-PLAN.md`; it is not
-active or authorized by this run.
+P3-S8 is complete under `CONTRACT-P3-S8-CROSS-MODULE-VARIANT-UOM`. P3-S9 is
+the next candidate but is not active or authorized by this run.
 
 ## Resume Instructions
 
