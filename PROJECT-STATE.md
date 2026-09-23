@@ -9,8 +9,8 @@ repository reality on every resume.
 - **State Version:** 1
 - **Last Reconciled:** 2026-09-24
 - **Repository Branch:** `development`
-- **Recorded HEAD:** `5080c94`
-- **State Status:** Phase 3 COMPLETE/ACCEPTED — Phase 4 COMPLETE/ACCEPTED
+- **Recorded HEAD:** `5080c94` (Phase 5 changes currently uncommitted)
+- **State Status:** Phase 3 COMPLETE/ACCEPTED — Phase 4 COMPLETE/ACCEPTED — Phase 5 ACTIVE
 
 ## Authority References
 
@@ -23,7 +23,7 @@ repository reality on every resume.
 - Agent roles: `docs/agent-system/AGENT-MODEL.md`
 - Validation gates: `docs/15-testing-and-quality.md`
 
-## Current Authorization
+## Completed Authorization
 
 - **Authorization ID:** `AUTH-P4-PHASE4-ACCOUNTING`
 - **Scope Type:** ROADMAP
@@ -49,16 +49,16 @@ authorized and do not expand the Step 6 application scope.
 
 ## Current Phase / Wave / Feature
 
-- **Phase:** Phase 4 — Accounting
-- **Step:** P4-S8 — Final fresh PostgreSQL, supported upgrade, regression and Phase 4 closure
-- **Feature:** Canonical Accounting foundation and posting contract
+- **Phase:** Phase 5 — CRM Intelligence
+- **Step:** P5-S2 — reminder and follow-up integration (active)
+- **Feature:** Lead, Opportunity, Contact history and follow-up
 
 ## Accepted Baseline
 
 - Step 5 accepted commit: `ba0e317 feat(inventory): add variant reservations and backorders`
 - `origin/development` matches the recorded HEAD (`0/0` at reconciliation).
-- Phase 3 is accepted at `d621e19`. P4-S1 decisions are recorded in
-  `docs/decisions/DEC-P4-001-accounting-boundary.md`; P4-S2 is active.
+- Phase 3 is accepted at `d621e19`. Phase 4 is accepted at `5080c94`.
+  Phase 5 planning is active from the authorized CRM scope.
   Existing unrelated dirty changes are not part of the accepted baseline.
 
 ## Active Contracts
@@ -109,12 +109,18 @@ authorized and do not expand the Step 6 application scope.
 
 - Phase 3 final certification is complete. P4-S1 through P4-S8 are complete;
   Phase 4 Accounting is COMPLETE/ACCEPTED. No Phase 4 work remains active.
+- P5-S1 CRM workflow foundation is implemented in the working tree; Maven
+  compilation and clean PostgreSQL migration/acceptance remain to be recorded.
+- P5-S2/P5-S3 cannot safely proceed until their event/scheduler boundary is
+  specified from existing conventions; policy-dependent P5-S4 remains blocked
+  by the open customer-intelligence policy decision.
 
 ## Working Tree Preservation
 
 ### Authorized active changes
 
-- Phase 4 plan, P4-S1 decision artifacts, P4-S2 Contract/run, and V73.
+- Phase 5 execution plan, P5-S1 Contract/run, and CRM workflow foundation
+  migration/entities currently being implemented.
 
 ### Unrelated pre-existing changes to preserve
 
@@ -186,6 +192,13 @@ in `RUN-P3-S7-001.md`.
 ## Blockers
 
 - **OWNER BLOCKER:** None proven after DEC-P4-001.
+- **OWNER BLOCKER:** None. DEC-P5-001 resolves the former CRM intelligence
+  policy blocker.
+- **TECHNICAL STATUS:** P5-S1 implementation, V1→V77/V50→V77 migration
+  validation, and focused idempotency validation are green; permanent workflow
+  acceptance is still pending and must not be represented as complete.
+- **Decision:** `docs/decisions/DEC-P5-001-crm-intelligence-policy.md` approved;
+  P5-S2 onward may proceed within its bounded scope.
 - **TECHNICAL BLOCKER:** None proven in V73 SQL.
 - **ENVIRONMENT BLOCKER:** None for the completed evidence.
 - **TECHNICAL BLOCKER:** None proven; independent planning is complete.
@@ -219,18 +232,34 @@ silently resolve those decisions here.
 - Step 6 acceptance evidence is green on the current disposable PostgreSQL
   run, with final Guardian/DoD/Git closure recorded in the run artifact.
 
+## Current Authorization
+
+- **Authorization ID:** `AUTH-P5-PHASE5-CRM`
+- **Scope Type:** ROADMAP / PHASE
+- **Scope:** Phase 5 — CRM Intelligence
+- **Status:** ACTIVE — planning and independent foundation sequencing
+- **Release Permission:** NOT AUTHORIZED
+
 ## Next Authorized Action
 
-No Phase 4 action remains. Phase 5 requires a new explicit authorization.
+Continue P5-S2 reminder integration, then dependency-valid P5-S3/P5-S4 work;
+P5-S4 policy is governed by DEC-P5-001.
 
 ## Agent-System Retrospective
 
 Phase 4 retrospective: `docs/agent-system/retrospectives/PHASE-4-EXECUTION-RETROSPECTIVE.md`.
 No generic framework correction was required; the external PostgreSQL fixture
 path and continuation/checkpoint protections are recorded in existing artifacts.
-Phase 5 remains NOT STARTED / NOT AUTHORIZED.
+Phase 5 is AUTHORIZED and ACTIVE. Phase 6 remains NOT STARTED / NOT AUTHORIZED.
 
 ## Resume Instructions
+
+1. Read `docs/agent-system/plans/PHASE-5-EXECUTION-PLAN.md`,
+   `docs/decisions/DEC-P5-001-crm-intelligence-policy.md`, and active P5
+   Contracts/runs.
+2. Reconcile P5-S1 evidence, then continue P5-S2 and later dependency-valid
+   work without reopening completed foundations.
+3. Continue only within active Phase 5 authorization; do not start Phase 6.
 
 Read `AGENTS.md`, this file, `docs/agent-system/GOVERNANCE.md`, and the
 authoritative sources. Verify branch/HEAD/upstream/status, inspect V71 and
