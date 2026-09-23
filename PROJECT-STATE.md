@@ -9,8 +9,8 @@ repository reality on every resume.
 - **State Version:** 1
 - **Last Reconciled:** 2026-09-23
 - **Repository Branch:** `development`
-- **Recorded HEAD:** `90d92c5`
-- **State Status:** COMPLETE — Step 6 accepted and pushed
+- **Recorded HEAD:** `feddba4` (reconcile after scoped commit)
+- **State Status:** P3-S7 COMPLETE — next candidate P3-S8 is not active
 
 ## Authority References
 
@@ -25,21 +25,21 @@ repository reality on every resume.
 
 ## Current Authorization
 
-- **Authorization ID:** `AUTH-P3-S6-SERIAL-CUSTODY`
+- **Authorization ID:** `AUTH-P3-S7-RESERVATION-TIMEOUT`
 - **Scope Type:** FEATURE
-- **Scope:** Phase 3 Step 6 — Variant-aware Serial/IMEI custody and integrity
-- **Objective:** Complete the already-started Step 6 implementation and its
-  acceptance, regression, Guardian, state-update, and permitted commit/push
-  gates.
+- **Scope:** Phase 3 Step 7 — configurable reservation timeout and expiry
+  lifecycle
+- **Objective:** Complete P3-S7 through implementation, acceptance, regression,
+  Guardian, state update, and permitted commit/push gates.
 - **Status:** COMPLETED
-- **Allowed Change Area:** Step 6 serial/IMEI custody production code, V71,
-  directly related tests, validation evidence, and agent-system documentation
-  explicitly authorized by the current infrastructure work.
-- **Forbidden Change Area:** Step 7; unrelated frontend/documentation work;
+- **Allowed Change Area:** Reservation timeout/expiry implementation, directly
+  related tests, migrations/configuration and validation evidence.
+- **Forbidden Change Area:** P3-S8 and later; Phase 4; unrelated
+  frontend/documentation work;
   business-rule redesign; architecture redesign; release/deployment; changing
   accepted Step 5 behavior without regression evidence.
-- **Commit Permission:** Not yet exercised; only after Step 6 DoD gates pass.
-- **Push Permission:** Not yet exercised; only after accepted certification and
+- **Commit Permission:** Authorized after P3-S7 DoD gates pass.
+- **Push Permission:** Authorized after accepted P3-S7 certification and
   repository-policy checks.
 - **Release Permission:** NOT AUTHORIZED.
 - **Stop Conditions:** DoD complete, genuine Owner decision, required approval,
@@ -51,9 +51,9 @@ authorized and do not expand the Step 6 application scope.
 ## Current Phase / Wave / Feature
 
 - **Phase:** Phase 3 — Inventory
-- **Step:** Step 6 — Serial/IMEI custody and integrity
-- **Feature:** Variant-aware serialized custody while preserving Product-only
-  legacy records and HAMTA history
+- **Step:** P3-S7 — Reservation timeout and expiry lifecycle
+- **Feature:** Configurable reservation timeout while preserving accepted
+  Variant/UOM, backorder and Serial/IMEI foundations
 
 ## Accepted Baseline
 
@@ -65,13 +65,15 @@ authorized and do not expand the Step 6 application scope.
 
 ## Active Contracts
 
-- `docs/agent-system/contracts/AUTH-P3-S6-SERIAL-CUSTODY.md` — COMPLETED
-- Run: `docs/agent-system/runs/RUN-P3-S6-001.md`
+- `docs/agent-system/contracts/AUTH-P3-S7-RESERVATION-TIMEOUT.md` — COMPLETED
+- Run: `docs/agent-system/runs/RUN-P3-S7-001.md`
 
 ## Completed Contracts
 
 - `CONTRACT-P3-S6-SERIAL-CUSTODY` — completed; run
   `docs/agent-system/runs/RUN-P3-S6-001.md` is green.
+- `CONTRACT-P3-S7-RESERVATION-TIMEOUT` — completed; run
+  `docs/agent-system/runs/RUN-P3-S7-001.md` is green.
 
 ## Completed Foundations
 
@@ -81,17 +83,16 @@ authorized and do not expand the Step 6 application scope.
 
 ## Work In Progress
 
-- No authorized Phase 3 implementation Step is active. Step 6 is complete and
-  pushed at `90d92c5`.
+- P3-S7 reservation timeout implementation and acceptance are complete under
+  the Contract above. P3-S4–S6 remain accepted and must not be reopened absent
+  regression evidence. P3-S8 is the next technical candidate, not active.
 
 ## Working Tree Preservation
 
 ### Authorized active changes
 
-- Step 6 backend inventory changes listed above.
-- V71 migration and Step 6 acceptance test.
-- This phase's `AGENTS.md`, `PROJECT-STATE.md`, `docs/agent-system/AGENT-MODEL.md`,
-  and index/governance discoverability changes.
+- P3-S7 timeout implementation, configuration, acceptance test, Contract, run,
+  plan and state updates listed in this run.
 
 ### Unrelated pre-existing changes to preserve
 
@@ -115,23 +116,21 @@ authorized and do not expand the Step 6 application scope.
 - **PASS:** Full backend regression: 310 tests, 0 failures, 0 errors.
 - **PASS:** Final fresh combined PostgreSQL acceptance: 18 tests, 0 failures,
   0 errors.
+- **PASS:** P3-S7 final fresh combined PostgreSQL acceptance: 14 tests, 0
+  failures, 0 errors (Step 4: 1; Step 5: 13).
 
 ## Known Failures
 
-An earlier expanded acceptance attempt used a non-empty external database and
-was invalid; it was corrected by recreating a disposable empty database. The
-current clean run is the governing evidence.
+Earlier non-empty external-database evidence was discarded. The governing
+P3-S7 evidence is the final disposable empty PostgreSQL database run recorded
+in `RUN-P3-S7-001.md`.
 
 ## Blockers
 
 - **OWNER BLOCKER:** None known.
 - **TECHNICAL BLOCKER:** None proven.
 - **ENVIRONMENT BLOCKER:** None for the completed evidence.
-- **NO BLOCKER:** Step 6 is complete.
-- **OWNER BLOCKER:** The roadmap does not define a numbered next Phase 3 Step
-  after Step 6. The next roadmap section is Phase 4 Accounting, but the current
-  authorization explicitly limits execution to the next Phase 3 Step. Starting
-  Phase 4 or inventing a Phase 3 Step would exceed authority.
+- **NO BLOCKER:** Step 6 and P3-S7 are complete.
 
 ## Environment Limitations
 
@@ -162,9 +161,10 @@ silently resolve those decisions here.
 
 ## Next Authorized Action
 
-No executable next Phase 3 Step can be recovered from the authoritative
-roadmap. Owner-level clarification is required before any new implementation;
-do not begin Phase 4, release, or deployment.
+P3-S7 is complete under `CONTRACT-P3-S7-RESERVATION-TIMEOUT`. The next
+candidate is P3-S8 (cross-module Variant/UOM integration and UI evidence) as
+defined in `docs/agent-system/plans/PHASE-3-EXECUTION-PLAN.md`; it is not
+active or authorized by this run.
 
 ## Resume Instructions
 
@@ -177,6 +177,6 @@ at meaningful boundaries.
 ## State Reconciliation Notes
 
 Recorded facts were reconciled against the current branch, HEAD, upstream,
-working tree, V71, Step 6 source, and acceptance test. Transient external
-database evidence is explicitly marked as environment-blocked rather than
-treated as a production result.
+working tree, V71, P3-S7 source, acceptance tests, Contract and run evidence.
+The external PostgreSQL databases used for acceptance were disposable and
+isolated by database name; no repository fixture was left modified.

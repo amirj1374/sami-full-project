@@ -128,6 +128,13 @@ Specialized workflows live under `.agents/skills/`: project context,
 architecture audit, module/backend/frontend builders, contract validation,
 migration guardian, repository reconciliation, UI/UX, reporting and release
 gate. Contribution rules are in `docs/20-contribution-guide.md`.
+
+## Phase execution decomposition
+
+- `docs/IMPLEMENTATION_ROADMAP.md` is the approved roadmap scope.
+- `docs/agent-system/plans/PHASE-3-EXECUTION-PLAN.md` is the technical
+  execution decomposition for completing that approved Phase 3 scope; it does
+  not redefine business truth.
 ## Current implementation update — 2026-08-08
 
 - Customer Purchase / Trade-in: Purchasing now supports Supplier or CRM Customer sellers with valuation, inspection, settlement, linked Sale, CRM timeline, inventory and IMEI integrity (`V38`).

@@ -8,6 +8,8 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
@@ -19,6 +21,26 @@ class InventoryReservationBackorderPostgresAcceptanceIT extends PostgresApplicat
     @Autowired JdbcTemplate jdbc;
     @Autowired InventoryLedgerService ledger;
     @Autowired TransactionTemplate tx;
+
+    @Test
+    void reservationTimeoutExpiresAndReleasesProjection() {
+        long tenant = 1L;
+        long warehouse = jdbc.queryForObject("select id from pur_warehouses where tenant_id=? order by id limit 1", Long.class, tenant);
+        long location = jdbc.queryForObject("select id from inventory_locations where tenant_id=? and warehouse_id=? order by id limit 1", Long.class, tenant, warehouse);
+        long product = jdbc.queryForObject("insert into products(name,sku,price,stock_quantity,active,created_at,updated_at,tenant_id) values(?,?,0,0,true,?,?,?) returning id", Long.class, "Timeout Product", "timeout-" + System.nanoTime(), new Timestamp(System.currentTimeMillis()), new Timestamp(System.currentTimeMillis()), tenant);
+        jdbc.update("insert into inventory_balances(tenant_id,warehouse_id,location_id,product_id,on_hand) values(?,?,?,?,?)", tenant, warehouse, location, product, new BigDecimal("4"));
+        tx.execute(status -> ledger.reserveAvailable(tenant, product, null, warehouse, location, new BigDecimal("2"), "TIMEOUT", 8801L, 1L, null, null, new BigDecimal("2"), null, BigDecimal.ONE, new BigDecimal("2"), null));
+        Timestamp expires = jdbc.queryForObject("select expires_at from inventory_reservations where tenant_id=? and source_type='TIMEOUT' and source_id=8801", Timestamp.class, tenant);
+        assertNotNull(expires);
+        assertTrue(expires.toInstant().isAfter(Instant.now().plusSeconds(29 * 60)));
+        assertTrue(expires.toInstant().isBefore(Instant.now().plusSeconds(31 * 60)));
+        int expired = tx.execute(status -> ledger.expireReservations(tenant, Instant.now().plus(Duration.ofHours(1))));
+        assertTrue(expired >= 1);
+        assertEquals("EXPIRED", jdbc.queryForObject("select status from inventory_reservations where tenant_id=? and source_type='TIMEOUT' and source_id=8801", String.class, tenant));
+        assertEquals(new BigDecimal("0.000"), jdbc.queryForObject("select reserved from inventory_balances where tenant_id=? and product_id=?", BigDecimal.class, tenant, product));
+        assertEquals(1, jdbc.queryForObject("select count(*) from inventory_movements where tenant_id=? and movement_type='RELEASE' and source_id=8801", Integer.class, tenant));
+        assertEquals(0, tx.execute(status -> ledger.expireReservations(tenant, Instant.now().plus(Duration.ofHours(2)))).intValue());
+    }
 
     @Test
     void productAndVariantReservationsAllocateWithoutNegativeStock() {

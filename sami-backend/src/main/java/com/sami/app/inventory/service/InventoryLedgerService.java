@@ -4,6 +4,7 @@ import com.sami.app.common.exception.ApiException;
 import com.sami.app.common.exception.ErrorCode;
 import com.sami.app.common.exception.ResourceNotFoundException;
 import com.sami.app.inventory.domain.InventoryWarehouse;
+import com.sami.app.inventory.InventoryProperties;
 import com.sami.app.inventory.event.InventoryDomainEvent;
 import com.sami.app.inventory.publicapi.InventoryStockOperations.VariantPurchaseReceiptCommand;
 import com.sami.app.inventory.repository.InventoryWarehouseRepository;
@@ -18,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
@@ -33,6 +35,7 @@ import java.util.Map;
 public class InventoryLedgerService {
 
     private final JdbcTemplate jdbc;
+    private final InventoryProperties inventoryProperties;
     private final InventoryWarehouseRepository warehouses;
     private final InventoryAuditService audit;
     private final ApplicationEventPublisher events;
@@ -179,11 +182,11 @@ public class InventoryLedgerService {
                 insert into inventory_reservations(
                     tenant_id,product_id,variant_id,warehouse_id,location_id,source_type,source_id,
                     source_line_id,quantity,requested_quantity,reserved_quantity,backordered_quantity,backorder_status,base_quantity,
-                    serial_unit_id,created_by)
-                values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) returning id
+                    serial_unit_id,expires_at,created_by)
+                values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) returning id
                 """, Long.class, tenantId, productId, variantId, warehouseId, location,
                 normalize(sourceType), sourceId, sourceLineId, quantity, quantity, quantity, BigDecimal.ZERO,
-                "FULFILLED", quantity, serialId, CurrentActor.id());
+                "FULFILLED", quantity, serialId, expiresAt(), CurrentActor.id());
         if (serialId != null) {
             jdbc.update("update inventory_serial_units set status='RESERVED',updated_at=now(),version=version+1 where id=?",
                     serialId);
@@ -257,12 +260,12 @@ public class InventoryLedgerService {
                 insert into inventory_reservations(
                     tenant_id,product_id,variant_id,warehouse_id,location_id,source_type,source_id,
                     source_line_id,quantity,requested_quantity,reserved_quantity,backordered_quantity,backorder_status,base_quantity,
-                    entered_quantity,entered_uom_id,conversion_factor,base_uom_id,serial_unit_id,created_by)
-                values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) returning id
+                    entered_quantity,entered_uom_id,conversion_factor,base_uom_id,serial_unit_id,expires_at,created_by)
+                values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) returning id
                 """, Long.class, tenantId, productId, variantId, warehouseId, location,
                 normalize(sourceType), sourceId, sourceLineId, reserved, quantity, reserved, quantity.subtract(reserved),
                 quantity.subtract(reserved).signum() > 0 ? "OPEN" : "FULFILLED",
-                baseQuantity == null ? quantity : baseQuantity, enteredQuantity, enteredUomId, conversionFactor, baseUomId, serialId, CurrentActor.id());
+                baseQuantity == null ? quantity : baseQuantity, enteredQuantity, enteredUomId, conversionFactor, baseUomId, serialId, expiresAt(), CurrentActor.id());
         if (serialId != null) {
             jdbc.update("update inventory_serial_units set status='RESERVED',updated_at=now(),version=version+1 where id=?",
                     serialId);
@@ -345,6 +348,7 @@ public class InventoryLedgerService {
 
     @Transactional(propagation = Propagation.MANDATORY)
     public List<ReservationState> activeReservations(Long tenantId, String sourceType, Long sourceId) {
+        expireReservations(tenantId, Instant.now());
         return jdbc.query("""
                 select id,product_id,variant_id,warehouse_id,location_id,source_type,source_id,source_line_id,
                        quantity,fulfilled_quantity,serial_unit_id
@@ -357,6 +361,49 @@ public class InventoryLedgerService {
                 rs.getLong("source_id"), (Long) rs.getObject("source_line_id"),
                 rs.getBigDecimal("quantity"), rs.getBigDecimal("fulfilled_quantity"),
                 (Long) rs.getObject("serial_unit_id")), tenantId, normalize(sourceType), sourceId);
+    }
+
+    /** Expires due active reservations once, restoring their reserved projection. */
+    public int expireReservations(Long tenantId, Instant now) {
+        List<ReservationState> due = jdbc.query("""
+                select id,product_id,variant_id,warehouse_id,location_id,source_type,source_id,source_line_id,
+                       quantity,fulfilled_quantity,serial_unit_id
+                from inventory_reservations
+                where tenant_id=? and status='ACTIVE' and expires_at is not null and expires_at <= ?
+                order by id for update
+                """, (rs, row) -> new ReservationState(rs.getLong("id"), rs.getLong("product_id"),
+                (Long) rs.getObject("variant_id"), rs.getLong("warehouse_id"), rs.getLong("location_id"),
+                rs.getString("source_type"), rs.getLong("source_id"), (Long) rs.getObject("source_line_id"),
+                rs.getBigDecimal("quantity"), rs.getBigDecimal("fulfilled_quantity"),
+                (Long) rs.getObject("serial_unit_id")), tenantId, Timestamp.from(now));
+        for (ReservationState reservation : due) {
+            BalanceState state = lockBalance(tenantId, reservation.warehouseId(), reservation.locationId(),
+                    reservation.productId(), reservation.variantId());
+            BigDecimal remaining = reservation.quantity().subtract(reservation.fulfilledQuantity());
+            if (remaining.signum() > 0) {
+                updateBalance(state.id(), state.onHand(), state.reserved().subtract(remaining).max(BigDecimal.ZERO), state.averageCost());
+            }
+            jdbc.update("""
+                    update inventory_reservations
+                    set status='EXPIRED',requested_quantity=reserved_quantity,backordered_quantity=0,
+                        backorder_status='CANCELLED',updated_at=now(),version=version+1
+                    where id=? and tenant_id=? and status='ACTIVE'
+                    """, reservation.id(), tenantId);
+            if (reservation.serialUnitId() != null) {
+                jdbc.update("update inventory_serial_units set status='AVAILABLE',updated_at=now(),version=version+1 where id=? and tenant_id=? and status='RESERVED'",
+                        reservation.serialUnitId(), tenantId);
+            }
+            if (remaining.signum() > 0) {
+                recordMovement(tenantId, reservation.productId(), reservation.warehouseId(), reservation.locationId(),
+                        null, null, "RELEASE", remaining, state.averageCost(), reservation.sourceType(),
+                        reservation.sourceId(), reservation.sourceLineId(), "EXPIRE-" + reservation.id(), "Reservation timeout");
+            }
+        }
+        return due.size();
+    }
+
+    private Timestamp expiresAt() {
+        return Timestamp.from(Instant.now().plus(inventoryProperties.reservationTimeoutOrDefault()));
     }
 
     @Transactional(propagation = Propagation.MANDATORY)

@@ -57,6 +57,8 @@ security:
     refresh-token-ttl: ${JWT_REFRESH_TTL:1209600}  # 14 days
 
 app:
+  inventory:
+    reservation-timeout: ${INVENTORY_RESERVATION_TIMEOUT:PT30M}
   suppliers:
     code-prefix: ${SUP_CODE_PREFIX:SUP-}
     code-padding: ${SUP_CODE_PADDING:6}
