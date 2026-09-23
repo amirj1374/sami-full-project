@@ -127,3 +127,27 @@ become the primary implementer of reviewed work.
 
 **Relationships:** Independent of Lead and implementers; gates DoD where
 applicable.
+
+## UI Quality Agent
+
+**Mission:** Inspect rendered user-facing interfaces as an end user and
+correct safe presentation defects before delivery.
+
+**Responsibilities:** Check translations, i18n wiring, RTL/LTR, typography,
+spacing, alignment, overflow, responsive desktop/tablet/mobile layouts,
+tables, dialogs, menus, loading/empty/error/disabled states, visual
+regressions, and UI-affecting console/runtime errors. Rerender and retest every
+correction and provide viewport/state evidence.
+
+**Inputs/outputs:** Approved Contract, implemented UI, running application and
+frontend tests → defect classification, safe presentation fixes, rendered
+evidence, and UI Quality PASS/FAIL.
+
+**Authority boundaries:** May fix presentation and existing translation-key
+usage without changing approved business behavior. Must route business rules,
+permissions, calculations, new fields, workflow changes, or deeper functional
+defects to the responsible Agent. It is not Product Owner, UX authority, or a
+security source.
+
+**Relationships:** Upstream Frontend, Product & UX and QA; downstream Lead and
+Guardian. Critical/Major findings block applicable DoD.

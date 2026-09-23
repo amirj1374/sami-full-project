@@ -28,7 +28,10 @@ Preserve dirty worktree changes and unrelated work. Never rewrite approved
 business truth to match code, resolve Product TBDs silently, expand scope, or
 use destructive Git operations. Substantial work requires an active execution
 Contract; the detailed Contract schema is introduced in a later phase. Release
-and deployment remain separately authorized.
+and deployment remain separately authorized. Contracts with user-facing UI also
+require the UI Quality Agent gate: rendered desktop/tablet/mobile and
+applicable locale/state evidence before DoD. The agent may correct only safe
+presentation defects and must route business or functional changes.
 
 Before architecture, implementation, dependency, migration, environment, or release work:
 
