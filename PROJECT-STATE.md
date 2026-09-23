@@ -9,7 +9,7 @@ repository reality on every resume.
 - **State Version:** 1
 - **Last Reconciled:** 2026-09-23
 - **Repository Branch:** `development`
-- **Recorded HEAD:** `d621e19`
+- **Recorded HEAD:** `f265e0c`
 - **State Status:** Phase 3 COMPLETE/ACCEPTED — Phase 4 AUTHORIZED; P4-S4 active
 
 ## Authority References
@@ -142,6 +142,10 @@ authorized and do not expand the Step 6 application scope.
 - **PASS:** Docker Maven test compilation after the P4-S3 posting boundary.
 - **PASS:** Fresh V1→V74 migration on disposable PostgreSQL 16.15.
 - **PASS:** Supported V72→V74 migration on disposable PostgreSQL 16.15.
+- **PASS:** Full backend regression in a repository-root-mounted Maven
+  container: 310 tests, 0 failures, 0 errors. The earlier missing
+  `../sami-frontend/vite.config.ts` error was a test-harness mount defect, not
+  a product regression; mounting the repository root corrected the path.
 - **PASS:** Phase 3 Guardian closure recorded in `RUN-P3-S9-001.md`.
 
 ## Known Failures
