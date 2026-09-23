@@ -9,7 +9,7 @@ repository reality on every resume.
 - **State Version:** 1
 - **Last Reconciled:** 2026-09-23
 - **Repository Branch:** `development`
-- **Recorded HEAD:** `feddba4` (reconcile after scoped commit)
+- **Recorded HEAD:** `6f3b5c6`
 - **State Status:** P3-S7 COMPLETE — next candidate P3-S8 is not active
 
 ## Authority References
@@ -58,7 +58,7 @@ authorized and do not expand the Step 6 application scope.
 ## Accepted Baseline
 
 - Step 5 accepted commit: `ba0e317 feat(inventory): add variant reservations and backorders`
-- `origin/development` matches the recorded baseline (`0/0` at reconciliation).
+- `origin/development` matches the recorded HEAD (`0/0` at reconciliation).
 - Step 5 PostgreSQL acceptance and Step 4 regression are recorded as accepted
   in repository execution history; current Step 6 work must not reopen them
   without regression evidence.
