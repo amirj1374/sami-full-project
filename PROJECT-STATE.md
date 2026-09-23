@@ -9,8 +9,8 @@ repository reality on every resume.
 - **State Version:** 1
 - **Last Reconciled:** 2026-09-24
 - **Repository Branch:** `development`
-- **Recorded HEAD:** `5080c94` (Phase 5 changes currently uncommitted)
-- **State Status:** Phase 3 COMPLETE/ACCEPTED — Phase 4 COMPLETE/ACCEPTED — Phase 5 ACTIVE
+- **Recorded HEAD:** `ff0f7ce` (Phase 5 non-acceptance checkpoint)
+- **State Status:** Phase 3 COMPLETE/ACCEPTED — Phase 4 COMPLETE/ACCEPTED — Phase 5 ACTIVE / VALIDATION PENDING
 
 ## Authority References
 
@@ -197,6 +197,10 @@ in `RUN-P3-S7-001.md`.
 - **TECHNICAL STATUS:** P5-S1 implementation, V1→V77/V50→V77 migration
   validation, and focused idempotency validation are green; permanent workflow
   acceptance is still pending and must not be represented as complete.
+- **Checkpoint:** `ff0f7ce chore(crm): checkpoint phase 5 validation` is pushed
+  to `origin/development`; this is not an acceptance or DoD commit.
+- **Validation environment:** Docker/Maven execution is currently unavailable;
+  resume compile, PostgreSQL acceptance and regression from this checkpoint.
 - **Decision:** `docs/decisions/DEC-P5-001-crm-intelligence-policy.md` approved;
   P5-S2 onward may proceed within its bounded scope.
 - **TECHNICAL BLOCKER:** None proven in V73 SQL.
