@@ -45,7 +45,7 @@ public class JournalPostingService implements JournalPostingPort {
         Long id = jdbc.queryForObject("insert into accounting_journal_entries(tenant_id,company_id,branch_id,fiscal_period_id,entry_type,posting_reference,idempotency_key,currency_code,description,created_by) values(?,?,?,?,?,?,?,?,?,?) returning id",
                 Long.class, c.tenantId(), c.companyId(), c.branchId(), c.fiscalPeriodId(), "ORIGINAL", c.postingReference(), c.idempotencyKey(), "IRR", c.description(), c.createdBy());
         for (JournalLine line : c.lines()) {
-            jdbc.update("insert into accounting_journal_lines(journal_entry_id,tenant_id,account_id,line_number,debit,credit,description) values(?,?,?,?,?,?,?)",
+            jdbc.update("insert into accounting_journal_lines(journal_entry_id,tenant_id,account_id,line_number,debit_amount,credit_amount,description) values(?,?,?,?,?,?,?)",
                     id, c.tenantId(), line.accountId(), line.lineNumber(), line.debit(), line.credit(), line.description());
         }
         return id;
