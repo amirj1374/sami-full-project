@@ -9,7 +9,7 @@ repository reality on every resume.
 - **State Version:** 1
 - **Last Reconciled:** 2026-09-23
 - **Repository Branch:** `development`
-- **Recorded HEAD:** `1ca5566`
+- **Recorded HEAD:** `e557f9c`
 - **State Status:** Phase 3 COMPLETE/ACCEPTED — Phase 4 AUTHORIZED; P4-S6 active
 
 ## Authority References
@@ -50,7 +50,7 @@ authorized and do not expand the Step 6 application scope.
 ## Current Phase / Wave / Feature
 
 - **Phase:** Phase 4 — Accounting
-- **Step:** P4-S6 — Finance-policy/tax configuration and whole-Toman rules
+- **Step:** P4-S7 — Accounting reports/API/UI and journal/report reconciliation
 - **Feature:** Canonical Accounting foundation and posting contract
 
 ## Accepted Baseline
@@ -104,8 +104,9 @@ authorized and do not expand the Step 6 application scope.
 ## Work In Progress
 
 - Phase 3 final certification is complete. P4-S1 through P4-S4 are complete;
-  P4-S5 is complete and pushed. P4-S6 is active at the V76 tax-policy
-  implementation checkpoint.
+  P4-S5 and P4-S6 are complete and pushed. P4-S7 is the active next Step;
+  its reports/API/UI contract requires bounded technical planning before
+  implementation.
 
 ## Working Tree Preservation
 
@@ -211,9 +212,8 @@ silently resolve those decisions here.
 
 ## Next Authorized Action
 
-Complete P4-S6 effective-date/tenant acceptance and Guardian review, then
-activate the next dependency-valid Phase 4 Step without returning an
-intermediate status report.
+Plan and activate the bounded P4-S7 reports/API/UI Contract, preserving the
+approved Accounting scope and applying UI Quality gates to any new screens.
 
 ## Resume Instructions
 
