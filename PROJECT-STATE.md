@@ -10,7 +10,7 @@ repository reality on every resume.
 - **Last Reconciled:** 2026-09-23
 - **Repository Branch:** `development`
 - **Recorded HEAD:** `79a0f32`
-- **State Status:** P3-S8 COMPLETE — next candidate P3-S9 is not active
+- **State Status:** Phase 3 COMPLETE/ACCEPTED — Phase 4 not authorized
 
 ## Authority References
 
@@ -25,14 +25,14 @@ repository reality on every resume.
 
 ## Current Authorization
 
-- **Authorization ID:** `AUTH-P3-S8-CROSS-MODULE-VARIANT-UOM`
+- **Authorization ID:** `AUTH-P3-S9-PHASE3-CERTIFICATION`
 - **Scope Type:** FEATURE
-- **Scope:** Phase 3 Step 8 — cross-module Variant/UOM integration and UI/API evidence
-- **Objective:** Complete P3-S8 through implementation, acceptance, regression,
+- **Scope:** Phase 3 Step 9 — final Phase 3 Inventory certification
+- **Objective:** Complete P3-S9 through migration, acceptance, regression,
   Guardian, state update, and permitted commit/push gates.
 - **Status:** COMPLETED
-- **Allowed Change Area:** Directly related Sales/Purchasing/Inventory propagation, API/frontend contracts, migrations, tests and validation.
-- **Forbidden Change Area:** P3-S9 and later; Phase 4; unrelated
+- **Allowed Change Area:** Phase 3 certification, directly related test/fixture corrections and evidence.
+- **Forbidden Change Area:** Phase 4; unrelated
   frontend/documentation work;
   business-rule redesign; architecture redesign; release/deployment; changing
   accepted Step 5 behavior without regression evidence.
@@ -49,8 +49,8 @@ authorized and do not expand the Step 6 application scope.
 ## Current Phase / Wave / Feature
 
 - **Phase:** Phase 3 — Inventory
-- **Step:** P3-S8 — Cross-module Variant/UOM integration and UI/API evidence
-- **Feature:** Preserve Variant/UOM identity across approved module boundaries
+- **Step:** P3-S9 — Final Phase 3 Inventory certification (complete)
+- **Feature:** Final clean migration, acceptance, regression and Phase 3 closure
 
 ## Accepted Baseline
 
@@ -64,6 +64,7 @@ authorized and do not expand the Step 6 application scope.
 
 - `docs/agent-system/contracts/AUTH-P3-S7-RESERVATION-TIMEOUT.md` — COMPLETED
 - Run: `docs/agent-system/runs/RUN-P3-S7-001.md`
+- `docs/agent-system/contracts/AUTH-P3-S9-PHASE3-CERTIFICATION.md` — COMPLETED
 
 ## Completed Contracts
 
@@ -73,6 +74,8 @@ authorized and do not expand the Step 6 application scope.
   `docs/agent-system/runs/RUN-P3-S7-001.md` is green.
 - `CONTRACT-P3-S8-CROSS-MODULE-VARIANT-UOM` — completed; run
   `docs/agent-system/runs/RUN-P3-S8-001.md` is green.
+- `CONTRACT-P3-S9-PHASE3-CERTIFICATION` — completed; run
+  `docs/agent-system/runs/RUN-P3-S9-001.md` is green.
 
 ## Completed Foundations
 
@@ -82,9 +85,8 @@ authorized and do not expand the Step 6 application scope.
 
 ## Work In Progress
 
-- P3-S8 cross-module Variant/UOM implementation and acceptance are complete
-  under the Contract above. P3-S4–S7 remain accepted and must not be reopened
-  absent regression evidence. P3-S9 is the next candidate, not active.
+- P3-S9 final certification is complete. All Phase 3 steps are accepted and
+  Phase 4 is not authorized.
 
 ## Working Tree Preservation
 
@@ -122,6 +124,11 @@ authorized and do not expand the Step 6 application scope.
 - **PASS:** Frontend type-check and 56 frontend tests.
 - **PASS:** Full backend regression after P3-S8: 310 tests, 0 failures,
   0 errors.
+- **PASS:** P3-S9 final fresh PostgreSQL certification: 21 tests, 0 failures,
+  0 errors (migration 2, Step 4 1, Step 5 13, Step 6 5).
+- **PASS:** Supported V50→V72 upgrade and fresh V1→V72 migration with no
+  checksum errors.
+- **PASS:** Phase 3 Guardian closure recorded in `RUN-P3-S9-001.md`.
 
 ## Known Failures
 
@@ -134,7 +141,8 @@ in `RUN-P3-S7-001.md`.
 - **OWNER BLOCKER:** None known.
 - **TECHNICAL BLOCKER:** None proven.
 - **ENVIRONMENT BLOCKER:** None for the completed evidence.
-- **NO BLOCKER:** Step 6 and P3-S7 are complete.
+- **NO BLOCKER:** Phase 3 is complete and accepted; Phase 4 requires new
+  authorization.
 
 ## Environment Limitations
 
@@ -165,8 +173,8 @@ silently resolve those decisions here.
 
 ## Next Authorized Action
 
-P3-S8 is complete under `CONTRACT-P3-S8-CROSS-MODULE-VARIANT-UOM`. P3-S9 is
-the next candidate but is not active or authorized by this run.
+P3-S9 is complete under `CONTRACT-P3-S9-PHASE3-CERTIFICATION`. Phase 3 is
+complete; Phase 4 requires a new authorization.
 
 ## Resume Instructions
 

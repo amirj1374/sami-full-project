@@ -31,6 +31,9 @@ Product-only data and tenant boundaries.
 
 ## Remaining Executable Steps
 
+P3-S7, P3-S8 and P3-S9 are complete. No remaining Phase 3 executable Step is
+authorized; Phase 4 requires a new authorization.
+
 ### P3-S7 — Reservation expiry and timeout lifecycle
 
 - **Objective:** Implement the approved configurable reservation timeout (30
@@ -81,5 +84,4 @@ release/deployment work is included.
 
 ## Current Candidate
 
-`P3-S9` is the next authorized candidate. It is not ACTIVE until its Contract
-is activated; no later Step may start in the same execution.
+`P3-S9` is complete. Phase 3 is COMPLETE/ACCEPTED; Phase 4 is not authorized.
