@@ -9,8 +9,8 @@ repository reality on every resume.
 - **State Version:** 1
 - **Last Reconciled:** 2026-09-23
 - **Repository Branch:** `development`
-- **Recorded HEAD:** `5cb7756`
-- **State Status:** Phase 3 COMPLETE/ACCEPTED — Phase 4 AUTHORIZED; P4-S5 BLOCKED
+- **Recorded HEAD:** `2460a56`
+- **State Status:** Phase 3 COMPLETE/ACCEPTED — Phase 4 AUTHORIZED; P4-S5 active
 
 ## Authority References
 
@@ -73,7 +73,7 @@ authorized and do not expand the Step 6 application scope.
 - Run: `docs/agent-system/runs/RUN-P4-S3-001.md`
 - `docs/agent-system/contracts/AUTH-P4-S4-AR-AP-INTEGRATION.md` — COMPLETED
 - Run: `docs/agent-system/runs/RUN-P4-S4-001.md`
-- `docs/agent-system/contracts/AUTH-P4-S5-TREASURY-POSTING.md` — BLOCKED
+- `docs/agent-system/contracts/AUTH-P4-S5-TREASURY-POSTING.md` — ACTIVE
 - Run: `docs/agent-system/runs/RUN-P4-S5-001.md`
 - P4-S3 and P4-S4 completion are continuation checkpoints under the active
   Phase authorization; P4-S5 must be activated and executed without yielding
@@ -102,7 +102,8 @@ authorized and do not expand the Step 6 application scope.
 ## Work In Progress
 
 - Phase 3 final certification is complete. P4-S1 through P4-S4 are complete;
-  P4-S5 is the active next Step.
+  P4-S5 is active and its V75 Treasury-to-Accounting boundary implementation
+  is complete pending final acceptance evidence.
 
 ## Working Tree Preservation
 
@@ -150,6 +151,11 @@ authorized and do not expand the Step 6 application scope.
 - **PASS:** Fresh V1→V74 migration on disposable PostgreSQL 16.15.
 - **PASS:** Supported V72→V74 migration on disposable PostgreSQL 16.15.
 - **PASS:** P4-S4 focused AR/AP validation: 11 tests, 0 failures, 0 errors.
+- **PASS:** P4-S5 Docker Maven test compilation after Treasury posting changes.
+- **PASS:** P4-S5 `TreasuryContractTest`: 2 tests, 0 failures, 0 errors.
+- **PASS:** V75 Treasury mapping/posting SQL applied with ON_ERROR_STOP=1 to
+  disposable PostgreSQL 16 database `sami_p4s5_v75`; mapping and posting tables
+  were created successfully.
 - **PASS:** Full backend regression in a repository-root-mounted Maven
   container: 310 tests, 0 failures, 0 errors. The earlier missing
   `../sami-frontend/vite.config.ts` error was a test-harness mount defect, not
@@ -168,9 +174,8 @@ in `RUN-P3-S7-001.md`.
 - **TECHNICAL BLOCKER:** None proven in V73 SQL.
 - **ENVIRONMENT BLOCKER:** None for the completed evidence.
 - **TECHNICAL BLOCKER:** None proven; independent planning is complete.
-- **OWNER BLOCKER:** Treasury operational-to-Accounting CoA mapping/posting
-  boundary is not approved. Treasury migration explicitly forbids Treasury
-  journal creation, while P4-S5 requires canonical posting.
+- **OWNER BLOCKER:** None; DEC-P4-002 resolves the Treasury-to-Accounting
+  boundary.
 
 ## Environment Limitations
 
@@ -201,8 +206,8 @@ silently resolve those decisions here.
 
 ## Next Authorized Action
 
-Owner decision required: approve the minimum Treasury-to-CoA mapping and
-finalized-movement posting boundary, or defer Treasury journal integration.
+Complete P4-S5 acceptance/Guardian evidence, then activate the next dependency-
+valid Phase 4 Step without returning an intermediate status report.
 
 ## Resume Instructions
 
