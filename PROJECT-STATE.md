@@ -9,8 +9,8 @@ repository reality on every resume.
 - **State Version:** 1
 - **Last Reconciled:** 2026-09-23
 - **Repository Branch:** `development`
-- **Recorded HEAD:** `3b38f3e`
-- **State Status:** Phase 3 COMPLETE/ACCEPTED — Phase 4 not authorized
+- **Recorded HEAD:** `d621e19`
+- **State Status:** Phase 3 COMPLETE/ACCEPTED — Phase 4 AUTHORIZED; P4-S1 blocked by HIGH-009
 
 ## Authority References
 
@@ -25,19 +25,20 @@ repository reality on every resume.
 
 ## Current Authorization
 
-- **Authorization ID:** `AUTH-P3-S9-PHASE3-CERTIFICATION`
-- **Scope Type:** FEATURE
-- **Scope:** Phase 3 Step 9 — final Phase 3 Inventory certification
-- **Objective:** Complete P3-S9 through migration, acceptance, regression,
-  Guardian, state update, and permitted commit/push gates.
-- **Status:** COMPLETED
-- **Allowed Change Area:** Phase 3 certification, directly related test/fixture corrections and evidence.
-- **Forbidden Change Area:** Phase 4; unrelated
+- **Authorization ID:** `AUTH-P4-PHASE4-ACCOUNTING`
+- **Scope Type:** ROADMAP
+- **Scope:** Phase 4 — Accounting, per `docs/IMPLEMENTATION_ROADMAP.md` and `docs/agent-system/plans/PHASE-4-EXECUTION-PLAN.md`
+- **Objective:** Execute the approved Phase 4 Accounting plan through applicable
+  DoD without inventing unresolved finance policy.
+- **Status:** ACTIVE — first candidate P4-S1 BLOCKED by HIGH-009
+- **Allowed Change Area:** Phase 4 planning, approved Accounting implementation, tests, migrations, contracts, evidence and state artifacts.
+- **Forbidden Change Area:** Phase 5; unrelated
   frontend/documentation work;
   business-rule redesign; architecture redesign; release/deployment; changing
   accepted Step 5 behavior without regression evidence.
-- **Commit Permission:** Authorized after P3-S7 DoD gates pass.
-- **Push Permission:** Authorized after accepted P3-S7 certification and
+- **Commit Permission:** Authorized for Phase 4 artifacts only after applicable
+  DoD gates and scope review pass.
+- **Push Permission:** Authorized for accepted Phase 4 artifacts after
   repository-policy checks.
 - **Release Permission:** NOT AUTHORIZED.
 - **Stop Conditions:** DoD complete, genuine Owner decision, required approval,
@@ -48,20 +49,22 @@ authorized and do not expand the Step 6 application scope.
 
 ## Current Phase / Wave / Feature
 
-- **Phase:** Phase 3 — Inventory
-- **Step:** P3-S9 — Final Phase 3 Inventory certification (complete)
-- **Feature:** Final clean migration, acceptance, regression and Phase 3 closure
+- **Phase:** Phase 4 — Accounting
+- **Step:** P4-S1 — Accounting boundary and policy decision closure (blocked)
+- **Feature:** Canonical Accounting foundation and posting contract
 
 ## Accepted Baseline
 
 - Step 5 accepted commit: `ba0e317 feat(inventory): add variant reservations and backorders`
 - `origin/development` matches the recorded HEAD (`0/0` at reconciliation).
-- Step 5 PostgreSQL acceptance and Step 4 regression are recorded as accepted
-  in repository execution history; current Step 6 work must not reopen them
-  without regression evidence.
+- Phase 3 is accepted at `d621e19`; Phase 4 work is planning-only until
+  HIGH-009 is resolved. Existing unrelated dirty changes are not part of the
+  accepted baseline.
 
 ## Active Contracts
 
+- `docs/agent-system/contracts/AUTH-P4-S1-ACCOUNTING-BOUNDARY.md` — BLOCKED
+- Run: `docs/agent-system/runs/RUN-P4-S1-001.md`
 - `docs/agent-system/contracts/AUTH-P3-S7-RESERVATION-TIMEOUT.md` — COMPLETED
 - Run: `docs/agent-system/runs/RUN-P3-S7-001.md`
 - `docs/agent-system/contracts/AUTH-P3-S9-PHASE3-CERTIFICATION.md` — COMPLETED
@@ -85,15 +88,14 @@ authorized and do not expand the Step 6 application scope.
 
 ## Work In Progress
 
-- P3-S9 final certification is complete. All Phase 3 steps are accepted and
-  Phase 4 is not authorized.
+- Phase 3 final certification is complete. Phase 4 plan and P4-S1 boundary
+  Contract are established; P4-S1 is blocked pending HIGH-009.
 
 ## Working Tree Preservation
 
 ### Authorized active changes
 
-- P3-S8 cross-module implementation, directly related tests, Contract, run and
-  state updates listed in this run.
+- Phase 4 plan, P4-S1 Contract, and P4-S1 run artifact.
 
 ### Unrelated pre-existing changes to preserve
 
@@ -138,11 +140,12 @@ in `RUN-P3-S7-001.md`.
 
 ## Blockers
 
-- **OWNER BLOCKER:** None known.
+- **OWNER BLOCKER:** HIGH-009 requires approved invoice/payment/return,
+  fiscal-period, tax and accounting-boundary decisions before dependent
+  Accounting behavior can be encoded safely.
 - **TECHNICAL BLOCKER:** None proven.
 - **ENVIRONMENT BLOCKER:** None for the completed evidence.
-- **NO BLOCKER:** Phase 3 is complete and accepted; Phase 4 requires new
-  authorization.
+- **TECHNICAL BLOCKER:** None proven; independent planning is complete.
 
 ## Environment Limitations
 
@@ -173,8 +176,10 @@ silently resolve those decisions here.
 
 ## Next Authorized Action
 
-P3-S9 is complete under `CONTRACT-P3-S9-PHASE3-CERTIFICATION`. Phase 3 is
-complete; Phase 4 requires a new authorization.
+Resolve the minimum HIGH-009 Product/Architecture decisions required by
+`AUTH-P4-S1-ACCOUNTING-BOUNDARY`; then activate P4-S2 only after P4-S1 is
+approved and complete. Independent planning is complete; no speculative
+Accounting implementation is authorized.
 
 ## Resume Instructions
 
