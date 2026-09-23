@@ -10,7 +10,7 @@ repository reality on every resume.
 - **Last Reconciled:** 2026-09-23
 - **Repository Branch:** `development`
 - **Recorded HEAD:** `d621e19`
-- **State Status:** Phase 3 COMPLETE/ACCEPTED — Phase 4 AUTHORIZED; P4-S2 implementation active
+- **State Status:** Phase 3 COMPLETE/ACCEPTED — Phase 4 AUTHORIZED; P4-S4 active
 
 ## Authority References
 
@@ -50,7 +50,7 @@ authorized and do not expand the Step 6 application scope.
 ## Current Phase / Wave / Feature
 
 - **Phase:** Phase 4 — Accounting
-- **Step:** P4-S2 — Accounting foundation (implementation present; validation pending)
+- **Step:** P4-S4 — AR/AP integration
 - **Feature:** Canonical Accounting foundation and posting contract
 
 ## Accepted Baseline
@@ -65,8 +65,12 @@ authorized and do not expand the Step 6 application scope.
 
 - `docs/agent-system/contracts/AUTH-P4-S1-ACCOUNTING-BOUNDARY.md` — COMPLETED
 - Run: `docs/agent-system/runs/RUN-P4-S1-001.md`
-- `docs/agent-system/contracts/AUTH-P4-S2-ACCOUNTING-FOUNDATION.md` — ACTIVE
+- `docs/agent-system/contracts/AUTH-P4-S2-ACCOUNTING-FOUNDATION.md` — COMPLETED
 - Run: `docs/agent-system/runs/RUN-P4-S2-001.md`
+- P4-S2 is now complete: fresh V1→V73 and supported V72→V73 migration
+  validation passed; Guardian review passed.
+- `docs/agent-system/contracts/AUTH-P4-S3-JOURNAL-GL-FOUNDATION.md` — COMPLETED
+- Run: `docs/agent-system/runs/RUN-P4-S3-001.md`
 - `docs/agent-system/contracts/AUTH-P3-S7-RESERVATION-TIMEOUT.md` — COMPLETED
 - Run: `docs/agent-system/runs/RUN-P3-S7-001.md`
 - `docs/agent-system/contracts/AUTH-P3-S9-PHASE3-CERTIFICATION.md` — COMPLETED
@@ -90,8 +94,8 @@ authorized and do not expand the Step 6 application scope.
 
 ## Work In Progress
 
-- Phase 3 final certification is complete. P4-S1 is complete and P4-S2 V73
-  foundation implementation is present; runtime migration validation remains.
+- Phase 3 final certification is complete. P4-S1, P4-S2 and P4-S3 are
+  complete; P4-S4 AR/AP integration is next.
 
 ## Working Tree Preservation
 
@@ -135,6 +139,9 @@ authorized and do not expand the Step 6 application scope.
 - **PASS:** V73 additive SQL applied with `ON_ERROR_STOP=1` on disposable
   PostgreSQL 16 database `sami_p4s2_v73`; V72 Flyway history was preserved and
   all three foundation tables/indexes were created.
+- **PASS:** Docker Maven test compilation after the P4-S3 posting boundary.
+- **PASS:** Fresh V1→V74 migration on disposable PostgreSQL 16.15.
+- **PASS:** Supported V72→V74 migration on disposable PostgreSQL 16.15.
 - **PASS:** Phase 3 Guardian closure recorded in `RUN-P3-S9-001.md`.
 
 ## Known Failures
@@ -147,8 +154,6 @@ in `RUN-P3-S7-001.md`.
 
 - **OWNER BLOCKER:** None proven after DEC-P4-001.
 - **TECHNICAL BLOCKER:** None proven in V73 SQL.
-- **ENVIRONMENT BLOCKER:** Maven and psql are unavailable on the current PATH;
-  runtime migration validation is pending on the approved acceptance host.
 - **ENVIRONMENT BLOCKER:** None for the completed evidence.
 - **TECHNICAL BLOCKER:** None proven; independent planning is complete.
 
@@ -181,9 +186,9 @@ silently resolve those decisions here.
 
 ## Next Authorized Action
 
-Complete Maven/Flyway fresh and supported migration validation for V73, then
-run Guardian review and proceed to P4-S3 Journal/GL only after P4-S2 DoD is
-green.
+Activate P4-S4 AR/AP integration using the canonical Journal/GL posting port;
+preserve existing receivable/payable public ports and do not invent tax or
+provider behavior.
 
 ## Resume Instructions
 
