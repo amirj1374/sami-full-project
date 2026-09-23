@@ -48,7 +48,15 @@ public interface InventoryStockOperations {
     record VariantPurchaseReceiptCommand(Long warehouseId, Long purchaseId, Long receiptId,
                                          Long productId, Long variantId, BigDecimal enteredQuantity,
                                          Long enteredUomId, Long baseUomId, BigDecimal conversionFactor,
-                                         BigDecimal unitCost) {}
+                                         BigDecimal unitCost, List<SerialIdentity> serials) {
+        public VariantPurchaseReceiptCommand(Long warehouseId, Long purchaseId, Long receiptId,
+                                             Long productId, Long variantId, BigDecimal enteredQuantity,
+                                             Long enteredUomId, Long baseUomId, BigDecimal conversionFactor,
+                                             BigDecimal unitCost) {
+            this(warehouseId, purchaseId, receiptId, productId, variantId, enteredQuantity,
+                    enteredUomId, baseUomId, conversionFactor, unitCost, List.of());
+        }
+    }
 
     record StockLine(Long sourceLineId, Long productId, BigDecimal quantity,
                      String serialNumber, String imei, Long variantId) {

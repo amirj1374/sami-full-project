@@ -1,0 +1,26 @@
+# Execution Contract
+
+- **Contract ID:** `CONTRACT-...`
+- **Authorization ID:** `AUTH-...`
+- **Parent Phase/Wave/Feature:**
+- **Objective:**
+- **Business Outcome:** See authoritative business sources; do not duplicate them here.
+- **Scope:**
+- **Out of Scope:**
+- **Authoritative Sources:**
+- **Applicable Acceptance Criteria:**
+- **Dependencies:**
+- **Inputs / Existing Interfaces:**
+- **Expected Outputs:**
+- **Allowed Change Area:**
+- **Forbidden Changes:**
+- **Primary Agent:**
+- **Supporting Agents:**
+- **Dependency / Parallelism Plan:**
+- **Validation Required:**
+- **Guardian Required:**
+- **Handoff Requirements:**
+- **Blocking TBDs:**
+- **Known Starting Failures:**
+- **Completion Conditions:**
+- **Status:** `DRAFT | ACTIVE | BLOCKED | COMPLETED | SUPERSEDED | CANCELLED`

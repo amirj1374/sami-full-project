@@ -7,6 +7,7 @@ import com.sami.app.inventory.domain.InventoryWarehouse;
 import com.sami.app.inventory.event.InventoryDomainEvent;
 import com.sami.app.inventory.publicapi.InventoryStockOperations.VariantPurchaseReceiptCommand;
 import com.sami.app.inventory.repository.InventoryWarehouseRepository;
+import com.sami.app.hamta.HamtaService;
 import com.sami.app.security.CurrentActor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -35,6 +36,7 @@ public class InventoryLedgerService {
     private final InventoryWarehouseRepository warehouses;
     private final InventoryAuditService audit;
     private final ApplicationEventPublisher events;
+    private final HamtaService hamtaService;
 
     @Transactional(propagation = Propagation.MANDATORY)
     public InventoryWarehouse requireWarehouse(Long tenantId, Long warehouseId) {
@@ -148,15 +150,25 @@ public class InventoryLedgerService {
     public Long reserve(Long tenantId, Long productId, Long warehouseId, Long locationId,
                         BigDecimal quantity, String sourceType, Long sourceId, Long sourceLineId,
                         String serialNumber, String imei) {
+        return reserve(tenantId, productId, null, warehouseId, locationId, quantity, sourceType,
+                sourceId, sourceLineId, serialNumber, imei);
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public Long reserve(Long tenantId, Long productId, Long variantId, Long warehouseId, Long locationId,
+                        BigDecimal quantity, String sourceType, Long sourceId, Long sourceLineId,
+                        String serialNumber, String imei) {
         requirePositive(quantity);
         requireProduct(tenantId, productId);
+        if (variantId != null && jdbc.queryForObject("select count(*) from product_variants where tenant_id=? and id=? and product_id=? and status='ACTIVE'", Integer.class, tenantId, variantId, productId) != 1)
+            throw new ApiException(ErrorCode.ACCESS_DENIED, "Variant does not belong to product and tenant");
         Long location = requireLocation(tenantId, warehouseId, locationId);
-        BalanceState state = lockBalance(tenantId, warehouseId, location, productId);
+        BalanceState state = lockBalance(tenantId, warehouseId, location, productId, variantId);
         if (state.onHand().subtract(state.reserved()).compareTo(quantity) < 0) {
             throw new ApiException(ErrorCode.RESOURCE_CONFLICT,
                     "Insufficient available stock for product " + productId);
         }
-        Long serialId = findSerialForUpdate(tenantId, productId, warehouseId,
+        Long serialId = findSerialForUpdate(tenantId, productId, variantId, warehouseId,
                 serialNumber, imei, "AVAILABLE");
         if (serialId != null && quantity.compareTo(BigDecimal.ONE) != 0) {
             throw new ApiException(ErrorCode.VALIDATION_FAILED,
@@ -165,13 +177,13 @@ public class InventoryLedgerService {
         updateBalance(state.id(), state.onHand(), state.reserved().add(quantity), state.averageCost());
         Long reservationId = jdbc.queryForObject("""
                 insert into inventory_reservations(
-                    tenant_id,product_id,warehouse_id,location_id,source_type,source_id,
+                    tenant_id,product_id,variant_id,warehouse_id,location_id,source_type,source_id,
                     source_line_id,quantity,requested_quantity,reserved_quantity,backordered_quantity,backorder_status,base_quantity,
                     serial_unit_id,created_by)
-                values(?,?,?,?,?,?,?,?,?,?,?,?,?,?) returning id
-                """, Long.class, tenantId, productId, warehouseId, location,
+                values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) returning id
+                """, Long.class, tenantId, productId, variantId, warehouseId, location,
                 normalize(sourceType), sourceId, sourceLineId, quantity, quantity, quantity, BigDecimal.ZERO,
-                quantity, serialId, CurrentActor.id());
+                "FULFILLED", quantity, serialId, CurrentActor.id());
         if (serialId != null) {
             jdbc.update("update inventory_serial_units set status='RESERVED',updated_at=now(),version=version+1 where id=?",
                     serialId);
@@ -197,6 +209,19 @@ public class InventoryLedgerService {
         BalanceState state = jdbc.query("select id,on_hand,reserved,average_unit_cost from inventory_balances where tenant_id=? and warehouse_id=? and location_id=? and product_id=? and variant_id=? for update", (rs,row)->new BalanceState(rs.getLong("id"),rs.getBigDecimal("on_hand"),rs.getBigDecimal("reserved"),rs.getBigDecimal("average_unit_cost")),tenantId,warehouse.getId(),location,command.productId(),command.variantId()).getFirst();
         BigDecimal cost = nonNegative(command.unitCost()); BigDecimal onHand = state.onHand().add(baseQuantity); BigDecimal avg = cost.signum()>0 ? state.onHand().multiply(state.averageCost()).add(baseQuantity.multiply(cost)).divide(onHand,4,RoundingMode.HALF_UP) : state.averageCost(); updateBalance(state.id(),onHand,state.reserved(),avg);
         jdbc.update("insert into inventory_movements(tenant_id,product_id,variant_id,to_warehouse_id,to_location_id,movement_type,quantity,unit_cost,source_type,source_id,operation_key,entered_quantity,entered_uom_id,conversion_factor,base_quantity,base_uom_id,actor_id,actor_email) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",tenantId,command.productId(),command.variantId(),warehouse.getId(),location,"RECEIPT",baseQuantity,cost,"PURCHASE",command.purchaseId(),"PURCHASE-RECEIPT-"+command.receiptId(),command.enteredQuantity(),command.enteredUomId(),command.conversionFactor(),baseQuantity,command.baseUomId(),CurrentActor.id(),CurrentActor.email());
+        int expectedSerials = command.serials() == null ? 0 : command.serials().size();
+        if (expectedSerials > 0 && baseQuantity.compareTo(BigDecimal.valueOf(expectedSerials)) != 0) {
+            throw new ApiException(ErrorCode.VALIDATION_FAILED, "Serialized receipt quantity must equal serial count");
+        }
+        if (command.serials() != null) {
+            for (var serial : command.serials()) {
+                Long serialId = createSerial(tenantId, command.productId(), command.variantId(), warehouse.getId(), location,
+                        serial.serialNumber(), serial.imei(), "PURCHASE", command.purchaseId(), command.receiptId());
+                if (serial.hamtaActivationCode() != null && !serial.hamtaActivationCode().isBlank()) {
+                    hamtaService.register(serialId, serial.hamtaActivationCode());
+                }
+            }
+        }
         syncProductProjection(tenantId, command.productId());
     }
 
@@ -222,7 +247,7 @@ public class InventoryLedgerService {
         BigDecimal available = state.onHand().subtract(state.reserved()).max(BigDecimal.ZERO);
         BigDecimal reserved = available.min(quantity);
         if (reserved.signum() == 0) return BigDecimal.ZERO;
-        Long serialId = findSerialForUpdate(tenantId, productId, warehouseId, serialNumber, imei, "AVAILABLE");
+        Long serialId = findSerialForUpdate(tenantId, productId, variantId, warehouseId, serialNumber, imei, "AVAILABLE");
         if (serialId != null && reserved.compareTo(BigDecimal.ONE) != 0) {
             throw new ApiException(ErrorCode.VALIDATION_FAILED,
                     "Serialized reservations must have quantity 1");
@@ -338,19 +363,34 @@ public class InventoryLedgerService {
     public Long createSerial(Long tenantId, Long productId, Long warehouseId, Long locationId,
                              String serialNumber, String imei, String sourceType,
                              Long sourceId, Long sourceLineId) {
+        return createSerial(tenantId, productId, null, warehouseId, locationId,
+                serialNumber, imei, sourceType, sourceId, sourceLineId);
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public Long createSerial(Long tenantId, Long productId, Long variantId, Long warehouseId, Long locationId,
+                             String serialNumber, String imei, String sourceType,
+                             Long sourceId, Long sourceLineId) {
         String serial = blank(serialNumber);
         String normalizedImei = blank(imei);
         if (serial == null && normalizedImei == null) {
             return null;
         }
+        if (variantId != null) {
+            Integer valid = jdbc.queryForObject("select count(*) from product_variants where tenant_id=? and id=? and product_id=? and status='ACTIVE'",
+                    Integer.class, tenantId, variantId, productId);
+            if (valid == null || valid != 1) {
+                throw new ApiException(ErrorCode.ACCESS_DENIED, "Variant does not belong to product and tenant");
+            }
+        }
         try {
             return jdbc.queryForObject("""
                     insert into inventory_serial_units(
-                        tenant_id,product_id,warehouse_id,location_id,serial_number,imei,
+                        tenant_id,product_id,variant_id,warehouse_id,location_id,serial_number,imei,
                         status,source_type,source_id,source_line_id)
-                    values(?,?,?,?,?,?,'AVAILABLE',?,?,?)
+                    values(?,?,?,?,?,?,?,'AVAILABLE',?,?,?)
                     returning id
-                    """, Long.class, tenantId, productId, warehouseId, locationId, serial, normalizedImei,
+                    """, Long.class, tenantId, productId, variantId, warehouseId, locationId, serial, normalizedImei,
                     normalize(sourceType), sourceId, sourceLineId);
         } catch (org.springframework.dao.DataIntegrityViolationException ex) {
             throw new ApiException(ErrorCode.RESOURCE_CONFLICT,
@@ -381,6 +421,12 @@ public class InventoryLedgerService {
     @Transactional(propagation = Propagation.MANDATORY)
     public void restoreIssuedSerial(Long tenantId, Long productId, Long warehouseId,
                                     Long locationId, String serial, String imei) {
+        restoreIssuedSerial(tenantId, productId, null, warehouseId, locationId, serial, imei);
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void restoreIssuedSerial(Long tenantId, Long productId, Long variantId, Long warehouseId,
+                                    Long locationId, String serial, String imei) {
         if (blank(serial) == null && blank(imei) == null) {
             return;
         }
@@ -388,9 +434,9 @@ public class InventoryLedgerService {
                 update inventory_serial_units
                 set warehouse_id=?,location_id=?,status='AVAILABLE',issued_at=null,
                     updated_at=now(),version=version+1
-                where tenant_id=? and product_id=? and status='ISSUED'
+                where tenant_id=? and product_id=? and (? is null or variant_id=?) and status='ISSUED'
                   and (? is null or serial_number=?) and (? is null or imei=?)
-                """, warehouseId, locationId, tenantId, productId,
+                """, warehouseId, locationId, tenantId, productId, variantId, variantId,
                 blank(serial), blank(serial), blank(imei), blank(imei));
         if (changed != 1) {
             throw new ApiException(ErrorCode.RESOURCE_CONFLICT,
@@ -494,20 +540,23 @@ public class InventoryLedgerService {
         return count != null && count > 0;
     }
 
-    private Long findSerialForUpdate(Long tenantId, Long productId, Long warehouseId,
+    private Long findSerialForUpdate(Long tenantId, Long productId, Long variantId, Long warehouseId,
                                      String serialNumber, String imei, String status) {
         String serial = blank(serialNumber);
         String normalizedImei = blank(imei);
         if (serial == null && normalizedImei == null) {
             return null;
         }
-        List<Long> result = jdbc.query("""
-                select id from inventory_serial_units
-                where tenant_id=? and product_id=? and warehouse_id=? and status=?
-                  and (? is null or serial_number=?) and (? is null or imei=?)
-                for update
-                """, (rs, row) -> rs.getLong(1), tenantId, productId, warehouseId,
-                status, serial, serial, normalizedImei, normalizedImei);
+        String variantPredicate = variantId == null ? "variant_id is null" : "variant_id=?";
+        String serialPredicate = serial == null ? "serial_number is null" : "serial_number=?";
+        String imeiPredicate = normalizedImei == null ? "imei is null" : "imei=?";
+        String sql = "select id from inventory_serial_units where tenant_id=? and product_id=? and "
+                + variantPredicate + " and warehouse_id=? and status=? and "
+                + serialPredicate + " and " + imeiPredicate + " for update";
+        java.util.List<Object> args = new java.util.ArrayList<>();
+        args.add(tenantId); args.add(productId); if (variantId != null) args.add(variantId);
+        args.add(warehouseId); args.add(status); if (serial != null) args.add(serial); if (normalizedImei != null) args.add(normalizedImei);
+        List<Long> result = jdbc.query(sql, (rs, row) -> rs.getLong(1), args.toArray());
         if (result.size() != 1) {
             throw new ApiException(ErrorCode.RESOURCE_CONFLICT,
                     "Requested serialized unit is not available");

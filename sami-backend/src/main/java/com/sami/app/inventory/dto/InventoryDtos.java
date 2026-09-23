@@ -127,9 +127,13 @@ public final class InventoryDtos {
 
     public record TransferLineRequest(
             @NotNull Long productId,
+            Long variantId,
             @NotNull @Positive BigDecimal quantity,
             List<@NotBlank String> serialNumbers
     ) {
+        public TransferLineRequest(Long productId, BigDecimal quantity, List<String> serialNumbers) {
+            this(productId, null, quantity, serialNumbers);
+        }
     }
 
     public record TransferLineResponse(

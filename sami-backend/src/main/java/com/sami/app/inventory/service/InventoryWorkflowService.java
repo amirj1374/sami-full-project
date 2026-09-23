@@ -117,6 +117,10 @@ public class InventoryWorkflowService {
         Set<Long> products = new HashSet<>();
         request.lines().forEach(line -> {
             ledger.requireProduct(tenantId, line.productId());
+            if (line.variantId() != null) {
+                Integer valid = jdbc.queryForObject("select count(*) from product_variants where tenant_id=? and id=? and product_id=? and status='ACTIVE'", Integer.class, tenantId, line.variantId(), line.productId());
+                if (valid == null || valid != 1) throw new ApiException(ErrorCode.ACCESS_DENIED, "Variant does not belong to product and tenant");
+            }
             if (!products.add(line.productId())) {
                 throw new ApiException(ErrorCode.VALIDATION_FAILED,
                         "Each product may appear only once in a transfer");
@@ -132,9 +136,9 @@ public class InventoryWorkflowService {
                 request.toWarehouseId(), blank(request.notes()), com.sami.app.security.CurrentActor.id());
         for (TransferLineRequest line : request.lines()) {
             jdbc.update("""
-                    insert into inventory_transfer_items(transfer_id,product_id,quantity,serial_numbers)
-                    values(?,?,?,cast(? as jsonb))
-                    """, id, line.productId(), line.quantity(), json(line.serialNumbers()));
+                    insert into inventory_transfer_items(transfer_id,product_id,variant_id,quantity,serial_numbers)
+                    values(?,?,?,?,cast(? as jsonb))
+                    """, id, line.productId(), line.variantId(), line.quantity(), json(line.serialNumbers()));
         }
         ledger.audit(tenantId, "TRANSFER", id, "CREATED", null,
                 Map.of("transferNumber", number, "lines", request.lines().size()));
@@ -199,8 +203,8 @@ public class InventoryWorkflowService {
             if (!item.serialNumbers().isEmpty()) {
                 item.serialNumbers().forEach(serial -> jdbc.update("""
                         update inventory_serial_units set status='IN_TRANSIT',updated_at=now(),version=version+1
-                        where tenant_id=? and product_id=? and warehouse_id=? and serial_number=? and status='AVAILABLE'
-                        """, tenantId, item.productId(), state.fromWarehouseId(), serial));
+                        where tenant_id=? and product_id=? and (? is null or variant_id=?) and warehouse_id=? and serial_number=? and status='AVAILABLE'
+                        """, tenantId, item.productId(), item.variantId(), item.variantId(), state.fromWarehouseId(), serial));
             }
             jdbc.update("""
                     update inventory_movements set unit_cost=?
@@ -235,9 +239,9 @@ public class InventoryWorkflowService {
                 int changed = jdbc.update("""
                         update inventory_serial_units
                         set warehouse_id=?,location_id=?,status='AVAILABLE',updated_at=now(),version=version+1
-                        where tenant_id=? and product_id=? and serial_number=? and status='IN_TRANSIT'
+                        where tenant_id=? and product_id=? and (? is null or variant_id=?) and serial_number=? and status='IN_TRANSIT'
                         """, state.toWarehouseId(), destinationLocation, tenantId,
-                        item.productId(), serial);
+                        item.productId(), item.variantId(), item.variantId(), serial);
                 if (changed != 1) {
                     throw new ApiException(ErrorCode.RESOURCE_CONFLICT,
                             "Serialized transfer state is inconsistent");
@@ -567,10 +571,10 @@ public class InventoryWorkflowService {
 
     private List<TransferItemState> transferItemStates(Long transferId) {
         return jdbc.query("""
-                select id,product_id,quantity,serial_numbers::text
+                select id,product_id,variant_id,quantity,serial_numbers::text
                 from inventory_transfer_items where transfer_id=? order by id
                 """, (rs, row) -> new TransferItemState(rs.getLong("id"),
-                rs.getLong("product_id"), rs.getBigDecimal("quantity"),
+                rs.getLong("product_id"), (Long) rs.getObject("variant_id"), rs.getBigDecimal("quantity"),
                 strings(rs.getString("serial_numbers"))), transferId);
     }
 
@@ -602,8 +606,8 @@ public class InventoryWorkflowService {
         for (String serial : item.serialNumbers()) {
             Integer count = jdbc.queryForObject("""
                     select count(*) from inventory_serial_units
-                    where tenant_id=? and warehouse_id=? and product_id=? and serial_number=? and status='AVAILABLE'
-                    """, Integer.class, tenantId, warehouseId, item.productId(), serial);
+                    where tenant_id=? and warehouse_id=? and product_id=? and (? is null or variant_id=?) and serial_number=? and status='AVAILABLE'
+                    """, Integer.class, tenantId, warehouseId, item.productId(), item.variantId(), item.variantId(), serial);
             if (count == null || count != 1) {
                 throw new ApiException(ErrorCode.RESOURCE_CONFLICT,
                         "Serialized unit " + serial + " is not available in the source warehouse");
@@ -758,7 +762,7 @@ public class InventoryWorkflowService {
 
     private record TransferState(String number, Long fromWarehouseId,
                                  Long toWarehouseId, String status) { }
-    private record TransferItemState(Long id, Long productId, BigDecimal quantity,
+    private record TransferItemState(Long id, Long productId, Long variantId, BigDecimal quantity,
                                      List<String> serialNumbers) { }
     private record CountState(Long warehouseId, Long locationId, String status) { }
     private record CountItemState(Long id, Long productId, BigDecimal variance) { }

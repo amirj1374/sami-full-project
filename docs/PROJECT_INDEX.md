@@ -17,6 +17,7 @@ historical reports.
 | `docs/SAMI_ERP_ARCHITECTURE_CONSTITUTION.md` | Approved architecture ownership, boundaries and Architecture Freeze status |
 | `docs/SAMI_ERP_BUSINESS_RULES.md` | Approved business behavior and stable rule identifiers |
 | `docs/15-testing-and-quality.md` | Current validation commands and required gates |
+| `docs/agent-system/GOVERNANCE.md` | Agent execution governance; not SAMI business truth |
 | `docs/16-configuration-and-environments.md` | Configuration groups, ports and environment topology |
 | `PROJECT_SETUP_AND_DEPLOYMENT.md` | Local startup and deployment topology |
 | `DEPLOYMENT_AUTOMATION_GUIDE.md` | Canonical automated release/deploy/rollback workflow |

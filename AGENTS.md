@@ -1,5 +1,35 @@
 # SAMI workspace guidance
 
+## Fresh Agent startup
+
+Every fresh session must:
+
+1. read this file, `docs/agent-system/GOVERNANCE.md`, and `PROJECT-STATE.md`;
+2. inspect the relevant canonical business, architecture, roadmap, and open-
+   decision sources;
+3. reconcile the recorded state with branch, HEAD, upstream, working tree,
+   relevant migrations, source, tests, contracts, and validation evidence;
+4. recover active authorization and any active execution Contracts;
+5. determine the next authorized action before editing.
+
+`PROJECT-STATE.md` is durable execution memory, not business truth or
+architecture authority. Repository reality wins for implementation facts, and
+differences must be classified rather than silently overwritten.
+
+The Lead is an execution orchestrator, not a message router. Delegated work
+does not end the Lead's responsibility: while authorization is ACTIVE, Lead
+integrates handoffs, routes ordinary failures, validates, invokes Guardian when
+applicable, evaluates DoD, updates state, and continues until a valid stop
+condition. Ordinary build, test, migration, fixture, API, and integration
+failures stay inside execution. See `docs/agent-system/GOVERNANCE.md` for the
+full authority, interruption, escalation, parallelism, and evidence rules.
+
+Preserve dirty worktree changes and unrelated work. Never rewrite approved
+business truth to match code, resolve Product TBDs silently, expand scope, or
+use destructive Git operations. Substantial work requires an active execution
+Contract; the detailed Contract schema is introduced in a later phase. Release
+and deployment remain separately authorized.
+
 Before architecture, implementation, dependency, migration, environment, or release work:
 
 1. Read [`.agents/SAMI_PROJECT_CONTEXT.md`](.agents/SAMI_PROJECT_CONTEXT.md).

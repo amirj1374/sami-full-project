@@ -98,7 +98,7 @@ public class InventoryStockService implements InventoryStockOperations {
         InventoryWarehouse warehouse = ledger.salesWarehouse(tenantId, command.branchId());
         Long locationId = ledger.requireLocation(tenantId, warehouse.getId(), null);
         for (StockLine line : requireLines(command.lines())) {
-            ledger.reserve(tenantId, line.productId(), warehouse.getId(), locationId,
+            ledger.reserve(tenantId, line.productId(), line.variantId(), warehouse.getId(), locationId,
                     line.quantity(), normalize(command.sourceType()), command.sourceId(),
                     line.sourceLineId(), line.serialNumber(), line.imei());
         }
@@ -233,7 +233,7 @@ public class InventoryStockService implements InventoryStockOperations {
                     command.sourceId(), line.sourceLineId(),
                     "CUSTOMER-RETURN-" + command.sourceId() + "-" + index,
                     "Customer return");
-            ledger.restoreIssuedSerial(tenantId, line.productId(), warehouse.getId(), locationId,
+            ledger.restoreIssuedSerial(tenantId, line.productId(), line.variantId(), warehouse.getId(), locationId,
                     line.serialNumber(), line.imei());
         }
         ledger.audit(tenantId, "CUSTOMER_RETURN", command.sourceId(), "POSTED", null,
