@@ -6,4 +6,4 @@
 - **Out of scope:** new accounting rules, statutory reports, tax calculation, workflow/permissions invention, Phase 5.
 - **Agents:** Backend, Frontend, Contract Validator, QA, UI Quality, Guardian.
 - **Acceptance:** API tenant isolation and reconciliation tests; rendered desktop/tablet/mobile UI evidence for loading, empty, populated, error and read-only states; Persian/English and RTL/LTR checks; full regression.
-- **Status:** ACTIVE — bounded technical contract.
+- **Status:** COMPLETED — implementation, API validation and rendered UI gate passed with recorded viewport limitation.

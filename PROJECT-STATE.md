@@ -9,7 +9,7 @@ repository reality on every resume.
 - **State Version:** 1
 - **Last Reconciled:** 2026-09-23
 - **Repository Branch:** `development`
-- **Recorded HEAD:** `a0bcd1b`
+- **Recorded HEAD:** `7202f1d`
 - **State Status:** Phase 3 COMPLETE/ACCEPTED — Phase 4 AUTHORIZED; P4-S6 active
 
 ## Authority References
@@ -50,7 +50,7 @@ authorized and do not expand the Step 6 application scope.
 ## Current Phase / Wave / Feature
 
 - **Phase:** Phase 4 — Accounting
-- **Step:** P4-S7 — Accounting reports/API/UI and journal/report reconciliation
+- **Step:** P4-S8 — Final fresh PostgreSQL, supported upgrade, regression and Phase 4 closure
 - **Feature:** Canonical Accounting foundation and posting contract
 
 ## Accepted Baseline
@@ -214,8 +214,8 @@ silently resolve those decisions here.
 
 ## Next Authorized Action
 
-Plan and activate the bounded P4-S7 reports/API/UI Contract, preserving the
-approved Accounting scope and applying UI Quality gates to any new screens.
+Execute P4-S8 final fresh PostgreSQL, supported upgrade, regression, Guardian
+and Phase 4 closure gates.
 
 ## Resume Instructions
 
