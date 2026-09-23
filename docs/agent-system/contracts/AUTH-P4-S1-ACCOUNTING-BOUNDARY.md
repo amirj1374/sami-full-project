@@ -18,14 +18,13 @@
   review of the Phase 4 plan.
 - **Completion Conditions:** Approved decision record resolves HIGH-009's
   dependent boundary questions, or explicitly scopes them out.
-- **Status:** BLOCKED — OWNER DECISION REQUIRED
+- **Status:** COMPLETED — DECISION RECORDED
 
 ## Blocking TBDs
 
-HIGH-009 remains `needs-decision` for invoice lifecycle/numbering, payment
-methods/providers, partial/refund rules, exchange valuation, accounting scope,
-fiscal periods and currencies. P1 tax and approval policy details remain open
-for dependent steps.
+The blocking fiscal-period and tax decisions are resolved by
+`docs/decisions/DEC-P4-001-accounting-boundary.md`. Remaining implementation
+details are delegated to technical Agents within approved architecture.
 
 ## Forbidden Actions
 

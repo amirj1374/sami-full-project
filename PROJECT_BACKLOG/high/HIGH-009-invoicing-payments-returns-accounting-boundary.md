@@ -1,7 +1,7 @@
 ---
 id: HIGH-009
 title: Define invoicing payments returns and accounting boundary
-status: needs-decision
+status: ready
 priority: high
 type: architecture
 area: finance
@@ -23,7 +23,8 @@ accounting posting ownership before implementation.
 Financial records require immutable totals, auditable reversals and provider idempotency.
 
 ## Current evidence
-No confirmed invoicing, payment, sales-return or accounting bounded context exists.
+Remaining Phase 4 policy decisions are approved in
+`docs/decisions/DEC-P4-001-accounting-boundary.md`.
 
 ## Existing implementation
 CRM, Purchasing and future Sales/Pricing/Inventory are upstream.
@@ -36,8 +37,9 @@ implementation backlog decomposition.
 Approved Inventory, Pricing and Sales designs.
 
 ## Business decisions required
-Invoice lifecycle/numbering, taxes, payment methods/providers, partial/refund
-rules, exchange valuation, accounting scope, fiscal periods and currencies.
+None blocking for the approved Phase 4 Accounting core. Fiscal periods and tax
+policy are resolved by DEC-P4-001; other items are resolved or technically
+deferrable per the Phase 4 decision-minimization record.
 
 ## Proposed implementation approach
 Separate immutable invoice, payment orchestration and accounting journal
@@ -56,7 +58,7 @@ Money/property tests, provider idempotency, webhook replay, reversal and reconci
 Finance glossary, lifecycle, posting rules, provider and reconciliation runbooks.
 
 ## Acceptance criteria
-- [ ] Context ownership and regulatory decisions are approved.
+- [x] Context ownership and applicable Phase 4 policy decisions are approved.
 - [ ] Historical totals cannot be recomputed from mutable rules.
 - [ ] Payment/refund idempotency and reconciliation are defined.
 - [ ] Return/exchange effects on stock and accounting are explicit.

@@ -10,7 +10,7 @@ repository reality on every resume.
 - **Last Reconciled:** 2026-09-23
 - **Repository Branch:** `development`
 - **Recorded HEAD:** `d621e19`
-- **State Status:** Phase 3 COMPLETE/ACCEPTED — Phase 4 AUTHORIZED; P4-S1 blocked by HIGH-009
+- **State Status:** Phase 3 COMPLETE/ACCEPTED — Phase 4 AUTHORIZED; P4-S2 implementation active
 
 ## Authority References
 
@@ -30,7 +30,7 @@ repository reality on every resume.
 - **Scope:** Phase 4 — Accounting, per `docs/IMPLEMENTATION_ROADMAP.md` and `docs/agent-system/plans/PHASE-4-EXECUTION-PLAN.md`
 - **Objective:** Execute the approved Phase 4 Accounting plan through applicable
   DoD without inventing unresolved finance policy.
-- **Status:** ACTIVE — first candidate P4-S1 BLOCKED by HIGH-009
+- **Status:** ACTIVE — P4-S1 completed; implementation sequence may proceed
 - **Allowed Change Area:** Phase 4 planning, approved Accounting implementation, tests, migrations, contracts, evidence and state artifacts.
 - **Forbidden Change Area:** Phase 5; unrelated
   frontend/documentation work;
@@ -50,21 +50,23 @@ authorized and do not expand the Step 6 application scope.
 ## Current Phase / Wave / Feature
 
 - **Phase:** Phase 4 — Accounting
-- **Step:** P4-S1 — Accounting boundary and policy decision closure (blocked)
+- **Step:** P4-S2 — Accounting foundation (implementation present; validation pending)
 - **Feature:** Canonical Accounting foundation and posting contract
 
 ## Accepted Baseline
 
 - Step 5 accepted commit: `ba0e317 feat(inventory): add variant reservations and backorders`
 - `origin/development` matches the recorded HEAD (`0/0` at reconciliation).
-- Phase 3 is accepted at `d621e19`; Phase 4 work is planning-only until
-  HIGH-009 is resolved. Existing unrelated dirty changes are not part of the
-  accepted baseline.
+- Phase 3 is accepted at `d621e19`. P4-S1 decisions are recorded in
+  `docs/decisions/DEC-P4-001-accounting-boundary.md`; P4-S2 is active.
+  Existing unrelated dirty changes are not part of the accepted baseline.
 
 ## Active Contracts
 
-- `docs/agent-system/contracts/AUTH-P4-S1-ACCOUNTING-BOUNDARY.md` — BLOCKED
+- `docs/agent-system/contracts/AUTH-P4-S1-ACCOUNTING-BOUNDARY.md` — COMPLETED
 - Run: `docs/agent-system/runs/RUN-P4-S1-001.md`
+- `docs/agent-system/contracts/AUTH-P4-S2-ACCOUNTING-FOUNDATION.md` — ACTIVE
+- Run: `docs/agent-system/runs/RUN-P4-S2-001.md`
 - `docs/agent-system/contracts/AUTH-P3-S7-RESERVATION-TIMEOUT.md` — COMPLETED
 - Run: `docs/agent-system/runs/RUN-P3-S7-001.md`
 - `docs/agent-system/contracts/AUTH-P3-S9-PHASE3-CERTIFICATION.md` — COMPLETED
@@ -88,14 +90,14 @@ authorized and do not expand the Step 6 application scope.
 
 ## Work In Progress
 
-- Phase 3 final certification is complete. Phase 4 plan and P4-S1 boundary
-  Contract are established; P4-S1 is blocked pending HIGH-009.
+- Phase 3 final certification is complete. P4-S1 is complete and P4-S2 V73
+  foundation implementation is present; runtime migration validation remains.
 
 ## Working Tree Preservation
 
 ### Authorized active changes
 
-- Phase 4 plan, P4-S1 Contract, and P4-S1 run artifact.
+- Phase 4 plan, P4-S1 decision artifacts, P4-S2 Contract/run, and V73.
 
 ### Unrelated pre-existing changes to preserve
 
@@ -130,6 +132,9 @@ authorized and do not expand the Step 6 application scope.
   0 errors (migration 2, Step 4 1, Step 5 13, Step 6 5).
 - **PASS:** Supported V50→V72 upgrade and fresh V1→V72 migration with no
   checksum errors.
+- **PASS:** V73 additive SQL applied with `ON_ERROR_STOP=1` on disposable
+  PostgreSQL 16 database `sami_p4s2_v73`; V72 Flyway history was preserved and
+  all three foundation tables/indexes were created.
 - **PASS:** Phase 3 Guardian closure recorded in `RUN-P3-S9-001.md`.
 
 ## Known Failures
@@ -140,10 +145,10 @@ in `RUN-P3-S7-001.md`.
 
 ## Blockers
 
-- **OWNER BLOCKER:** HIGH-009 requires approved invoice/payment/return,
-  fiscal-period, tax and accounting-boundary decisions before dependent
-  Accounting behavior can be encoded safely.
-- **TECHNICAL BLOCKER:** None proven.
+- **OWNER BLOCKER:** None proven after DEC-P4-001.
+- **TECHNICAL BLOCKER:** None proven in V73 SQL.
+- **ENVIRONMENT BLOCKER:** Maven and psql are unavailable on the current PATH;
+  runtime migration validation is pending on the approved acceptance host.
 - **ENVIRONMENT BLOCKER:** None for the completed evidence.
 - **TECHNICAL BLOCKER:** None proven; independent planning is complete.
 
@@ -176,10 +181,9 @@ silently resolve those decisions here.
 
 ## Next Authorized Action
 
-Resolve the minimum HIGH-009 Product/Architecture decisions required by
-`AUTH-P4-S1-ACCOUNTING-BOUNDARY`; then activate P4-S2 only after P4-S1 is
-approved and complete. Independent planning is complete; no speculative
-Accounting implementation is authorized.
+Complete Maven/Flyway fresh and supported migration validation for V73, then
+run Guardian review and proceed to P4-S3 Journal/GL only after P4-S2 DoD is
+green.
 
 ## Resume Instructions
 
