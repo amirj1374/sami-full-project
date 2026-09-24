@@ -9,8 +9,8 @@ repository reality on every resume.
 - **State Version:** 1
 - **Last Reconciled:** 2026-09-24
 - **Repository Branch:** `development`
-- **Recorded HEAD:** `ff0f7ce` (Phase 5 non-acceptance checkpoint)
-- **State Status:** Phase 3 COMPLETE/ACCEPTED — Phase 4 COMPLETE/ACCEPTED — Phase 5 ACTIVE / VALIDATION PENDING
+- **Recorded HEAD:** `a09953f` plus uncommitted Phase 5 validation fixes
+- **State Status:** Phase 3 COMPLETE/ACCEPTED — Phase 4 COMPLETE/ACCEPTED — Phase 5 ACTIVE / validation evidence substantially green
 
 ## Authority References
 
@@ -50,7 +50,7 @@ authorized and do not expand the Step 6 application scope.
 ## Current Phase / Wave / Feature
 
 - **Phase:** Phase 5 — CRM Intelligence
-- **Step:** P5-S2 — reminder and follow-up integration (active)
+- **Step:** P5-S4 — advisory intelligence validation/continuation (active)
 - **Feature:** Lead, Opportunity, Contact history and follow-up
 
 ## Accepted Baseline
@@ -109,18 +109,16 @@ authorized and do not expand the Step 6 application scope.
 
 - Phase 3 final certification is complete. P4-S1 through P4-S8 are complete;
   Phase 4 Accounting is COMPLETE/ACCEPTED. No Phase 4 work remains active.
-- P5-S1 CRM workflow foundation is implemented in the working tree; Maven
-  compilation and clean PostgreSQL migration/acceptance remain to be recorded.
-- P5-S2/P5-S3 cannot safely proceed until their event/scheduler boundary is
-  specified from existing conventions; policy-dependent P5-S4 remains blocked
-  by the open customer-intelligence policy decision.
+- P5-S1/P5-S2/P5-S4 implementation is present and validation evidence is green;
+  P5-S3/P5-S5/P5-S6 remain to be reconciled and executed under the active Phase
+  authorization.
 
 ## Working Tree Preservation
 
 ### Authorized active changes
 
-- Phase 5 execution plan, P5-S1 Contract/run, and CRM workflow foundation
-  migration/entities currently being implemented.
+- Phase 5 implementation, acceptance fixture correction, Contracts/runs and
+  validation evidence are authorized active changes.
 
 ### Unrelated pre-existing changes to preserve
 
@@ -135,6 +133,14 @@ authorized and do not expand the Step 6 application scope.
   regression evidence recorded at the accepted revision.
 - **PASS:** Backend compilation previously passed for current Step 6 work.
 - **PASS:** Documentation validation before this state update.
+- **PASS:** Docker Maven clean test-compile after Phase 5 fixes.
+- **PASS:** Fresh V1→V79 and supported V50→V79 migration acceptance: 2 tests,
+  0 failures, 0 errors.
+- **PASS:** CRM PostgreSQL acceptance: 2 tests, 0 failures, 0 errors, using
+  external PostgreSQL 16.15; cross-tenant fixture and tenant identity are
+  explicit.
+- **PASS:** Focused CRM regression: 6 tests, 0 failures, 0 errors.
+- **PASS:** Full backend regression: 311 tests, 0 failures, 0 errors.
 - **PASS:** Step 6 acceptance on clean PostgreSQL: 5 tests, 0 failures,
   0 errors.
 - **PASS:** Fresh V1→V71 and supported V50→V71 migration acceptance: 2 tests,
@@ -194,13 +200,12 @@ in `RUN-P3-S7-001.md`.
 - **OWNER BLOCKER:** None proven after DEC-P4-001.
 - **OWNER BLOCKER:** None. DEC-P5-001 resolves the former CRM intelligence
   policy blocker.
-- **TECHNICAL STATUS:** P5-S1 implementation, V1→V77/V50→V77 migration
-  validation, and focused idempotency validation are green; permanent workflow
-  acceptance is still pending and must not be represented as complete.
-- **Checkpoint:** `ff0f7ce chore(crm): checkpoint phase 5 validation` is pushed
-  to `origin/development`; this is not an acceptance or DoD commit.
-- **Validation environment:** Docker/Maven execution is currently unavailable;
-  resume compile, PostgreSQL acceptance and regression from this checkpoint.
+- **TECHNICAL STATUS:** P5-S1/P5-S2/P5-S4 validation gates recorded green;
+    Phase 5 remains unaccepted pending remaining plan steps and final Guardian.
+- **Checkpoint:** `a09953f chore(crm): persist phase 5 validation checkpoint` is
+    pushed to `origin/development`; subsequent fixes are uncommitted.
+- **Validation environment:** external PostgreSQL 16.15 and repository-mounted
+    Maven container are available and were used; Testcontainers is not required.
 - **Decision:** `docs/decisions/DEC-P5-001-crm-intelligence-policy.md` approved;
   P5-S2 onward may proceed within its bounded scope.
 - **TECHNICAL BLOCKER:** None proven in V73 SQL.
@@ -246,8 +251,8 @@ silently resolve those decisions here.
 
 ## Next Authorized Action
 
-Continue P5-S2 reminder integration, then dependency-valid P5-S3/P5-S4 work;
-P5-S4 policy is governed by DEC-P5-001.
+ Continue P5-S3/P5-S5 dependency-valid work, then P5-S6 final certification;
+  do not mark Phase 5 accepted before those gates and Guardian review.
 
 ## Agent-System Retrospective
 

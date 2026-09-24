@@ -26,7 +26,7 @@ public class CrmIntelligenceService {
         Collections.sort(gaps); long cadence=gaps.get(gaps.size()/2); Instant last=p.get(p.size()-1).at(); long elapsed=Math.max(0,Duration.between(last,Instant.now()).toDays());
         double recency=Math.max(0,Math.min(100,100d*(1d-((double)elapsed/Math.max(1,cadence*2d)))));
         double frequency=Math.min(100,50+Math.min(50,p.size()*10)); double monetary=Math.min(100,p.stream().map(Purchase::amount).filter(Objects::nonNull).mapToDouble(BigDecimal::doubleValue).sum()/1000d);
-        double trend=p.size()<6?50:trend(p); double score=w.r()*recency+w.f()*frequency+w.m()*monetary+w.t()*trend;
+        double trend=p.size()<6?50:trend(p); double score=w.r().doubleValue()*recency+w.f().doubleValue()*frequency+w.m().doubleValue()*monetary+w.t().doubleValue()*trend;
         String state=elapsed>=cadence*2?"UNUSUALLY_INACTIVE":elapsed>=cadence?"ATTENTION_RECOMMENDED":trend<40?"DECLINING_ACTIVITY":"NORMAL";
         List<String> reasons=new ArrayList<>(); if(elapsed>=cadence) reasons.add("Purchase is later than the customer's normal cadence"); if(trend<40) reasons.add("Purchase activity has decreased"); if(trend>60) reasons.add("Customer activity is improving"); if(reasons.isEmpty()) reasons.add("Customer activity is stable");
         return new Intelligence(customerId,BigDecimal.valueOf(score).setScale(2,RoundingMode.HALF_UP),state,reasons,List.of("Review recent customer activity","Create a follow-up task"),p.size(),cadence);

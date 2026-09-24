@@ -70,7 +70,11 @@ class CrmPostgresAcceptanceIT extends PostgresApplicationFixture {
     @Test
     void crossTenantCustomerReferenceIsRejectedWithoutWorkflowMutation() {
         long tenant = 1L;
-        long otherTenant = jdbc.queryForObject("select id from tenants where id<>? order by id limit 1", Long.class, tenant);
+        Long otherTenant = jdbc.query("select id from tenants where id<>? order by id limit 1", rs -> rs.next() ? rs.getLong(1) : null, tenant);
+        if (otherTenant == null) {
+            otherTenant = jdbc.queryForObject("insert into tenants(code,name,status_id) select ?,?,id from licensing_statuses order by id limit 1 returning id",
+                    Long.class, "P5-CRM-OTHER-" + System.nanoTime(), "P5 CRM Other Tenant");
+        }
         long otherCustomer = customer(otherTenant, "phase5-cross-tenant-customer");
         assertThrows(RuntimeException.class, () -> tenants.callAsTenant(tenant, () -> transactions.execute(status ->
                 workflow.createLead(new LeadRequest("cross tenant", otherCustomer, "REFERRAL", null, null)))));
@@ -82,7 +86,7 @@ class CrmPostgresAcceptanceIT extends PostgresApplicationFixture {
         Timestamp now = new Timestamp(System.currentTimeMillis());
         long type = jdbc.queryForObject("select id from customer_types order by id limit 1", Long.class);
         long status = jdbc.queryForObject("select id from customer_statuses where is_default=true limit 1", Long.class);
-        return jdbc.queryForObject("insert into customers(customer_code,display_name,type_id,status_id,created_at,updated_at) values(?,?,?,?,?,?) returning id",
-                Long.class, code, code, type, status, now, now);
+        return jdbc.queryForObject("insert into customers(tenant_id,customer_code,display_name,type_id,status_id,created_at,updated_at) values(?,?,?,?,?,?,?) returning id",
+                Long.class, tenant, code, code, type, status, now, now);
     }
 }
