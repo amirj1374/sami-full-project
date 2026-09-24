@@ -9,7 +9,7 @@ repository reality on every resume.
 - **State Version:** 1
 - **Last Reconciled:** 2026-09-24
 - **Repository Branch:** `development`
-- **Recorded HEAD:** `a09953f` plus uncommitted Phase 5 validation fixes
+- **Recorded HEAD:** `842390b` (`fix(crm): close phase 5 validation defects`)
 - **State Status:** Phase 3 COMPLETE/ACCEPTED — Phase 4 COMPLETE/ACCEPTED — Phase 5 ACTIVE / validation evidence substantially green
 
 ## Authority References
@@ -50,7 +50,7 @@ authorized and do not expand the Step 6 application scope.
 ## Current Phase / Wave / Feature
 
 - **Phase:** Phase 5 — CRM Intelligence
-- **Step:** P5-S4 — advisory intelligence validation/continuation (active)
+- **Step:** P5-S5 — user-facing follow-up/intelligence workspace (next dependency-valid step)
 - **Feature:** Lead, Opportunity, Contact history and follow-up
 
 ## Accepted Baseline
@@ -251,8 +251,9 @@ silently resolve those decisions here.
 
 ## Next Authorized Action
 
- Continue P5-S3/P5-S5 dependency-valid work, then P5-S6 final certification;
-  do not mark Phase 5 accepted before those gates and Guardian review.
+ Continue P5-S5 user-facing workspace, then P5-S6 final certification; P5-S3
+ history/reporting is covered by the existing append-only customer timeline and
+ workflow outcome evidence and must be explicitly reconciled in its Contract.
 
 ## Agent-System Retrospective
 
