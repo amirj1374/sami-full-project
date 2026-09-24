@@ -107,6 +107,12 @@ const routes: RouteRecordRaw[] = [
         meta: { requiresAuth: true, permission: 'customers:view' },
       },
       {
+        path: 'customers/intelligence',
+        name: 'crm-intelligence',
+        component: () => import('@/views/CrmIntelligenceView.vue'),
+        meta: { requiresAuth: true, permission: 'customers:view' },
+      },
+      {
         path: 'organization',
         name: 'organization',
         component: () => import('@/views/OrganizationView.vue'),

@@ -786,6 +786,19 @@
       }
     }
   },
+  "crmIntelligence": {
+    "title": "Customer intelligence",
+    "subtitle": "Advisory signals and explainable next actions from recorded customer activity.",
+    "customer": "Customer",
+    "show": "Show intelligence",
+    "score": "Relationship score",
+    "explanations": "Why this appears",
+    "suggestions": "Suggested actions",
+    "emptyTitle": "Select a customer",
+    "emptyDescription": "Choose a customer to review recorded activity signals.",
+    "history": "Completed purchases: {count}",
+    "cadence": "Expected cadence: {days} days"
+  },
   "suppliers": {
     "title": "Suppliers",
     "newSupplier": "New supplier",
