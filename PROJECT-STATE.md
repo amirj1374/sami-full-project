@@ -10,7 +10,7 @@ repository reality on every resume.
 - **Last Reconciled:** 2026-09-24
 - **Repository Branch:** `development`
 - **Recorded HEAD:** `842390b` (`fix(crm): close phase 5 validation defects`)
-- **State Status:** Phase 3 COMPLETE/ACCEPTED — Phase 4 COMPLETE/ACCEPTED — Phase 5 ACTIVE / validation evidence substantially green
+- **State Status:** Phase 3 COMPLETE/ACCEPTED — Phase 4 COMPLETE/ACCEPTED — Phase 5 COMPLETE/ACCEPTED
 
 ## Authority References
 
@@ -50,7 +50,7 @@ authorized and do not expand the Step 6 application scope.
 ## Current Phase / Wave / Feature
 
 - **Phase:** Phase 5 — CRM Intelligence
-- **Step:** P5-S6 — final Phase 5 certification (active)
+- **Step:** P5-S6 — final Phase 5 certification (complete)
 - **Feature:** Lead, Opportunity, Contact history and follow-up
 
 ## Accepted Baseline
@@ -58,7 +58,7 @@ authorized and do not expand the Step 6 application scope.
 - Step 5 accepted commit: `ba0e317 feat(inventory): add variant reservations and backorders`
 - `origin/development` matches the recorded HEAD (`0/0` at reconciliation).
 - Phase 3 is accepted at `d621e19`. Phase 4 is accepted at `5080c94`.
-  Phase 5 planning is active from the authorized CRM scope.
+  Phase 5 is accepted at `835296d`; unrelated dirty changes remain outside the baseline.
   Existing unrelated dirty changes are not part of the accepted baseline.
 
 ## Active Contracts
@@ -146,6 +146,8 @@ authorized and do not expand the Step 6 application scope.
     Persian/RTL, insufficient-history, loading/empty/error shells and navigation
     exercised. Tablet/mobile exact viewport evidence is unavailable in the
     current browser harness and remains explicitly limited.
+- **PASS:** P5-S6 final certification and independent Guardian review; Phase 5
+  completion evidence recorded in `RUN-P5-S6-001.md`.
 - **PASS:** Step 6 acceptance on clean PostgreSQL: 5 tests, 0 failures,
   0 errors.
 - **PASS:** Fresh V1→V71 and supported V50→V71 migration acceptance: 2 tests,
@@ -256,7 +258,7 @@ silently resolve those decisions here.
 
 ## Next Authorized Action
 
- Continue P5-S6 final certification. P5-S3 history/reporting is covered by the existing append-only
+ Phase 5 is COMPLETE/ACCEPTED. Phase 6 remains NOT STARTED / NOT AUTHORIZED.
  customer timeline and workflow outcome evidence and must be explicitly
  reconciled in its Contract.
 
