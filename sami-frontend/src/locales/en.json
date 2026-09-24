@@ -797,7 +797,10 @@
     "emptyTitle": "Select a customer",
     "emptyDescription": "Choose a customer to review recorded activity signals.",
     "history": "Completed purchases: {count}",
-    "cadence": "Expected cadence: {days} days"
+    "cadence": "Expected cadence: {days} days",
+    "states": { "INSUFFICIENT_HISTORY": "Insufficient history" },
+    "reasons": { "Insufficient history exists for a reliable personalized conclusion": "Insufficient history exists for a reliable personalized conclusion" },
+    "suggestionValues": { "Review recent customer activity": "Review recent customer activity", "Schedule the next follow-up": "Schedule the next follow-up" }
   },
   "suppliers": {
     "title": "Suppliers",

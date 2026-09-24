@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { customersApi } from '@/api/customers'
 import { crmIntelligenceApi, type CrmIntelligence } from '@/api/crmIntelligence'
@@ -16,6 +16,9 @@ const selectedId = ref<number | null>(null)
 const intelligence = ref<CrmIntelligence | null>(null)
 const loading = ref(false)
 const loadingCustomers = ref(false)
+const localizedState = computed(() => intelligence.value ? t(`crmIntelligence.states.${intelligence.value.state}`, intelligence.value.state) : '')
+const localizedReasons = computed(() => intelligence.value?.reasons.map((reason) => t(`crmIntelligence.reasons.${reason}`, reason)) ?? [])
+const localizedSuggestions = computed(() => intelligence.value?.suggestions.map((suggestion) => t(`crmIntelligence.suggestionValues.${suggestion}`, suggestion)) ?? [])
 
 async function loadCustomers() {
   loadingCustomers.value = true
@@ -48,8 +51,8 @@ onMounted(() => { void loadCustomers() })
     <AppLoadingState v-if="loading" />
     <AppEmptyState v-else-if="!intelligence" :title="t('crmIntelligence.emptyTitle')" :description="t('crmIntelligence.emptyDescription')" />
     <v-row v-else>
-      <v-col cols="12" md="4"><v-card rounded="xl" class="pa-5 h-100"><div class="text-overline">{{ t('crmIntelligence.score') }}</div><div class="text-h2 font-weight-bold">{{ intelligence.score ?? '—' }}</div><div class="text-body-2 text-medium-emphasis mt-2">{{ intelligence.state }}</div></v-card></v-col>
-      <v-col cols="12" md="8"><v-card rounded="xl" class="pa-5 h-100"><div class="text-h6 mb-3">{{ t('crmIntelligence.explanations') }}</div><v-list density="compact"><v-list-item v-for="reason in intelligence.reasons" :key="reason" prepend-icon="mdi-information-outline" :title="reason" /></v-list><v-divider class="my-3" /><div class="text-h6 mb-2">{{ t('crmIntelligence.suggestions') }}</div><v-chip v-for="suggestion in intelligence.suggestions" :key="suggestion" class="ma-1" variant="tonal">{{ suggestion }}</v-chip></v-card></v-col>
+      <v-col cols="12" md="4"><v-card rounded="xl" class="pa-5 h-100"><div class="text-overline">{{ t('crmIntelligence.score') }}</div><div class="text-h2 font-weight-bold">{{ intelligence.score ?? '—' }}</div><div class="text-body-2 text-medium-emphasis mt-2">{{ localizedState }}</div></v-card></v-col>
+      <v-col cols="12" md="8"><v-card rounded="xl" class="pa-5 h-100"><div class="text-h6 mb-3">{{ t('crmIntelligence.explanations') }}</div><v-list density="compact"><v-list-item v-for="reason in localizedReasons" :key="reason" prepend-icon="mdi-information-outline" :title="reason" /></v-list><v-divider class="my-3" /><div class="text-h6 mb-2">{{ t('crmIntelligence.suggestions') }}</div><v-chip v-for="suggestion in localizedSuggestions" :key="suggestion" class="ma-1" variant="tonal">{{ suggestion }}</v-chip></v-card></v-col>
       <v-col cols="12"><v-card rounded="xl" class="pa-5"><div class="text-body-2 text-medium-emphasis">{{ t('crmIntelligence.history', { count: intelligence.purchaseCount }) }}</div><div v-if="intelligence.expectedCadenceDays" class="text-body-2 mt-2">{{ t('crmIntelligence.cadence', { days: intelligence.expectedCadenceDays }) }}</div></v-card></v-col>
     </v-row>
   </div>

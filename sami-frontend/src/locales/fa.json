@@ -797,7 +797,10 @@
     "emptyTitle": "یک مشتری انتخاب کنید",
     "emptyDescription": "برای بررسی نشانه‌های فعالیت ثبت‌شده، یک مشتری انتخاب کنید.",
     "history": "خریدهای تکمیل‌شده: {count}",
-    "cadence": "دوره مورد انتظار: {days} روز"
+    "cadence": "دوره مورد انتظار: {days} روز",
+    "states": { "INSUFFICIENT_HISTORY": "سابقه ناکافی" },
+    "reasons": { "Insufficient history exists for a reliable personalized conclusion": "برای نتیجه‌گیری شخصی‌سازی‌شده، سابقه کافی وجود ندارد" },
+    "suggestionValues": { "Review recent customer activity": "بررسی فعالیت اخیر مشتری", "Schedule the next follow-up": "زمان‌بندی پیگیری بعدی" }
   },
   "suppliers": {
     "title": "تأمین‌کنندگان",

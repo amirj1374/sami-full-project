@@ -50,7 +50,7 @@ authorized and do not expand the Step 6 application scope.
 ## Current Phase / Wave / Feature
 
 - **Phase:** Phase 5 — CRM Intelligence
-- **Step:** P5-S5 — user-facing follow-up/intelligence workspace (active)
+- **Step:** P5-S6 — final Phase 5 certification (active)
 - **Feature:** Lead, Opportunity, Contact history and follow-up
 
 ## Accepted Baseline
@@ -142,8 +142,10 @@ authorized and do not expand the Step 6 application scope.
 - **PASS:** Focused CRM regression: 6 tests, 0 failures, 0 errors.
 - **PASS:** Full backend regression: 311 tests, 0 failures, 0 errors.
 - **PASS:** P5-S5 frontend type-check, production build, and 56 frontend tests.
-- **PENDING:** P5-S5 rendered authenticated UI Quality gate; only login shell was
-  rendered because no authorized development backend/session was available.
+- **PASS:** P5-S5 authenticated rendered desktop CRM intelligence inspection;
+    Persian/RTL, insufficient-history, loading/empty/error shells and navigation
+    exercised. Tablet/mobile exact viewport evidence is unavailable in the
+    current browser harness and remains explicitly limited.
 - **PASS:** Step 6 acceptance on clean PostgreSQL: 5 tests, 0 failures,
   0 errors.
 - **PASS:** Fresh V1→V71 and supported V50→V71 migration acceptance: 2 tests,
@@ -254,8 +256,7 @@ silently resolve those decisions here.
 
 ## Next Authorized Action
 
- Continue P5-S5 rendered authenticated UI Quality inspection, then P5-S6 final
- certification. P5-S3 history/reporting is covered by the existing append-only
+ Continue P5-S6 final certification. P5-S3 history/reporting is covered by the existing append-only
  customer timeline and workflow outcome evidence and must be explicitly
  reconciled in its Contract.
 
