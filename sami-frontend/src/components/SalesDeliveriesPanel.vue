@@ -10,7 +10,7 @@ import { usePermission } from '@/composables/usePermission'
 import AppMobileRecordCard from '@/components/AppMobileRecordCard.vue'
 import type { Delivery, DeliveryAudit } from '@/types/deliveries'
 import type { SalesOrder } from '@/types/salesOrders'
-const {t}=useI18n();const {mdAndUp}=useDisplay();const org=useOrganizationContextStore();const {can}=usePermission();const error=useApiError();const rows=ref<Delivery[]>([]),orders=ref<SalesOrder[]>([]),loading=ref(false),saving=ref(false),editor=ref(false),selected=ref<Delivery|null>(null),audits=ref<DeliveryAudit[]>([]),notice=ref(''),source=ref<SalesOrder|null>(null)
+const {t}=useI18n();const {mdAndUp}=useDisplay();const org=useOrganizationContextStore();const {can}=usePermission();const error=useApiError({scope:'sales'});const rows=ref<Delivery[]>([]),orders=ref<SalesOrder[]>([]),loading=ref(false),saving=ref(false),editor=ref(false),selected=ref<Delivery|null>(null),audits=ref<DeliveryAudit[]>([]),notice=ref(''),source=ref<SalesOrder|null>(null)
 const form=reactive({companyId:null as number|null,branchId:null as number|null,notes:'',lines:[] as Array<{orderLineId:number;quantity:number;ordered:number;reserved:number;previous:number;backordered:number;name:string}>})
 const canSave=computed(()=>!!form.companyId&&!!form.branchId&&form.lines.length>0&&form.lines.every(l=>l.quantity>0&&l.quantity<=l.reserved-l.previous))
 async function load(){if(!org.companyId||!org.branchId)return;loading.value=true;try{[rows.value,orders.value]=await Promise.all([deliveriesApi.list(org.companyId,org.branchId),salesOrdersApi.list(org.companyId,org.branchId)]);orders.value=orders.value.filter(o=>o.status==='CONFIRMED')}catch(e){error.set(e)}finally{loading.value=false}}

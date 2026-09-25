@@ -20,9 +20,10 @@ test('critical create/edit forms guard duplicate submissions inside submit handl
 })
 
 test('sales and purchasing form validation cannot fail silently before API calls', () => {
-  assert.match(read('src/views/SalesView.vue'), /error\.set\(\{ code: "VALIDATION"/)
-  assert.match(read('src/components/SalesDocumentsPanel.vue'), /error\.set\(\{code:'VALIDATION'/)
-  assert.match(read('src/components/SalesOrdersPanel.vue'), /error\.set\(\{code:'VALIDATION'/)
+  const validationFeedback = /error\.set\(\{\s*code:\s*['"]VALIDATION['"]/
+  assert.match(read('src/views/SalesView.vue'), validationFeedback)
+  assert.match(read('src/components/SalesDocumentsPanel.vue'), validationFeedback)
+  assert.match(read('src/components/SalesOrdersPanel.vue'), validationFeedback)
   assert.match(read('src/components/purchasing/GoodsReceiptsPanel.vue'), /!warehouseId\.value/)
   assert.match(read('src/components/purchasing/SupplierInvoicesPanel.vue'), /po\.value\.id!==gr\.value\.purchase_order_id/)
 })

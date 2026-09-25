@@ -25,6 +25,13 @@ test('Sales lifecycle clients map to the implemented backend endpoints', () => {
   assert.match(receipts, /sales-receipts\/\$\{id\}\/confirm-now/)
 })
 
+test('Invoiceable line type matches the backend invoiceable response fields', () => {
+  const invoiceableType = read('src/types/salesInvoices.ts')
+  assert.match(invoiceableType, /deliveryId:number/)
+  assert.match(invoiceableType, /previouslyInvoiced:number/)
+  assert.doesNotMatch(invoiceableType, /issuedQuantity:number/)
+})
+
 test('Sales mutation state cannot reveal the next action before the mutation lock is released', () => {
   const view = read('src/views/SalesView.vue')
   const documents = read('src/components/SalesDocumentsPanel.vue')
@@ -43,4 +50,14 @@ test('Sales mutation state cannot reveal the next action before the mutation loc
   assert.match(deliveries, /saving\.value\|\|!canSave\.value/)
   assert.match(invoices, /salesInvoicesApi\.invoiceable/)
   assert.match(read('src/components/SalesReceiptsPanel.vue'), /if \(busy\.value\) return/)
+})
+
+test('Sales mutation owners retain rapid duplicate-submission guards', () => {
+  assert.match(read('src/views/SalesView.vue'), /async function save\(\) \{\s*if \(saving\.value\) return/)
+  assert.match(read('src/components/SaleActionPanel.vue'), /async function submit\(\)\{if\(busy\.value\)return/)
+  assert.match(read('src/components/SalesDocumentsPanel.vue'), /async function save\(\)\{if\(saving\.value\)return/)
+  assert.match(read('src/components/SalesOrdersPanel.vue'), /async function save\(\) \{\s*if \(saving\.value\) return/)
+  assert.match(read('src/components/SalesDeliveriesPanel.vue'), /async function save\(\)\{if\(!source\.value\|\|saving\.value\|\|!canSave\.value\)return/)
+  assert.match(read('src/components/SalesInvoicesPanel.vue'), /async function save\(\) \{\s*if \(saving\.value \|\|/)
+  assert.match(read('src/components/SalesReceiptsPanel.vue'), /async function create\(\) \{\s*if \(busy\.value\) return/)
 })

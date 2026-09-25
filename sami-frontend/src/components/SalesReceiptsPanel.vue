@@ -6,10 +6,12 @@ import { customersApi } from '@/api/customers'
 import { treasuryApi } from '@/api/treasury'
 import { salesInvoicesApi } from '@/api/salesInvoices'
 import { salesReceiptsApi } from '@/api/salesReceipts'
+import { useApiError } from '@/composables/useApiError'
 import { useOrganizationContextStore } from '@/stores/organizationContext'
 
 const { t } = useI18n()
 const org = useOrganizationContextStore()
+const error = useApiError({ scope: 'sales' })
 const customers = ref<any[]>([])
 const accounts = ref<any[]>([])
 const invoices = ref<any[]>([])
@@ -19,18 +21,24 @@ const amount = ref(0)
 const allocation = ref(0)
 const invoiceId = ref<number>()
 const result = ref<any>()
-const error = ref('')
 const busy = ref(false)
 
 async function load() {
-  customers.value = (await customersApi.list({ size: 100 })).content
-  accounts.value = await treasuryApi.accounts()
-  invoices.value = await salesInvoicesApi.list(org.companyId!, org.branchId!)
+  error.clear()
+  try {
+    if (!org.context) await org.refresh()
+    customers.value = (await customersApi.list({ size: 100 })).content
+    accounts.value = await treasuryApi.accounts()
+    invoices.value = await salesInvoicesApi.list(org.companyId!, org.branchId!)
+  } catch (e) {
+    error.set(e)
+  }
 }
 
 async function create() {
   if (busy.value) return
   busy.value = true
+  error.clear()
   try {
     const receipt = await salesReceiptsApi.create(
       {
@@ -44,17 +52,14 @@ async function create() {
     )
     await salesReceiptsApi.allocate(receipt.id, invoiceId.value!, allocation.value)
     result.value = await salesReceiptsApi.confirm(receipt.id, accountId.value!)
-  } catch (e: any) {
-    error.value = e?.message ?? 'Receipt failed'
+  } catch (e) {
+    error.set(e)
   } finally {
     busy.value = false
   }
 }
 
-onMounted(async () => {
-  if (!org.context) await org.refresh()
-  await load()
-})
+onMounted(load)
 </script>
 
 <template>
@@ -68,7 +73,7 @@ onMounted(async () => {
         <v-col cols="12" sm="6"><v-select v-model="invoiceId" :items="invoices.filter(i => i.customerId === customerId && i.status === 'ISSUED')" item-title="number" item-value="id" :label="t('sales.eligibleInvoice')" /></v-col>
         <v-col cols="12" sm="6"><v-text-field v-model.number="allocation" type="number" inputmode="decimal" :label="t('sales.allocationAmount')" /></v-col>
       </v-row>
-      <v-alert v-if="error" type="error" variant="tonal">{{ error }}</v-alert>
+      <v-alert v-if="error.message.value" type="error" variant="tonal">{{ error.message.value }}</v-alert>
       <v-alert v-if="result" type="success" variant="tonal">{{ result.status }} — {{ t('sales.treasury') }}: {{ result.treasury_transaction_id }} — {{ t('sales.accounting') }}: {{ result.accounting_posting_reference }}</v-alert>
     </v-card-text>
     <v-card-actions class="flex-wrap">

@@ -12,7 +12,7 @@ type EditableInvoiceableLine = InvoiceableLine & { quantity: number }
 
 const { t } = useI18n()
 const org = useOrganizationContextStore()
-const error = useApiError()
+const error = useApiError({ scope: 'sales' })
 const rows = ref<SalesInvoice[]>([])
 const orders = ref<SalesOrder[]>([])
 const invoiceable = ref<EditableInvoiceableLine[]>([])

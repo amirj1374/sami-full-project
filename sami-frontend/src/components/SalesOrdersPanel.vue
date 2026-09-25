@@ -19,7 +19,7 @@ const { t } = useI18n()
 const { mdAndUp } = useDisplay()
 const org = useOrganizationContextStore()
 const { can } = usePermission()
-const error = useApiError()
+const error = useApiError({ scope: 'sales' })
 
 const rows = ref<SalesOrder[]>([])
 const quotes = ref<SalesDocument[]>([])
@@ -236,6 +236,7 @@ onMounted(async () => {
         <div v-if="audits.length" class="text-caption mt-3">{{ audits.length }} audit events</div>
       </v-card-text>
       <v-card-actions>
+        <v-btn v-if="selected.status !== 'CANCELLED' && can('sales:edit')" variant="text" @click="open(selected); selected = null">{{ t('common.edit', 'Edit') }}</v-btn>
         <v-btn v-if="selected.status === 'DRAFT'" color="primary" :loading="saving" :disabled="saving" @click="action('confirm')">{{ t('salesOrders.confirm', 'Confirm') }}</v-btn>
         <v-btn v-if="selected.status === 'DRAFT'" color="error" variant="text" :loading="saving" :disabled="saving" @click="action('cancel')">{{ t('common.cancel', 'Cancel') }}</v-btn>
       </v-card-actions>

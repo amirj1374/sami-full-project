@@ -12,7 +12,7 @@ import AppMoneyField from '@/components/AppMoneyField.vue'
 import AppMobileRecordCard from '@/components/AppMobileRecordCard.vue'
 import type { Customer, Product } from '@/types/models'
 import type { SalesDocument, SalesDocumentAudit, SalesDocumentPayload, SalesDocumentType } from '@/types/salesDocuments'
-const {t}=useI18n(); const {mdAndUp}=useDisplay(); const {can}=usePermission(); const org=useOrganizationContextStore(); const error=useApiError();
+const {t}=useI18n(); const {mdAndUp}=useDisplay(); const {can}=usePermission(); const org=useOrganizationContextStore(); const error=useApiError({scope:'sales'});
 const rows=ref<SalesDocument[]>([]),customers=ref<Customer[]>([]),products=ref<Product[]>([]),audits=ref<SalesDocumentAudit[]>([]),loading=ref(false),saving=ref(false),editor=ref(false),detail=ref(false),selected=ref<SalesDocument|null>(null),notice=ref('');
 const form=reactive({id:null as number|null,version:undefined as number|undefined,companyId:null as number|null,branchId:null as number|null,customerId:null as number|null,documentType:'QUOTATION' as SalesDocumentType,currency:'IRR',notes:'',lines:[{productId:null as number|null,quantity:1,unitPrice:0,discount:0}]});
 const total=computed(()=>form.lines.reduce((s,l)=>s+l.unitPrice*l.quantity-l.discount,0)); const label=(x:string)=>t(`enum.${x}`,x); const money=(x:number)=>new Intl.NumberFormat(undefined,{maximumFractionDigits:0}).format(x);

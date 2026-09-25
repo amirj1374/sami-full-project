@@ -24,6 +24,7 @@ import { organizationApi, type Branch } from "@/api/organization";
 import { useApiError } from "@/composables/useApiError";
 import { usePermission } from "@/composables/usePermission";
 import { useOrganizationContextStore } from "@/stores/organizationContext";
+import { getSaleCompletionEligibility } from "@/services/saleCompletionEligibility";
 import type { Customer, Product } from "@/types/models";
 import type {
   Sale,
@@ -34,7 +35,7 @@ import type {
 const { t } = useI18n(),
   { mdAndUp } = useDisplay(),
   { can } = usePermission(),
-  error = useApiError();
+  error = useApiError({ scope: "sales" });
 const organizationContext = useOrganizationContextStore();
 const loading = ref(false),
   saving = ref(false),
@@ -121,6 +122,9 @@ const statusColor = (s: string) =>
     PARTIALLY_RETURNED: "warning",
     RETURNED: "secondary",
   })[s] || "grey";
+const completionEligibility = computed(() =>
+  selected.value ? getSaleCompletionEligibility(selected.value) : null,
+);
 const label = (code: string) => t(`sales.values.${code}`, code);
 const companyOptions = computed(() => organizationContext.context?.companies ?? []);
 const branchOptions = computed(() => {
@@ -332,6 +336,10 @@ async function show(s: Sale) {
 }
 async function act(action: "confirm" | "complete" | "cancel") {
   if (!selected.value || saving.value) return;
+  if (
+    action === "complete" &&
+    !getSaleCompletionEligibility(selected.value).canComplete
+  ) return;
   const saleId = selected.value.id;
   let updated: Sale | undefined;
   saving.value = true;
@@ -787,6 +795,12 @@ onMounted(load);
               </div></v-window-item
             ></v-window
           ></v-card-text
+        ><v-alert
+          v-if="completionEligibility?.paymentRequired"
+          type="warning"
+          variant="tonal"
+          class="mx-4 mb-2"
+          >{{ t("sales.completePaymentRequired") }}</v-alert
         ><v-card-actions class="pa-4 flex-wrap"
           ><v-btn
             v-if="selected.status === 'DRAFT' && canAction('confirm')"
@@ -798,7 +812,7 @@ onMounted(load);
           ><v-btn
             v-if="selected.status === 'CONFIRMED' && canAction('complete')"
             color="success"
-            :disabled="saving"
+            :disabled="saving || !completionEligibility?.canComplete"
             :loading="saving"
             @click="act('complete')"
             >{{ t("sales.complete") }}</v-btn

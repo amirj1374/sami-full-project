@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import{onMounted,reactive,ref}from'vue';import{useI18n}from'vue-i18n';import{salesApi}from '@/api/sales';import{useApiError}from '@/composables/useApiError';import type{SalesFilter,SalesReport}from '@/types/sales';
-const{t}=useI18n(),error=useApiError(),loading=ref(false),report=ref<SalesReport|null>(null),window=globalThis.window;const filters=reactive({from:'',to:'',branchId:null as number|null,sellerId:null as number|null,status:'',saleType:''});
+const{t}=useI18n(),error=useApiError({scope:'sales'}),loading=ref(false),report=ref<SalesReport|null>(null),window=globalThis.window;const filters=reactive({from:'',to:'',branchId:null as number|null,sellerId:null as number|null,status:'',saleType:''});
 const money=(v:number)=>new Intl.NumberFormat(undefined,{maximumFractionDigits:2}).format(v||0);function params():SalesFilter{return{from:filters.from?new Date(`${filters.from}T00:00:00`).toISOString():undefined,to:filters.to?new Date(`${filters.to}T23:59:59.999`).toISOString():undefined,branchId:filters.branchId||undefined,sellerId:filters.sellerId||undefined,status:filters.status||undefined,saleType:filters.saleType||undefined}}
 async function load(){loading.value=true;error.clear();try{report.value=await salesApi.reports(params())}catch(e){error.set(e)}finally{loading.value=false}}
 onMounted(load);
