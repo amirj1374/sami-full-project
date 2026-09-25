@@ -1,0 +1,12 @@
+{
+  "version": "0.8.0-rc.1",
+  "releaseType": "Release Candidate / Preview",
+  "commit": "0bdb47d",
+  "branch": "development",
+  "migrationVersion": "V79",
+  "runtime": { "java": "21", "postgresql": "16", "springBoot": "3.5.3", "frontend": "Node/Vite (locked manifests)" },
+  "included": ["purchasing", "inventory", "accounting", "treasury", "sales", "crm-preview"],
+  "knownLimitations": ["CRM preview UI exact tablet/mobile viewport evidence unavailable in current browser harness", "stable/attention CRM fixture states not present in disposable data"],
+  "productionSecretsRequired": ["POSTGRES_PASSWORD", "JWT_SECRET", "PORTAL_JWT_SECRET", "BOOTSTRAP_ADMIN_PASSWORD"],
+  "releaseTag": "NOT CREATED"
+}
