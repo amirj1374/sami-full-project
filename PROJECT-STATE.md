@@ -9,7 +9,7 @@ repository reality on every resume.
 - **State Version:** 1
 - **Last Reconciled:** 2026-09-26
 - **Repository Branch:** `development`
-- **Recorded HEAD:** `a94cc95` (`chore: bump version to 0.8.0`)
+- **Recorded HEAD:** `ef2a849` (`chore(release): align 0.8.0 runtime defaults`)
 - **State Status:** Phase 3 COMPLETE/ACCEPTED — Phase 4 COMPLETE/ACCEPTED — Phase 5 COMPLETE/ACCEPTED
 
 ## Authority References
