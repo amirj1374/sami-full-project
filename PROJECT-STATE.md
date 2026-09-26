@@ -342,3 +342,9 @@ isolated by database name; no repository fixture was left modified.
   still NOT CERTIFIED because mutation-by-mutation persisted and cross-screen
   evidence has not yet been completed; backend/PostgreSQL certification remains
   valid and is not promoted to browser PASS.
+- Real UI mutation attempt reached the operational prerequisite boundary:
+  Product creation visibly returned `No active Inventory warehouse is
+  configured for this branch` (HTTP 409). The Warehouse form was reachable but
+  Save remained disabled without required company/branch context. No API/SQL
+  workaround or fabricated business data was used; rerun must begin after
+  legitimate tenant company/branch/warehouse setup.

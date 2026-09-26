@@ -84,3 +84,25 @@
   Purchase → Goods Receipt → Inventory → Price → Sale → Issue journey was not
   certified in this run; no browser E2E PASS is claimed until each mutation has
   visible, persisted and cross-screen evidence.
+
+## Real-user mutation attempt
+
+- **Status:** FAIL — prerequisite configuration boundary reached through the
+  actual UI; not a browser-harness failure.
+- **Page/action:** Products → Product new → submit a deterministic phone
+  Product/price. The UI displayed the backend business error that no active
+  Inventory warehouse is configured for the current branch.
+- **Expected:** Product can be created and proceed into Purchasing after the
+  required operational warehouse context exists.
+- **Actual:** Product creation returned HTTP 409 with the user-facing error;
+  the Warehouse UI was then opened. Its Save action remained disabled because
+  required company/branch context was not populated by the current disposable
+  tenant bootstrap.
+- **Persisted result:** No valid phone purchase, receipt, inventory quantity,
+  IMEI custody, price mutation, sale or issue was created. No database/API
+  workaround was used.
+- **Defect classification:** Environment/tenant operational configuration
+  prerequisite exposed by the UI; the phone lifecycle remains uncertified.
+- **Required next action:** Establish the repository-supported active
+  company/branch and warehouse configuration through the normal setup UI, then
+  rerun the journey from Product creation.
