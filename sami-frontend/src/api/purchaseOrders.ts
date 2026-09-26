@@ -1,5 +1,5 @@
 import { http, unwrap } from './http'
-export interface PurchaseOrderLine { productId:number; quantity:number; unitPrice:number; lineTotal?:number }
+export interface PurchaseOrderLine { id?:number; productId:number; variantId?:number; quantity:number; unitPrice:number; lineTotal?:number }
 export interface PurchaseOrder { id:number; order_number:string; status:string; supplier_id:number; company_id:number; branch_id:number; subtotal:number; total:number; lines?:PurchaseOrderLine[] }
 export const purchaseOrdersApi = {
   list: () => unwrap<PurchaseOrder[]>(http.get('/v1/purchase-orders')),

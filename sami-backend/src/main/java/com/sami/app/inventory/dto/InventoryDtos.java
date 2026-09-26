@@ -88,7 +88,7 @@ public final class InventoryDtos {
     }
 
     public record SerialResponse(
-            Long id, Long productId, String sku, String productName,
+            Long id, Long productId, Long variantId, String sku, String productName,
             Long warehouseId, String warehouseName, Long locationId, String locationName,
             String serialNumber, String imei, String status,
             String sourceType, Long sourceId, Instant receivedAt, Instant issuedAt, Long version

@@ -3,6 +3,7 @@ package com.sami.app.supplier.service;
 import com.sami.app.common.exception.ApiException;
 import com.sami.app.common.exception.ErrorCode;
 import com.sami.app.common.exception.ResourceNotFoundException;
+import com.sami.app.common.tenancy.TenantContext;
 import com.sami.app.security.CurrentActor;
 import com.sami.app.supplier.SupplierProperties;
 import com.sami.app.supplier.domain.SupAddress;
@@ -66,6 +67,7 @@ public class SupplierService {
     private final SupDuplicateRuleRepository duplicateRuleRepository;
     private final SupplierProperties properties;
     private final SupLogService logs;
+    private final TenantContext tenants;
 
     // ----------------------------------------------------------------- reads
 
@@ -111,6 +113,7 @@ public class SupplierService {
                                 "No default supplier status is configured"));
 
         Supplier supplier = Supplier.builder()
+                .tenantId(tenants.requireTenantId())
                 .supplierCode(nextSupplierCode())
                 .companyName(request.companyName().trim())
                 .displayName(request.displayName().trim())

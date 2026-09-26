@@ -261,6 +261,27 @@ silently resolve those decisions here.
 ## Next Authorized Action
 
  Phase 5 is COMPLETE/ACCEPTED. Phase 6 remains NOT STARTED / NOT AUTHORIZED.
+ Cross-module phone lifecycle certification is COMPLETE for backend/PostgreSQL
+ evidence. Rendered browser UI evidence is unavailable in this environment and
+ is explicitly not claimed as PASS.
+
+## Cross-Module E2E Certification
+
+- **Contract:** `docs/agent-system/contracts/AUTH-CROSS-MODULE-PHONE-LIFECYCLE.md`
+- **Run:** `docs/agent-system/runs/RUN-CROSS-MODULE-PHONE-LIFECYCLE-001.md`
+- **Status:** COMPLETE for the executable backend/database flow.
+- **Scenario:** one Product Variant phone, one deterministic serial/IMEI,
+  purchase order → goods receipt → variant stock → reservation → delivery
+  issue → sales invoice/receivable trace.
+- **Evidence:** Fresh PostgreSQL 16.15 V1→V80 plus
+  `PhonePurchaseToSalePostgresAcceptanceIT` 1/0/0; supported V50→V80
+  migration 2/0/0; `SalesBusinessFixturePostgresIT` 3/0/0; full Maven
+  regression 315/0/0; frontend tests 56/0/0, type-check/build PASS.
+- **UI Quality:** source/build checks PASS; authenticated rendered browser
+  inspection NOT RUN because the available CUA environment exposed no browser
+  provider. This is a recorded environment limitation, not fabricated PASS.
+- **Guardian:** PASS on implementation, ownership, identity, tenant,
+  idempotency and evidence scope; UI limitation remains explicit.
  customer timeline and workflow outcome evidence and must be explicitly
  reconciled in its Contract.
 

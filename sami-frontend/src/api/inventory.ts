@@ -10,7 +10,7 @@ import { http, unwrap, unwrapVoid } from './http'
 export interface InventoryPageParams { page?: number; size?: number }
 export interface BalanceParams extends InventoryPageParams { search?: string; warehouseId?: number; lowStock?: boolean }
 export interface MovementParams extends InventoryPageParams { search?: string; warehouseId?: number; movementType?: string; sourceType?: string; from?: string; to?: string }
-export interface SerialParams extends InventoryPageParams { search?: string; warehouseId?: number; status?: string }
+export interface SerialParams extends InventoryPageParams { search?: string; warehouseId?: number; variantId?: number; status?: string }
 
 function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob)

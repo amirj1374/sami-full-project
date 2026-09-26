@@ -25,6 +25,7 @@ const rows = ref<SalesOrder[]>([])
 const quotes = ref<SalesDocument[]>([])
 const customers = ref<Customer[]>([])
 const products = ref<Product[]>([])
+const variants = ref<Record<number, any[]>>({})
 const audits = ref<SalesOrderAudit[]>([])
 const loading = ref(false)
 const saving = ref(false)
@@ -39,7 +40,7 @@ const form = reactive({
   customerId: null as number | null,
   currency: 'IRR',
   notes: '',
-  lines: [{ productId: null as number | null, quantity: 1, unitPrice: 0, discount: 0 }],
+  lines: [{ productId: null as number | null, variantId: null as number | null, serialNumber: '', imei: '', quantity: 1, unitPrice: 0, discount: 0 }],
 })
 
 const total = computed(() => form.lines.reduce((sum, line) => sum + line.unitPrice * line.quantity - line.discount, 0))
@@ -82,18 +83,23 @@ function open(row?: SalesOrder) {
     notes: row?.notes ?? '',
     lines: row?.lines.map((line) => ({
       productId: line.productId,
+      variantId: line.variantId ?? null,
+      serialNumber: line.serialNumber ?? '',
+      imei: line.imei ?? '',
       quantity: line.quantity,
       unitPrice: line.unitPrice,
       discount: line.discount,
-    })) ?? [{ productId: null, quantity: 1, unitPrice: 0, discount: 0 }],
+    })) ?? [{ productId: null, variantId: null, serialNumber: '', imei: '', quantity: 1, unitPrice: 0, discount: 0 }],
   })
   editor.value = true
   void lookups()
 }
 
-function chooseProduct(line: { productId: number | null; unitPrice: number }) {
+async function chooseProduct(line: { productId: number | null; variantId: number | null; unitPrice: number }) {
   const product = products.value.find((item) => item.id === line.productId)
   if (product && line.unitPrice === 0) line.unitPrice = product.price
+  line.variantId = null
+  if (line.productId && !variants.value[line.productId]) variants.value[line.productId] = await productsApi.variants(line.productId)
 }
 
 async function save() {
@@ -112,6 +118,9 @@ async function save() {
       notes: form.notes || undefined,
       lines: form.lines.map((line) => ({
         productId: line.productId!,
+        variantId: line.variantId || undefined,
+        serialNumber: line.serialNumber || undefined,
+        imei: line.imei || undefined,
         quantity: line.quantity,
         unitPrice: line.unitPrice,
         discount: line.discount || undefined,
@@ -202,6 +211,9 @@ onMounted(async () => {
         </v-row>
         <div v-for="(line, index) in form.lines" :key="index" class="d-flex ga-2 align-center mb-2">
           <v-select v-model="line.productId" :items="products" item-title="name" item-value="id" :label="t('product.title', 'Product')" @update:model-value="chooseProduct(line)" />
+          <v-select v-if="line.productId" v-model="line.variantId" :items="variants[line.productId] || []" item-title="name" item-value="id" label="Variant" clearable />
+          <v-text-field v-model="line.serialNumber" label="Serial" />
+          <v-text-field v-model="line.imei" label="IMEI" />
           <v-text-field v-model.number="line.quantity" type="number" min="1" label="Qty" />
           <AppMoneyField v-model="line.unitPrice" :label="t('common.unitPrice', 'Unit price')" />
           <AppMoneyField v-model="line.discount" :label="t('common.discount', 'Discount')" />
@@ -232,7 +244,7 @@ onMounted(async () => {
       <v-card-text>
         <div>{{ t('customer.title', 'Customer') }}: {{ customerName(selected.customerId) }}</div>
         <div>Status: {{ label(selected.status) }}</div>
-        <div v-for="line in selected.lines" :key="line.id">{{ line.name }} × {{ line.quantity }}</div>
+        <div v-for="line in selected.lines" :key="line.id">{{ line.name }} × {{ line.quantity }}<span v-if="line.variantId"> · Variant {{ line.variantId }}</span><span v-if="line.imei"> · IMEI {{ line.imei }}</span></div>
         <div v-if="audits.length" class="text-caption mt-3">{{ audits.length }} audit events</div>
       </v-card-text>
       <v-card-actions>

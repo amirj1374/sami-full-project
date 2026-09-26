@@ -101,7 +101,7 @@ public class InventoryQueryService {
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<SerialResponse> serials(String search, Long warehouseId, String status,
+    public PageResponse<SerialResponse> serials(String search, Long warehouseId, Long variantId, String status,
                                                  int page, int size) {
         Long tenantId = tenantContext.requireTenantId();
         StringBuilder where = new StringBuilder(" where s.tenant_id=?");
@@ -116,6 +116,10 @@ public class InventoryQueryService {
             where.append(" and s.warehouse_id=?");
             args.add(warehouseId);
         }
+        if (variantId != null) {
+            where.append(" and s.variant_id=?");
+            args.add(variantId);
+        }
         if (status != null && !status.isBlank()) {
             where.append(" and s.status=?");
             args.add(status.trim().toUpperCase(Locale.ROOT));
@@ -127,7 +131,7 @@ public class InventoryQueryService {
         ArrayList<Object> paged = new ArrayList<>(args);
         paged.add(limit(size)); paged.add(offset(page, size));
         List<SerialResponse> rows = jdbc.query("""
-                select s.id,s.product_id,p.sku,p.name,s.warehouse_id,w.name warehouse_name,
+                select s.id,s.product_id,s.variant_id,p.sku,p.name,s.warehouse_id,w.name warehouse_name,
                        s.location_id,l.name location_name,s.serial_number,s.imei,s.status,
                        s.source_type,s.source_id,s.received_at,s.issued_at,s.version
                 """ + fromSql + where + " order by s.received_at desc,s.id desc limit ? offset ?",
@@ -293,7 +297,7 @@ public class InventoryQueryService {
     }
 
     private SerialResponse serial(ResultSet rs) throws SQLException {
-        return new SerialResponse(rs.getLong("id"), rs.getLong("product_id"),
+        return new SerialResponse(rs.getLong("id"), rs.getLong("product_id"), rs.getObject("variant_id", Long.class),
                 rs.getString("sku"), rs.getString("name"), rs.getLong("warehouse_id"),
                 rs.getString("warehouse_name"), rs.getLong("location_id"),
                 rs.getString("location_name"), rs.getString("serial_number"),

@@ -101,6 +101,7 @@ export interface InventoryMovement {
 export interface InventorySerial {
   id: number
   productId: number
+  variantId?: number
   sku: string
   productName: string
   warehouseId: number

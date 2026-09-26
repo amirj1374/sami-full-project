@@ -191,7 +191,7 @@ public class InventoryLedgerService {
             jdbc.update("update inventory_serial_units set status='RESERVED',updated_at=now(),version=version+1 where id=?",
                     serialId);
         }
-        recordMovement(tenantId, productId, warehouseId, location, null, null,
+        recordVariantMovement(tenantId, productId, variantId, warehouseId, location, null, null,
                 "RESERVE", quantity, state.averageCost(), sourceType, sourceId,
                 sourceLineId, "RESERVE-" + normalize(sourceType) + "-" + sourceId + "-" + sourceLineId,
                 null);
@@ -207,11 +207,13 @@ public class InventoryLedgerService {
         BigDecimal baseQuantity = command.enteredQuantity().multiply(command.conversionFactor());
         InventoryWarehouse warehouse = requireWarehouse(tenantId, command.warehouseId());
         Long location = requireLocation(tenantId, warehouse.getId(), null);
-        if (movementExists(tenantId, "PURCHASE-RECEIPT-" + command.receiptId())) return;
+        String operationKey = "PURCHASE-RECEIPT-" + command.receiptId()
+                + (command.sourceLineId() == null ? "" : "-" + command.sourceLineId());
+        if (movementExists(tenantId, operationKey)) return;
         jdbc.update("insert into inventory_balances(tenant_id,warehouse_id,location_id,product_id,variant_id) values(?,?,?,?,?) on conflict do nothing", tenantId, warehouse.getId(), location, command.productId(), command.variantId());
         BalanceState state = jdbc.query("select id,on_hand,reserved,average_unit_cost from inventory_balances where tenant_id=? and warehouse_id=? and location_id=? and product_id=? and variant_id=? for update", (rs,row)->new BalanceState(rs.getLong("id"),rs.getBigDecimal("on_hand"),rs.getBigDecimal("reserved"),rs.getBigDecimal("average_unit_cost")),tenantId,warehouse.getId(),location,command.productId(),command.variantId()).getFirst();
         BigDecimal cost = nonNegative(command.unitCost()); BigDecimal onHand = state.onHand().add(baseQuantity); BigDecimal avg = cost.signum()>0 ? state.onHand().multiply(state.averageCost()).add(baseQuantity.multiply(cost)).divide(onHand,4,RoundingMode.HALF_UP) : state.averageCost(); updateBalance(state.id(),onHand,state.reserved(),avg);
-        jdbc.update("insert into inventory_movements(tenant_id,product_id,variant_id,to_warehouse_id,to_location_id,movement_type,quantity,unit_cost,source_type,source_id,operation_key,entered_quantity,entered_uom_id,conversion_factor,base_quantity,base_uom_id,actor_id,actor_email) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",tenantId,command.productId(),command.variantId(),warehouse.getId(),location,"RECEIPT",baseQuantity,cost,"PURCHASE",command.purchaseId(),"PURCHASE-RECEIPT-"+command.receiptId(),command.enteredQuantity(),command.enteredUomId(),command.conversionFactor(),baseQuantity,command.baseUomId(),CurrentActor.id(),CurrentActor.email());
+        jdbc.update("insert into inventory_movements(tenant_id,product_id,variant_id,to_warehouse_id,to_location_id,movement_type,quantity,unit_cost,source_type,source_id,source_line_id,operation_key,entered_quantity,entered_uom_id,conversion_factor,base_quantity,base_uom_id,actor_id,actor_email) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",tenantId,command.productId(),command.variantId(),warehouse.getId(),location,"RECEIPT",baseQuantity,cost,"PURCHASE",command.purchaseId(),command.sourceLineId(),operationKey,command.enteredQuantity(),command.enteredUomId(),command.conversionFactor(),baseQuantity,command.baseUomId(),CurrentActor.id(),CurrentActor.email());
         int expectedSerials = command.serials() == null ? 0 : command.serials().size();
         if (expectedSerials > 0 && baseQuantity.compareTo(BigDecimal.valueOf(expectedSerials)) != 0) {
             throw new ApiException(ErrorCode.VALIDATION_FAILED, "Serialized receipt quantity must equal serial count");
@@ -219,7 +221,7 @@ public class InventoryLedgerService {
         if (command.serials() != null) {
             for (var serial : command.serials()) {
                 Long serialId = createSerial(tenantId, command.productId(), command.variantId(), warehouse.getId(), location,
-                        serial.serialNumber(), serial.imei(), "PURCHASE", command.purchaseId(), command.receiptId());
+                        serial.serialNumber(), serial.imei(), "PURCHASE", command.purchaseId(), command.sourceLineId());
                 if (serial.hamtaActivationCode() != null && !serial.hamtaActivationCode().isBlank()) {
                     hamtaService.register(serialId, serial.hamtaActivationCode());
                 }
@@ -270,7 +272,7 @@ public class InventoryLedgerService {
             jdbc.update("update inventory_serial_units set status='RESERVED',updated_at=now(),version=version+1 where id=?",
                     serialId);
         }
-        recordMovement(tenantId, productId, warehouseId, location, null, null,
+        recordVariantMovement(tenantId, productId, variantId, warehouseId, location, null, null,
                 "RESERVE", reserved, state.averageCost(), sourceType, sourceId,
                 sourceLineId, "RESERVE-" + normalize(sourceType) + "-" + sourceId + "-" + sourceLineId,
                 null);
@@ -301,7 +303,7 @@ public class InventoryLedgerService {
                     where id=? and tenant_id=? and status='RESERVED'
                     """, reservation.serialUnitId(), tenantId);
         }
-        recordMovement(tenantId, reservation.productId(), reservation.warehouseId(),
+        recordVariantMovement(tenantId, reservation.productId(), reservation.variantId(), reservation.warehouseId(),
                 reservation.locationId(), null, null, "RELEASE", remaining,
                 state.averageCost(), reservation.sourceType(), reservation.sourceId(),
                 reservation.sourceLineId(), "RELEASE-" + reservation.id(), reason);
@@ -339,7 +341,7 @@ public class InventoryLedgerService {
                     where id=? and tenant_id=? and status='RESERVED'
                     """, reservation.serialUnitId(), tenantId);
         }
-        recordMovement(tenantId, reservation.productId(), reservation.warehouseId(),
+        recordVariantMovement(tenantId, reservation.productId(), reservation.variantId(), reservation.warehouseId(),
                 reservation.locationId(), null, null, "ISSUE", quantity,
                 state.averageCost(), provenanceType, provenanceId,
                 reservation.sourceLineId(), operationKey, null);
@@ -572,6 +574,24 @@ public class InventoryLedgerService {
                     source_type,source_id,source_line_id,operation_key,reason,actor_id,actor_email)
                 values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                 """, tenantId, productId, fromWarehouseId, fromLocationId,
+                toWarehouseId, toLocationId, normalize(movementType), quantity,
+                nonNegative(unitCost), normalize(sourceType), sourceId, sourceLineId,
+                operationKey, reason, CurrentActor.id(), CurrentActor.email());
+    }
+
+    private void recordVariantMovement(Long tenantId, Long productId, Long variantId,
+                                       Long fromWarehouseId, Long fromLocationId,
+                                       Long toWarehouseId, Long toLocationId,
+                                       String movementType, BigDecimal quantity, BigDecimal unitCost,
+                                       String sourceType, Long sourceId, Long sourceLineId,
+                                       String operationKey, String reason) {
+        jdbc.update("""
+                insert into inventory_movements(
+                    tenant_id,product_id,variant_id,from_warehouse_id,from_location_id,
+                    to_warehouse_id,to_location_id,movement_type,quantity,unit_cost,
+                    source_type,source_id,source_line_id,operation_key,reason,actor_id,actor_email)
+                values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                """, tenantId, productId, variantId, fromWarehouseId, fromLocationId,
                 toWarehouseId, toLocationId, normalize(movementType), quantity,
                 nonNegative(unitCost), normalize(sourceType), sourceId, sourceLineId,
                 operationKey, reason, CurrentActor.id(), CurrentActor.email());

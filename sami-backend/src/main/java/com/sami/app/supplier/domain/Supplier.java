@@ -39,6 +39,10 @@ import java.util.Set;
 @Builder
 public class Supplier extends BaseEntity {
 
+    /** Explicit tenant ownership; the database default is only a migration safety net. */
+    @Column(name = "tenant_id", nullable = false, updatable = false)
+    private Long tenantId;
+
     @Column(name = "supplier_code", nullable = false, unique = true, length = 32)
     private String supplierCode;
 

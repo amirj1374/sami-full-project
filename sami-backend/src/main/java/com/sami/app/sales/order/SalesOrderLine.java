@@ -12,6 +12,8 @@ public class SalesOrderLine extends BaseEntity {
     @Column(name="source_line_id") Long sourceLineId;
     @Column(name="product_id", nullable=false) Long productId;
     @Column(name="variant_id") Long variantId;
+    @Column(name="serial_number") String serialNumber;
+    @Column(name="imei") String imei;
     @Column(name="product_sku", nullable=false) String productSku;
     @Column(name="product_name", nullable=false) String productName;
     @Column(nullable=false) BigDecimal quantity;

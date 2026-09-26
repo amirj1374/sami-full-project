@@ -158,10 +158,11 @@ public class InventoryController {
     public ApiResponse<PageResponse<SerialResponse>> serials(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) Long warehouseId,
+            @RequestParam(required = false) Long variantId,
             @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        return ApiResponse.ok(queries.serials(search, warehouseId, status, page, size));
+        return ApiResponse.ok(queries.serials(search, warehouseId, variantId, status, page, size));
     }
 
     @PutMapping("/serials/{id}/status")

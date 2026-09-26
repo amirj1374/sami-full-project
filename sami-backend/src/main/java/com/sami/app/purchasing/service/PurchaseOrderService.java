@@ -34,12 +34,15 @@ public class PurchaseOrderService {
         BigDecimal total = BigDecimal.ZERO;
         for (Map<String,Object> line : lines) {
             Object product = line.get("productId");
+            Long variant = number(line.get("variantId"));
             BigDecimal quantity = decimal(line.get("quantity"));
             BigDecimal price = decimal(line.get("unitPrice"));
             if (product == null || quantity.signum() <= 0 || price.signum() < 0 || jdbc.queryForObject("select count(*) from products where id=? and tenant_id=? and active=true", Integer.class, product, tenant) == 0)
                 throw new ApiException(ErrorCode.VALIDATION_FAILED, "Invalid purchase order line");
+            if (variant != null && jdbc.queryForObject("select count(*) from product_variants where id=? and tenant_id=? and product_id=? and status='ACTIVE'", Integer.class, variant, tenant, product) != 1)
+                throw new ApiException(ErrorCode.VALIDATION_FAILED, "Variant does not belong to product and tenant");
             BigDecimal lineTotal = quantity.multiply(price); total = total.add(lineTotal);
-            jdbc.update("insert into purchase_order_lines(tenant_id,purchase_order_id,product_id,quantity,unit_price,line_total) values(?,?,?,?,?,?)", tenant, id, product, quantity, price, lineTotal);
+            jdbc.update("insert into purchase_order_lines(tenant_id,purchase_order_id,product_id,variant_id,quantity,unit_price,line_total) values(?,?,?,?,?,?,?)", tenant, id, product, variant, quantity, price, lineTotal);
         }
         jdbc.update("update purchase_orders set subtotal=?,total=? where id=? and tenant_id=?", total, total, id, tenant);
         audit.record(tenant, company, branch, "PURCHASE_ORDER", id, "CREATED", "Purchase order created", Map.of("orderNumber", number));
@@ -47,6 +50,7 @@ public class PurchaseOrderService {
     }
 
     private BigDecimal decimal(Object value) { try { return new BigDecimal(Objects.requireNonNull(value).toString()); } catch (Exception e) { throw new ApiException(ErrorCode.VALIDATION_FAILED, "Invalid numeric value"); } }
+    private Long number(Object value) { if (value == null || value.toString().isBlank()) return null; try { return Long.valueOf(value.toString()); } catch (Exception e) { throw new ApiException(ErrorCode.VALIDATION_FAILED, "Invalid variant identifier"); } }
 
     @Transactional(readOnly = true)
     public Map<String,Object> get(Long id) {

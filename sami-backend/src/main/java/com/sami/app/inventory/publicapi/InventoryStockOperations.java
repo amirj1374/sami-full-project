@@ -46,15 +46,23 @@ public interface InventoryStockOperations {
                                   List<ReceiptLine> lines) {
     }
     record VariantPurchaseReceiptCommand(Long warehouseId, Long purchaseId, Long receiptId,
-                                         Long productId, Long variantId, BigDecimal enteredQuantity,
+                                         Long sourceLineId, Long productId, Long variantId, BigDecimal enteredQuantity,
                                          Long enteredUomId, Long baseUomId, BigDecimal conversionFactor,
                                          BigDecimal unitCost, List<SerialIdentity> serials) {
         public VariantPurchaseReceiptCommand(Long warehouseId, Long purchaseId, Long receiptId,
                                              Long productId, Long variantId, BigDecimal enteredQuantity,
                                              Long enteredUomId, Long baseUomId, BigDecimal conversionFactor,
                                              BigDecimal unitCost) {
-            this(warehouseId, purchaseId, receiptId, productId, variantId, enteredQuantity,
+            this(warehouseId, purchaseId, receiptId, null, productId, variantId, enteredQuantity,
                     enteredUomId, baseUomId, conversionFactor, unitCost, List.of());
+        }
+
+        public VariantPurchaseReceiptCommand(Long warehouseId, Long purchaseId, Long receiptId,
+                                             Long productId, Long variantId, BigDecimal enteredQuantity,
+                                             Long enteredUomId, Long baseUomId, BigDecimal conversionFactor,
+                                             BigDecimal unitCost, List<SerialIdentity> serials) {
+            this(warehouseId, purchaseId, receiptId, null, productId, variantId, enteredQuantity,
+                    enteredUomId, baseUomId, conversionFactor, unitCost, serials);
         }
     }
 
