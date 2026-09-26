@@ -285,6 +285,12 @@ silently resolve those decisions here.
 - **Hardened QA:** The independent `real-user-acceptance` skill, governance
   gate and executable framework regression are present. Rendered authenticated
   browser execution remains `BLOCKED BY HARNESS`, not PASS.
+- **Repository browser harness:** Playwright runner/configuration is now
+  committed at `7bc1c7e` with desktop/tablet/mobile projects, screenshots,
+  traces, console/network capture and environment-provided authentication.
+  Official Playwright container execution launched Chromium successfully, but
+  the current local Docker/frontend runtime became unavailable during the
+  application self-test; no browser or phone-flow PASS is claimed.
  customer timeline and workflow outcome evidence and must be explicitly
  reconciled in its Contract.
 
