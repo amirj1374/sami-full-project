@@ -291,6 +291,10 @@ silently resolve those decisions here.
   Official Playwright container execution launched Chromium successfully, but
   the current local Docker/frontend runtime became unavailable during the
   application self-test; no browser or phone-flow PASS is claimed.
+- **Current harness retry:** Docker Desktop's WSL2 engine is currently stopped
+  and Docker CLI health calls hang (`docker-desktop Stopped`). Frontend/backend
+  browser execution remains `BLOCKED BY HARNESS` pending runtime recovery; no
+  positive browser evidence is recorded.
  customer timeline and workflow outcome evidence and must be explicitly
  reconciled in its Contract.
 
