@@ -65,3 +65,22 @@
   authenticated browser execution because no browser provider is available in
   this environment. Prior backend/PostgreSQL evidence remains valid but is not
   promoted to browser certification.
+
+## Browser runtime recovery and self-test
+
+- Runtime recovery: disposable PostgreSQL, Spring backend and Vite frontend
+  were restarted without database reset; Flyway remained at V80.
+- Harness correction: Vite explicitly allows `host.docker.internal` for the
+  repository Playwright container and accepts `VITE_DEV_API_TARGET`; the
+  browser harness now waits for the real login control, supports Persian
+  labels, and ignores only navigation-cancelled requests during refresh.
+- Authenticated self-test: PASS on the official
+  `mcr.microsoft.com/playwright:v1.52.0-noble` image with real bootstrap admin
+  authentication, dashboard navigation, refresh/reopen and console/network
+  capture. Desktop PASS, mobile PASS, tablet PASS after the cancellation
+  classification correction.
+- Operational UI smoke: authenticated Products, Purchases, Inventory and
+  Sales pages rendered with real API communication. The complete phone
+  Purchase → Goods Receipt → Inventory → Price → Sale → Issue journey was not
+  certified in this run; no browser E2E PASS is claimed until each mutation has
+  visible, persisted and cross-screen evidence.

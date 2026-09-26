@@ -326,3 +326,19 @@ Recorded facts were reconciled against the current branch, HEAD, upstream,
 working tree, V71, P3-S7 source, acceptance tests, Contract and run evidence.
 The external PostgreSQL databases used for acceptance were disposable and
 isolated by database name; no repository fixture was left modified.
+
+### Browser harness recovery (latest)
+
+- Docker Desktop runtime recovered; disposable PostgreSQL, backend and
+  frontend are running for local QA without resetting data.
+- Repository Playwright harness self-test is PASS on the official Playwright
+  container: desktop, tablet and mobile authenticated runs passed after the
+  harness classified refresh-cancelled requests correctly.
+- Vite development host/proxy configuration was corrected only for the
+  repository container path (`host.docker.internal` and
+  `VITE_DEV_API_TARGET`); production behavior is unchanged.
+- Authenticated Products, Purchases, Inventory and Sales pages render through
+  the real application. The hardened phone Purchase → Sale browser journey is
+  still NOT CERTIFIED because mutation-by-mutation persisted and cross-screen
+  evidence has not yet been completed; backend/PostgreSQL certification remains
+  valid and is not promoted to browser PASS.

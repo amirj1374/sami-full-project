@@ -17,6 +17,10 @@ export default defineConfig({
   },
   server: {
     port: 7474,
+    // The repository-owned Playwright container reaches the dev server through
+    // host.docker.internal. Keep the allow-list explicit; this is development
+    // infrastructure only and does not change production serving behavior.
+    allowedHosts: ['host.docker.internal', 'localhost', '127.0.0.1'],
     // Proxy API calls to the backend in development so the browser makes
     // same-origin requests and there are no CORS surprises.
     proxy: {
