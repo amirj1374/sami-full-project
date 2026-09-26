@@ -36,6 +36,12 @@ and deployment remain separately authorized. Contracts with user-facing UI also
 require the UI Quality Agent gate: rendered desktop/tablet/mobile and
 applicable locale/state evidence before DoD. The agent may correct only safe
 presentation defects and must route business or functional changes.
+Material user-facing business journeys additionally require the Real User
+Acceptance / Adversarial Browser QA gate. Browser PASS requires, where
+applicable, ACTION → VISIBLE RESULT → BUSINESS RESULT → PERSISTED RESULT →
+CROSS-SCREEN CONSISTENCY, plus refresh/reopen, negative/idempotency,
+console/network and explicit NOT TESTED/BLOCKED BY HARNESS states. A shallow
+render, toast, HTTP 200 or source inspection is not acceptance evidence.
 
 Before architecture, implementation, dependency, migration, environment, or release work:
 

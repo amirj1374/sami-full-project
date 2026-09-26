@@ -282,6 +282,9 @@ silently resolve those decisions here.
   provider. This is a recorded environment limitation, not fabricated PASS.
 - **Guardian:** PASS on implementation, ownership, identity, tenant,
   idempotency and evidence scope; UI limitation remains explicit.
+- **Hardened QA:** The independent `real-user-acceptance` skill, governance
+  gate and executable framework regression are present. Rendered authenticated
+  browser execution remains `BLOCKED BY HARNESS`, not PASS.
  customer timeline and workflow outcome evidence and must be explicitly
  reconciled in its Contract.
 

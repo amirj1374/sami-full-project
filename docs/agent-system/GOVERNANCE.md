@@ -170,3 +170,22 @@ This document does not create business requirements, supersede the Business
 Rules, authorize roadmap items, replace the Architecture Constitution, or
 create execution contracts, project state, agent registries, handoff ledgers,
 or run ledgers. Those are later infrastructure phases.
+
+## 12. Real User Acceptance / Adversarial Browser QA
+
+Material user-facing business journeys require the independent Real User
+Acceptance / Adversarial Browser QA Agent in addition to UI Quality. A browser
+scenario is accepted only when the applicable chain is proven:
+
+`ACTION → VISIBLE RESULT → BUSINESS RESULT → PERSISTED RESULT → CROSS-SCREEN CONSISTENCY`.
+
+The gate includes refresh/reopen persistence, realistic negative and duplicate
+submission attempts, authorization/tenant checks, console and network error
+inspection, and explicit before/after state evidence. Required states and
+viewports must be recorded as `PASS`, `FAIL`, `NOT TESTED`, `BLOCKED BY
+HARNESS`, or `NOT APPLICABLE`; unavailable evidence is never implied PASS.
+Screenshots or equivalent rendered evidence and a step-by-step journey ledger
+are required where the environment supports them. The Agent must not bypass
+authentication, invent business behavior, use API workarounds for UI actions,
+or mutate data to manufacture evidence. Critical/Major findings block DoD;
+ordinary defects and harness recovery remain internal execution work.

@@ -52,3 +52,16 @@
 - PASS for approved cross-module ownership, tenant isolation, identity
   preservation, idempotency, migration safety and evidence scope. Browser
   limitation remains explicitly recorded above.
+
+## Hardened QA Recheck
+
+- The repository now requires the independent `real-user-acceptance` skill for
+  material user-facing journeys. Its gate requires action, visible, business,
+  persisted and cross-screen evidence, refresh/reopen, negative/idempotency
+  checks, runtime/network inspection and explicit unavailable-state labels.
+- Framework regression: frontend tests 57/0/0, including the permanent
+  framework-marker test.
+- Phone journey under the hardened standard: `BLOCKED BY HARNESS` for rendered
+  authenticated browser execution because no browser provider is available in
+  this environment. Prior backend/PostgreSQL evidence remains valid but is not
+  promoted to browser certification.
