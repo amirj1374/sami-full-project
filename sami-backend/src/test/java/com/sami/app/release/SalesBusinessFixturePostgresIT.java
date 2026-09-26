@@ -63,7 +63,10 @@ public class SalesBusinessFixturePostgresIT extends PostgresApplicationFixture {
         var assignment = grants.assign( new AssignmentRequest(1L, company.id(), role)); grants.grant(assignment.id(), new BranchGrantRequest(branch.id()));
         var type = crmConfig.createType(new TypeRequest("fixture-customer-" + tenant.getId(), "Fixture Customer", null, true, 1));
         var customer = customers.create(new CustomerRequest(null, null, "Fixture Customer", null, null, null, null, null, null, null, type.id(), null, null, null, null, null, false, null));
-        contactWrites.createCustomerContact(customer.customer().id(), customer.customer().displayName());
+        if (jdbc.queryForObject("select count(*) from contact_customer_roles where tenant_id=? and customer_id=?", Integer.class,
+                tenant.getId(), customer.customer().id()) == 0) {
+            contactWrites.createCustomerContact(customer.customer().id(), customer.customer().displayName());
+        }
         var warehouse = warehouses.create(new WarehouseRequest(null, null, "FIX-WH-" + tenant.getId(), "Fixture Warehouse", null, "STANDARD", true, true, 1));
         var product = products.create(new CreateProductRequest("Fixture Product", "FIX-" + tenant.getId(), null, new BigDecimal("100.00"), 1, true, false));
         var location = warehouses.locations(warehouse.id()).getFirst();
