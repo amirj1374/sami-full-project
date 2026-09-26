@@ -8,6 +8,8 @@
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "node --test tests/*.test.mjs",
+    "test:browser": "playwright test",
+    "run-real-user-acceptance": "playwright test tests/browser --project=desktop --project=tablet --project=mobile",
     "test:font-assets": "node tests/font-assets-smoke.mjs",
     "type-check": "vue-tsc --noEmit"
   },
@@ -26,6 +28,7 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.52.0",
     "@vitejs/plugin-vue": "^6.0.0",
     "msw": "^2.15.0",
     "sass-embedded": "^1.83.0",
