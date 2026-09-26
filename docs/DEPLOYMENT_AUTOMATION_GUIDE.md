@@ -13,13 +13,13 @@ release version. The launcher uses the project's Git Bash wrapper and keeps all
 validation, deployment, and rollback logic in `scripts/release-deploy.sh`.
 
 ```bat
-release.bat 0.7.0
+release.bat 0.8.0
 ```
 
 The equivalent Git Bash command is:
 
 ```bash
-./scripts/release-deploy.sh 0.7.0
+./scripts/release-deploy.sh 0.8.0
 ```
 
 The launcher does not store credentials, pass credentials as arguments, commit,

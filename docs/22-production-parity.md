@@ -94,7 +94,7 @@ be read back from a new HTTP request.
 Run the official pre-release gate from a clean `development` checkout:
 
 ```powershell
-.\scripts\deploy.ps1 -Mode Validate -ApplicationVersion 0.7.0
+.\scripts\deploy.ps1 -Mode Validate -ApplicationVersion 0.8.0
 ```
 
 The gate is production-parity aware and must pass before any export/upload or

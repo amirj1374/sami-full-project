@@ -7,9 +7,9 @@ repository reality on every resume.
 ## State Metadata
 
 - **State Version:** 1
-- **Last Reconciled:** 2026-09-24
+- **Last Reconciled:** 2026-09-26
 - **Repository Branch:** `development`
-- **Recorded HEAD:** `0bdb47d` (`chore(crm): certify phase 5`)
+- **Recorded HEAD:** `a94cc95` (`chore: bump version to 0.8.0`)
 - **State Status:** Phase 3 COMPLETE/ACCEPTED — Phase 4 COMPLETE/ACCEPTED — Phase 5 COMPLETE/ACCEPTED
 
 ## Authority References
@@ -109,9 +109,9 @@ authorized and do not expand the Step 6 application scope.
 
 - Phase 3 final certification is complete. P4-S1 through P4-S8 are complete;
   Phase 4 Accounting is COMPLETE/ACCEPTED. No Phase 4 work remains active.
-- P5-S1/P5-S2/P5-S4 implementation is present and validation evidence is green;
-  P5-S3/P5-S5/P5-S6 remain to be reconciled and executed under the active Phase
-  authorization.
+- Phase 5 implementation and validation evidence are complete; P5-S5 rendered
+  UI evidence is accepted with explicit browser-harness limitations recorded in
+  `RUN-P5-S5-001.md`.
 
 ## Working Tree Preservation
 
@@ -146,6 +146,9 @@ authorized and do not expand the Step 6 application scope.
     Persian/RTL, insufficient-history, loading/empty/error shells and navigation
     exercised. Tablet/mobile exact viewport evidence is unavailable in the
     current browser harness and remains explicitly limited.
+- **PASS:** Frontend production-parity regression after 0.8.0 version
+  alignment: 56 tests, 0 failures, 0 errors; type-check and production build
+  also passed.
 - **PASS:** P5-S6 final certification and independent Guardian review; Phase 5
   completion evidence recorded in `RUN-P5-S6-001.md`.
 - **PASS:** Step 6 acceptance on clean PostgreSQL: 5 tests, 0 failures,
@@ -207,10 +210,9 @@ in `RUN-P3-S7-001.md`.
 - **OWNER BLOCKER:** None proven after DEC-P4-001.
 - **OWNER BLOCKER:** None. DEC-P5-001 resolves the former CRM intelligence
   policy blocker.
-- **TECHNICAL STATUS:** P5-S1/P5-S2/P5-S4 validation gates recorded green;
-    Phase 5 remains unaccepted pending remaining plan steps and final Guardian.
-- **Checkpoint:** `a09953f chore(crm): persist phase 5 validation checkpoint` is
-    pushed to `origin/development`; subsequent fixes are uncommitted.
+- **TECHNICAL STATUS:** Phase 5 P5-S1 through P5-S6 are complete/accepted;
+    current rendered UI limitations remain explicitly recorded as harness
+    limitations, not untested PASS claims.
 - **Validation environment:** external PostgreSQL 16.15 and repository-mounted
     Maven container are available and were used; Testcontainers is not required.
 - **Decision:** `docs/decisions/DEC-P5-001-crm-intelligence-policy.md` approved;
