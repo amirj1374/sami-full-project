@@ -2,7 +2,7 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useDisplay } from 'vuetify'
 import { useI18n } from 'vue-i18n'
-import { organizationApi, type Company, type CompanyPayload, type OrganizationAssignment, type Branch } from '@/api/organization'
+import { organizationApi, type Company, type CompanyPayload, type OrganizationAssignment, type Branch, type BranchType } from '@/api/organization'
 import { usersApi, type RoleOption } from '@/api/users'
 import { useApiError } from '@/composables/useApiError'
 import { usePermission } from '@/composables/usePermission'
@@ -26,6 +26,10 @@ const grantCompanyId = ref<number | null>(null)
 const grantBranchId = ref<number | null>(null)
 const assignments = ref<OrganizationAssignment[]>([])
 const branches = ref<Branch[]>([])
+const branchTypes = ref<BranchType[]>([])
+const branchDialog = ref(false)
+const branchCompanyId = ref<number | null>(null)
+const branchForm = reactive({ code: '', name: '', branchTypeId: null as number | null, active: true })
 const roles = ref<RoleOption[]>([])
 const grantsLoading = ref(false)
 
@@ -107,12 +111,14 @@ async function grantBranch() {
 }
 async function revokeAssignment(assignment: OrganizationAssignment) { await organizationApi.revokeAssignment(assignment.id); await loadGrants() }
 onMounted(async () => { try { roles.value = await usersApi.roleOptions() } catch (error) { apiError.set(error) } })
+async function openBranch(company: Company) { branchCompanyId.value = company.id; Object.assign(branchForm, { code: '', name: '', branchTypeId: null, active: true }); branchTypes.value = await organizationApi.branchTypes(); branchDialog.value = true }
+async function saveBranch() { if (!branchCompanyId.value || !branchForm.code.trim() || !branchForm.name.trim() || !branchForm.branchTypeId) return; try { await organizationApi.createBranch(branchCompanyId.value, { ...branchForm, code: branchForm.code.trim(), name: branchForm.name.trim(), branchTypeId: branchForm.branchTypeId }); branchDialog.value = false; await load() } catch (error) { apiError.set(error) } }
 </script>
 
 <template>
   <div>
     <AppPageHeader :title="t('organization.title')" :subtitle="t('organization.subtitle')" icon="mdi-office-building-outline">
-      <template #actions><v-btn v-if="can('organization:create')" color="primary" prepend-icon="mdi-plus" @click="open()">{{ t('organization.addCompany') }}</v-btn></template>
+      <template #actions><v-btn v-if="can('organization:create')" color="primary" prepend-icon="mdi-plus" @click="open()">{{ t('organization.addCompany') }}</v-btn><v-btn v-if="can('organization:create') && rows.length" color="secondary" prepend-icon="mdi-source-branch-plus" @click="openBranch(rows[0])">{{ t('organization.addBranch') }}</v-btn></template>
     </AppPageHeader>
     <v-alert v-if="apiError.message" type="error" variant="tonal" class="mb-4" closable @click:close="apiError.clear()">{{ apiError.message }}</v-alert>
     <v-card class="app-data-surface" rounded="xl">
@@ -165,5 +171,6 @@ onMounted(async () => { try { roles.value = await usersApi.roleOptions() } catch
         <v-card-actions class="pa-4"><v-spacer/><v-btn variant="text" :disabled="saving" @click="dialog = false">{{ t('common.cancel') }}</v-btn><v-btn color="primary" :loading="saving" :disabled="!form.code?.trim() || !form.name?.trim()" @click="save">{{ t('common.save') }}</v-btn></v-card-actions>
       </v-card>
     </v-dialog>
+    <v-dialog v-model="branchDialog" max-width="520"><v-card rounded="xl"><v-card-title>{{ t('organization.addBranch') }}</v-card-title><v-card-text><v-text-field v-model="branchForm.code" :label="t('organization.branchFields.code')" /><v-text-field v-model="branchForm.name" :label="t('organization.branchFields.name')" /><v-select v-model="branchForm.branchTypeId" :items="branchTypes" item-title="name" item-value="id" :label="t('organization.branchFields.type')" /><v-switch v-model="branchForm.active" :label="t('common.active')" color="success" /></v-card-text><v-card-actions><v-spacer/><v-btn variant="text" @click="branchDialog=false">{{ t('common.cancel') }}</v-btn><v-btn color="primary" :disabled="!branchForm.code.trim() || !branchForm.name.trim() || !branchForm.branchTypeId" @click="saveBranch">{{ t('common.save') }}</v-btn></v-card-actions></v-card></v-dialog>
   </div>
 </template>

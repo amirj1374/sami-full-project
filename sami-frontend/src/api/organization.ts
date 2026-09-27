@@ -49,6 +49,7 @@ export interface CompanyPayload {
   expectedVersion?: number
 }
 export interface Branch { id: number; companyId: number; code: string; name: string; active: boolean }
+export interface BranchType { id: number; code: string; name: string; allowsInventory: boolean; allowsSales: boolean }
 export interface OrganizationAssignment { id: number; userId: number; companyId: number; roleId: number; active: boolean; branchIds: number[] }
 
 export const organizationApi = {
@@ -56,6 +57,9 @@ export const organizationApi = {
   create: (payload: CompanyPayload) => unwrap(http.post<ApiResponse<Company>>('/v1/organization/companies', payload)),
   update: (id: number, payload: CompanyPayload) => unwrap(http.put<ApiResponse<Company>>(`/v1/organization/companies/${id}`, payload)),
   branches: (companyId: number) => unwrap(http.get<ApiResponse<Branch[]>>(`/v1/organization/companies/${companyId}/branches`)),
+  branchTypes: () => unwrap(http.get<ApiResponse<BranchType[]>>('/v1/organization/branch-types')),
+  createBranch: (companyId: number, payload: { code: string; name: string; branchTypeId: number; active?: boolean; displayOrder?: number }) =>
+    unwrap(http.post<ApiResponse<Branch>>(`/v1/organization/companies/${companyId}/branches`, payload)),
   assignments: (userId: number) => unwrap(http.get<ApiResponse<OrganizationAssignment[]>>(`/v1/organization/grants/users/${userId}`)),
   assign: (payload: { userId: number; companyId: number; roleId: number }) => unwrap(http.post<ApiResponse<OrganizationAssignment>>('/v1/organization/grants', payload)),
   grantBranch: (assignmentId: number, branchId: number) => unwrap(http.post<ApiResponse<OrganizationAssignment>>(`/v1/organization/grants/${assignmentId}/branches`, { branchId })),

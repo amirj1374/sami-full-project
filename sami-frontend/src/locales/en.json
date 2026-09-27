@@ -458,6 +458,8 @@
     "title": "Organisation",
     "subtitle": "Manage companies registered for this business",
     "addCompany": "Add company",
+    "addBranch": "Add branch",
+    "branchFields": { "code": "Branch code", "name": "Branch name", "type": "Branch type" },
     "editCompany": "Edit company",
     "defaultCompany": "Default",
     "fields": {

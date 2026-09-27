@@ -458,6 +458,8 @@
     "title": "سازمان",
     "subtitle": "مدیریت شرکت‌های ثبت‌شده در این کسب‌وکار",
     "addCompany": "افزودن شرکت",
+    "addBranch": "افزودن شعبه",
+    "branchFields": { "code": "کد شعبه", "name": "نام شعبه", "type": "نوع شعبه" },
     "editCompany": "ویرایش شرکت",
     "defaultCompany": "پیش‌فرض",
     "fields": {
