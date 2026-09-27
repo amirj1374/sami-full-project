@@ -106,3 +106,19 @@
 - **Required next action:** Establish the repository-supported active
   company/branch and warehouse configuration through the normal setup UI, then
   rerun the journey from Product creation.
+
+### Setup continuation — Company / Branch boundary
+
+- **Company:** PASS. Organization → Add Company created `BROWSER-COMP`
+  (`شرکت تست مرورگر`) visibly; the response was successful and the row remained
+  after reload.
+- **Branch:** FAIL / PRODUCT-UX DEFECT. The authenticated Organization UI has
+  branch listing and branch-grant controls, but no branch-create action or
+  branch-type selection. The backend requires `branchTypeId`; no UI business
+  workflow exists to establish the minimum branch prerequisite.
+- **Forbidden workaround:** Branch creation was not performed through direct
+  API/SQL because this is a business setup operation the Product is expected
+  to expose. Warehouse and phone journey steps therefore remain unexecuted.
+- **Owner boundary:** no Product policy decision is needed; the missing
+  branch onboarding surface must be routed to the Frontend/Organization owner
+  within the existing architecture before rerunning the journey.

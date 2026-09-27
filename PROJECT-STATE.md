@@ -348,3 +348,9 @@ isolated by database name; no repository fixture was left modified.
   Save remained disabled without required company/branch context. No API/SQL
   workaround or fabricated business data was used; rerun must begin after
   legitimate tenant company/branch/warehouse setup.
+- Company setup has since been completed through Organization UI (`BROWSER-COMP`)
+  and persisted after reload. The next UI boundary is a product onboarding
+  defect: Organization exposes branch list/grant controls but no branch-create
+  flow or branch-type selection, although the approved backend branch contract
+  requires one. No direct API/SQL branch creation was used; phone E2E remains
+  uncertified and must resume after this UI gap is corrected.
