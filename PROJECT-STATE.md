@@ -7,10 +7,10 @@ repository reality on every resume.
 ## State Metadata
 
 - **State Version:** 1
-- **Last Reconciled:** 2026-09-26
+- **Last Reconciled:** 2026-09-28
 - **Repository Branch:** `development`
-- **Recorded HEAD:** `31a08ad` (`test(sales): stabilize PostgreSQL fixture contact setup`)
-- **State Status:** Phase 3 COMPLETE/ACCEPTED — Phase 4 COMPLETE/ACCEPTED — Phase 5 COMPLETE/ACCEPTED — cross-module phone lifecycle CERTIFIED
+- **Recorded implementation commit:** `3d9cd1d` (`test(e2e): certify phone purchase to sale journey`)
+- **State Status:** Phase 3 COMPLETE/ACCEPTED — Phase 4 COMPLETE/ACCEPTED — Phase 5 COMPLETE/ACCEPTED — PHONE PURCHASE → SALE E2E CERTIFIED
 
 ## Authority References
 
@@ -261,15 +261,16 @@ silently resolve those decisions here.
 ## Next Authorized Action
 
  Phase 5 is COMPLETE/ACCEPTED. Phase 6 remains NOT STARTED / NOT AUTHORIZED.
- Cross-module phone lifecycle certification is COMPLETE for backend/PostgreSQL
- evidence. Rendered browser UI evidence is unavailable in this environment and
- is explicitly not claimed as PASS.
+ The cross-module Phone Purchase → Sale lifecycle is CERTIFIED across
+ backend/PostgreSQL, authenticated desktop/tablet/mobile browser execution,
+ UI Quality, Real User Acceptance, Guardian and final regression gates.
 
 ## Cross-Module E2E Certification
 
 - **Contract:** `docs/agent-system/contracts/AUTH-CROSS-MODULE-PHONE-LIFECYCLE.md`
 - **Run:** `docs/agent-system/runs/RUN-CROSS-MODULE-PHONE-LIFECYCLE-001.md`
-- **Status:** COMPLETE for the executable backend/database flow.
+- **Status:** CERTIFIED for the executable backend/database and authenticated
+  real-user browser flow.
 - **Scenario:** one Product Variant phone, one deterministic serial/IMEI,
   purchase order → goods receipt → variant stock → reservation → delivery
   issue → sales invoice/receivable trace.
@@ -277,46 +278,35 @@ silently resolve those decisions here.
   `PhonePurchaseToSalePostgresAcceptanceIT` 1/0/0; supported V50→V80
   migration 2/0/0; `SalesBusinessFixturePostgresIT` 3/0/0; full Maven
   regression 315/0/0; frontend tests 56/0/0, type-check/build PASS.
-- **UI Quality:** source/build checks PASS; authenticated rendered browser
-  inspection NOT RUN because the available CUA environment exposed no browser
-  provider. This is a recorded environment limitation, not fabricated PASS.
+- **UI Quality:** PASS on populated desktop/tablet/mobile, Persian/RTL and
+  English/LTR with overflow, console and failed-network assertions.
 - **Guardian:** PASS on implementation, ownership, identity, tenant,
-  idempotency and evidence scope; UI limitation remains explicit.
+  idempotency, migration safety and evidence scope.
 - **Hardened QA:** The independent `real-user-acceptance` skill, governance
-  gate and executable framework regression are present. Rendered authenticated
-  browser execution remains `BLOCKED BY HARNESS`, not PASS.
-- **Repository browser harness:** Playwright runner/configuration is now
-  committed at `7bc1c7e` with desktop/tablet/mobile projects, screenshots,
-  traces, console/network capture and environment-provided authentication.
-  Official Playwright container execution launched Chromium successfully, but
-  the current local Docker/frontend runtime became unavailable during the
-  application self-test; no browser or phone-flow PASS is claimed.
-- **Current harness retry:** Docker Desktop's WSL2 engine is currently stopped
-  and Docker CLI health calls hang (`docker-desktop Stopped`). Frontend/backend
-  browser execution remains `BLOCKED BY HARNESS` pending runtime recovery; no
-  positive browser evidence is recorded.
- customer timeline and workflow outcome evidence and must be explicitly
- reconciled in its Contract.
+  gate and executable framework regression passed for the authenticated
+  purchase-to-sale journey.
+- **Repository browser harness:** Playwright authentication and serial
+  desktop/tablet/mobile execution are committed at `3d9cd1d`; final populated
+  regression passed 4/0/0 against the real backend and PostgreSQL database.
+- **Final regression:** frontend 57/0/0 plus type-check/build; supplier tenant
+  isolation 5/0/0; full backend 316/0/0; documentation 5/0/0.
 
 ## Agent-System Retrospective
 
 Phase 4 retrospective: `docs/agent-system/retrospectives/PHASE-4-EXECUTION-RETROSPECTIVE.md`.
 No generic framework correction was required; the external PostgreSQL fixture
 path and continuation/checkpoint protections are recorded in existing artifacts.
-Phase 5 is AUTHORIZED and ACTIVE. Phase 6 remains NOT STARTED / NOT AUTHORIZED.
+Phase 5 is COMPLETE/ACCEPTED. Phase 6 remains NOT STARTED / NOT AUTHORIZED.
 
 ## Resume Instructions
 
-1. Read `docs/agent-system/plans/PHASE-5-EXECUTION-PLAN.md`,
-   `docs/decisions/DEC-P5-001-crm-intelligence-policy.md`, and active P5
-   Contracts/runs.
-2. Reconcile P5-S1 evidence, then continue P5-S2 and later dependency-valid
-   work without reopening completed foundations.
-3. Continue only within active Phase 5 authorization; do not start Phase 6.
+1. Preserve the certified Phone Purchase → Sale lifecycle and its run evidence.
+2. Phase 6 remains NOT STARTED / NOT AUTHORIZED.
+3. Release and deployment remain separately unauthorized.
 
 Read `AGENTS.md`, this file, `docs/agent-system/GOVERNANCE.md`, and the
 authoritative sources. Verify branch/HEAD/upstream/status, inspect V71 and
-Step 6 source/tests, and classify any differences before editing. Preserve all
+V80 source/tests, and classify any differences before editing. Preserve all
 unrelated dirty changes. Ordinary failures route internally; update this state
 at meaningful boundaries.
 
@@ -327,7 +317,7 @@ working tree, V71, P3-S7 source, acceptance tests, Contract and run evidence.
 The external PostgreSQL databases used for acceptance were disposable and
 isolated by database name; no repository fixture was left modified.
 
-### Browser harness recovery (latest)
+### Browser harness recovery and certification closure (latest)
 
 - Docker Desktop runtime recovered; disposable PostgreSQL, backend and
   frontend are running for local QA without resetting data.
@@ -338,19 +328,10 @@ isolated by database name; no repository fixture was left modified.
   repository container path (`host.docker.internal` and
   `VITE_DEV_API_TARGET`); production behavior is unchanged.
 - Authenticated Products, Purchases, Inventory and Sales pages render through
-  the real application. The hardened phone Purchase → Sale browser journey is
-  still NOT CERTIFIED because mutation-by-mutation persisted and cross-screen
-  evidence has not yet been completed; backend/PostgreSQL certification remains
-  valid and is not promoted to browser PASS.
-- Real UI mutation attempt reached the operational prerequisite boundary:
-  Product creation visibly returned `No active Inventory warehouse is
-  configured for this branch` (HTTP 409). The Warehouse form was reachable but
-  Save remained disabled without required company/branch context. No API/SQL
-  workaround or fabricated business data was used; rerun must begin after
-  legitimate tenant company/branch/warehouse setup.
-- Company setup has since been completed through Organization UI (`BROWSER-COMP`)
-  and persisted after reload. The next UI boundary is a product onboarding
-  defect: Organization exposes branch list/grant controls but no branch-create
-  flow or branch-type selection, although the approved backend branch contract
-  requires one. No direct API/SQL branch creation was used; phone E2E remains
-  uncertified and must resume after this UI gap is corrected.
+  the real application. The earlier branch/warehouse/Product onboarding gaps
+  were corrected through existing UI and API contracts without SQL or hidden
+  developer workflows.
+- The hardened phone Purchase → Sale browser journey is CERTIFIED. Final
+  populated desktop/tablet/mobile read-back, refresh persistence,
+  localization, overflow, console and failed-network checks passed against the
+  preserved lifecycle data.

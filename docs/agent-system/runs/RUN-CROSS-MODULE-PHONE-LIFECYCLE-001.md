@@ -1,10 +1,11 @@
 # Run CROSS-MODULE-PHONE-LIFECYCLE-001
 
 - **Contract:** `AUTH-CROSS-MODULE-PHONE-LIFECYCLE`
-- **Status:** COMPLETED — backend/service and PostgreSQL E2E certified; UI
-  rendered inspection not executable in this environment (no browser surface).
+- **Status:** CERTIFIED — backend/PostgreSQL, authenticated browser, UI Quality,
+  Real User Acceptance, Guardian and final regression gates passed.
 - **Starting revision:** `717dc3a` on `development`
-- **Environment:** Pending isolated PostgreSQL-backed authenticated UI run.
+- **Environment:** Disposable PostgreSQL 16.15, Spring Boot backend, Vite
+  frontend and official Playwright 1.52 Chromium container.
 
 ## Discovery checkpoint
 
@@ -122,3 +123,61 @@
 - **Owner boundary:** no Product policy decision is needed; the missing
   branch onboarding surface must be routed to the Frontend/Organization owner
   within the existing architecture before rerunning the journey.
+
+## Final authenticated browser certification
+
+- The prerequisite gap was repaired through the existing Organization,
+  Inventory and Product contracts: branch creation with approved branch type,
+  selected organization context, warehouse defaults and optional Product
+  Variant creation are available through the normal UI. No SQL or direct API
+  workaround was used to perform a user action.
+- The completed lifecycle was created once through the authenticated UI and was
+  preserved across resume. Certification did not replay the supplier,
+  purchase, receipt, product/variant/IMEI, customer, order, delivery or invoice
+  mutations.
+- Final populated read-back proved the same supplier, purchase order, goods
+  receipt, Product/Variant, issued IMEI, customer, confirmed Sales Order,
+  confirmed Delivery and issued Sales Invoice after navigation and reload.
+- Final responsive/localization regression at implementation revision
+  `3d9cd1d`: authenticated setup + desktop + tablet + mobile, 4 tests, 0
+  failures, 0 errors. Each viewport asserted no document overflow and captured
+  rendered screenshots; console errors and failed HTTP responses were empty.
+- Persian/RTL and English/LTR switching passed. Tablet/mobile record and table
+  breakpoints passed; the final safe correction removed the raw empty
+  `inventory.values.` key from the status select.
+- Negative/idempotency coverage remains protected by the permanent backend
+  PostgreSQL acceptance and the browser mutation specs executed during the
+  lifecycle run; the final resume pass was deliberately read-only.
+
+## Final regression and integrity gates
+
+- Frontend: 57 tests, 0 failures; `vue-tsc --noEmit` PASS; Vite production
+  build PASS.
+- Backend: `SupplierTenantIsolationTest` 5/0/0; full Maven regression 316/0/0.
+- Migration Guardian: no migration changed, V1→V80 history preserved, 80
+  versioned files and no duplicate versions. Previously proven fresh V1→V80
+  and supported V50→V80 execution were not replayed.
+- Documentation validation: command PASS and tests 5/0/0.
+- `git diff --check`: PASS before implementation commit.
+- Cleanup: the completed `sami-e2e-populated-run` and
+  `sami-e2e-populated-final` browser containers and temporary cloned runner
+  image were removed. The pre-existing backend, frontend and
+  `sami-phone-e2e-pg` services were intentionally preserved; no persistent
+  volume was removed.
+
+## Guardian / Definition of Done
+
+- **Guardian:** PASS. No invented or weakened business rule, unresolved TBD,
+  ownership drift, schema-history mutation, tenant weakening, Phase 6 work or
+  release/deployment action was found. Supplier reads and duplicate detection
+  now require trusted tenant scope; Product/Variant/Serial ownership and
+  purchase/delivery/invoice separation remain intact.
+- **UI Quality:** PASS across populated desktop/tablet/mobile and Persian/RTL
+  plus English/LTR. No Critical or Major finding remains.
+- **Real User Acceptance:** PASS for ACTION → VISIBLE RESULT → BUSINESS RESULT
+  → PERSISTED RESULT → CROSS-SCREEN CONSISTENCY, with refresh/reopen and
+  console/network inspection.
+- **Implementation commit:** `3d9cd1d` (`test(e2e): certify phone purchase to
+  sale journey`).
+- **Release/deployment:** NOT AUTHORIZED and not performed. Phase 6 was not
+  started.

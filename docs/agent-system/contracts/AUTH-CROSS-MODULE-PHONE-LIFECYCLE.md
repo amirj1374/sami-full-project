@@ -52,10 +52,13 @@
   Product/Variant/Serial identity, stock transitions and traceability are
   proven; permanent acceptance and relevant regression are green; UI Quality
   and Guardian pass; state/run artifacts and scoped Git closure are complete.
-- **Status:** COMPLETED — PostgreSQL and backend certification passed; rendered
-  browser inspection was unavailable because no browser surface was exposed by
-  the execution environment.
+- **Status:** CERTIFIED — backend/PostgreSQL and authenticated real-browser
+  purchase-to-sale evidence passed across desktop, tablet and mobile. Guardian,
+  UI Quality, Real User Acceptance, regression and scoped Git closure passed.
 - **Evidence:** `PhonePurchaseToSalePostgresAcceptanceIT` 1/0/0 on a fresh
   PostgreSQL 16 database; `SalesBusinessFixturePostgresIT` 3/0/0; Maven
   backend regression 315/0/0; frontend type-check, tests 56/0/0 and production
-  build PASS; Flyway fresh V1→V80 and supported V50→V80 PASS.
+  build PASS; Flyway fresh V1→V80 and supported V50→V80 PASS. Final browser
+  read-back at implementation revision `3d9cd1d` passed desktop/tablet/mobile
+  plus authenticated setup 4/0/0; frontend tests 57/0/0, type-check/build PASS;
+  focused supplier tenant isolation 5/0/0 and full backend regression 316/0/0.
