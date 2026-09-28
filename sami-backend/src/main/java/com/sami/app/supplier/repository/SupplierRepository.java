@@ -20,7 +20,7 @@ public interface SupplierRepository
 
     @EntityGraph(attributePaths = {"type", "status", "paymentTerm", "tags", "categories",
             "channels", "addresses", "contacts", "bankAccounts"})
-    Optional<Supplier> findWithDetailsById(Long id);
+    Optional<Supplier> findWithDetailsByIdAndTenantId(Long id, Long tenantId);
 
     @Query(value = "SELECT * FROM suppliers WHERE id = :id AND tenant_id = :tenantId", nativeQuery = true)
     Optional<Supplier> findByIdAndTenantId(@Param("id") Long id, @Param("tenantId") Long tenantId);

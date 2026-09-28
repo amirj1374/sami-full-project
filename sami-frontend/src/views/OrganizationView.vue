@@ -6,6 +6,7 @@ import { organizationApi, type Company, type CompanyPayload, type OrganizationAs
 import { usersApi, type RoleOption } from '@/api/users'
 import { useApiError } from '@/composables/useApiError'
 import { usePermission } from '@/composables/usePermission'
+import { useNotifications } from '@/composables/useNotifications'
 import AppEmptyState from '@/components/AppEmptyState.vue'
 import AppLoadingState from '@/components/AppLoadingState.vue'
 import AppMobileRecordCard from '@/components/AppMobileRecordCard.vue'
@@ -15,6 +16,7 @@ const { t } = useI18n()
 const { smAndDown } = useDisplay()
 const { can } = usePermission()
 const apiError = useApiError()
+const notifications = useNotifications()
 const rows = ref<Company[]>([])
 const loading = ref(false)
 const saving = ref(false)
@@ -26,12 +28,15 @@ const grantCompanyId = ref<number | null>(null)
 const grantBranchId = ref<number | null>(null)
 const assignments = ref<OrganizationAssignment[]>([])
 const branches = ref<Branch[]>([])
+const companyBranches = ref<Branch[]>([])
 const branchTypes = ref<BranchType[]>([])
 const branchDialog = ref(false)
 const branchCompanyId = ref<number | null>(null)
 const branchForm = reactive({ code: '', name: '', branchTypeId: null as number | null, active: true })
+const branchSaving = ref(false)
 const roles = ref<RoleOption[]>([])
 const grantsLoading = ref(false)
+const activeGrantAssignment = computed(() => assignments.value.find((item) => item.companyId === grantCompanyId.value && item.active))
 
 const headers = computed(() => [
   { title: t('organization.fields.code'), key: 'code' },
@@ -50,7 +55,13 @@ function emptyForm(): CompanyPayload {
 async function load() {
   loading.value = true
   apiError.clear()
-  try { rows.value = await organizationApi.list() } catch (error) { apiError.set(error) } finally { loading.value = false }
+  try {
+    rows.value = await organizationApi.list()
+    ;[branchTypes.value, companyBranches.value] = await Promise.all([
+      organizationApi.branchTypes(),
+      Promise.all(rows.value.map((company) => organizationApi.branches(company.id))).then((groups) => groups.flat()),
+    ])
+  } catch (error) { apiError.set(error) } finally { loading.value = false }
 }
 
 function open(company?: Company) {
@@ -111,14 +122,31 @@ async function grantBranch() {
 }
 async function revokeAssignment(assignment: OrganizationAssignment) { await organizationApi.revokeAssignment(assignment.id); await loadGrants() }
 onMounted(async () => { try { roles.value = await usersApi.roleOptions() } catch (error) { apiError.set(error) } })
-async function openBranch(company: Company) { branchCompanyId.value = company.id; Object.assign(branchForm, { code: '', name: '', branchTypeId: null, active: true }); branchTypes.value = await organizationApi.branchTypes(); branchDialog.value = true }
-async function saveBranch() { if (!branchCompanyId.value || !branchForm.code.trim() || !branchForm.name.trim() || !branchForm.branchTypeId) return; try { await organizationApi.createBranch(branchCompanyId.value, { ...branchForm, code: branchForm.code.trim(), name: branchForm.name.trim(), branchTypeId: branchForm.branchTypeId }); branchDialog.value = false; await load() } catch (error) { apiError.set(error) } }
+function companyName(companyId: number) { return rows.value.find((company) => company.id === companyId)?.name ?? String(companyId) }
+function branchTypeName(branchTypeId: number) { return branchTypes.value.find((type) => type.id === branchTypeId)?.name ?? String(branchTypeId) }
+function openBranch(company?: Company) {
+  branchCompanyId.value = company?.id ?? null
+  Object.assign(branchForm, { code: '', name: '', branchTypeId: null, active: true })
+  apiError.clear()
+  branchDialog.value = true
+}
+async function saveBranch() {
+  if (branchSaving.value || !branchCompanyId.value || !branchForm.code.trim() || !branchForm.name.trim() || !branchForm.branchTypeId) return
+  branchSaving.value = true
+  apiError.clear()
+  try {
+    await organizationApi.createBranch(branchCompanyId.value, { ...branchForm, code: branchForm.code.trim(), name: branchForm.name.trim(), branchTypeId: branchForm.branchTypeId })
+    branchDialog.value = false
+    notifications.success(t('organization.branchCreated'))
+    await load()
+  } catch (error) { apiError.set(error) } finally { branchSaving.value = false }
+}
 </script>
 
 <template>
   <div>
     <AppPageHeader :title="t('organization.title')" :subtitle="t('organization.subtitle')" icon="mdi-office-building-outline">
-      <template #actions><v-btn v-if="can('organization:create')" color="primary" prepend-icon="mdi-plus" @click="open()">{{ t('organization.addCompany') }}</v-btn><v-btn v-if="can('organization:create') && rows.length" color="secondary" prepend-icon="mdi-source-branch-plus" @click="openBranch(rows[0])">{{ t('organization.addBranch') }}</v-btn></template>
+      <template #actions><v-btn v-if="can('organization:create')" color="primary" prepend-icon="mdi-plus" @click="open()">{{ t('organization.addCompany') }}</v-btn><v-btn v-if="can('organization:create') && rows.length" color="secondary" prepend-icon="mdi-source-branch-plus" @click="openBranch()">{{ t('organization.addBranch') }}</v-btn></template>
     </AppPageHeader>
     <v-alert v-if="apiError.message" type="error" variant="tonal" class="mb-4" closable @click:close="apiError.clear()">{{ apiError.message }}</v-alert>
     <v-card class="app-data-surface" rounded="xl">
@@ -138,6 +166,29 @@ async function saveBranch() { if (!branchCompanyId.value || !branchForm.code.tri
       <AppEmptyState v-else-if="!loading" icon="mdi-office-building-plus-outline" :title="t('organization.empty.title')" :description="t('organization.empty.description')"><template #actions><v-btn v-if="can('organization:create')" color="primary" @click="open()">{{ t('organization.addCompany') }}</v-btn></template></AppEmptyState>
     </v-card>
 
+    <v-card class="app-data-surface mt-6" rounded="xl">
+      <v-card-title>{{ t('organization.branchesTitle') }}</v-card-title>
+      <v-data-table v-if="!smAndDown" :items="companyBranches" :headers="[
+        { title: t('organization.grants.company'), key: 'companyId' },
+        { title: t('organization.branchFields.code'), key: 'code' },
+        { title: t('organization.branchFields.name'), key: 'name' },
+        { title: t('organization.branchFields.type'), key: 'branchTypeId' },
+        { title: t('common.status'), key: 'active' },
+      ]" :loading="loading" item-value="id">
+        <template #[`item.companyId`]="{ item }">{{ companyName(item.companyId) }}</template>
+        <template #[`item.branchTypeId`]="{ item }">{{ branchTypeName(item.branchTypeId) }}</template>
+        <template #[`item.active`]="{ item }"><v-chip :color="item.active ? 'success' : undefined" size="small" variant="tonal">{{ item.active ? t('common.active') : t('common.inactive') }}</v-chip></template>
+      </v-data-table>
+      <AppLoadingState v-else-if="loading" variant="table" :rows="3" :label="t('common.loading')" />
+      <div v-else-if="companyBranches.length" class="d-grid ga-3 pa-3">
+        <AppMobileRecordCard v-for="branch in companyBranches" :key="branch.id" :label="branch.name">
+          <div class="d-flex justify-space-between ga-3"><div><strong>{{ branch.name }}</strong><div class="text-caption">{{ branch.code }}</div></div><v-chip :color="branch.active ? 'success' : undefined" size="x-small" variant="tonal">{{ branch.active ? t('common.active') : t('common.inactive') }}</v-chip></div>
+          <template #details><div>{{ companyName(branch.companyId) }}</div><div class="text-caption text-medium-emphasis">{{ branchTypeName(branch.branchTypeId) }}</div></template>
+        </AppMobileRecordCard>
+      </div>
+      <AppEmptyState v-else-if="!loading" dense icon="mdi-source-branch" :title="t('organization.noBranches')" />
+    </v-card>
+
     <v-card v-if="can('organization:edit')" class="app-data-surface mt-6" rounded="xl">
       <v-card-title>{{ t('organization.grants.title') }}</v-card-title>
       <v-card-text>
@@ -151,7 +202,7 @@ async function saveBranch() { if (!branchCompanyId.value || !branchForm.code.tri
         <v-divider class="my-3" />
         <v-row>
           <v-col cols="12" sm="4"><v-select v-model="grantBranchId" :items="branches" item-title="name" item-value="id" :label="t('organization.grants.branch')" /></v-col>
-          <v-col cols="12" sm="4" class="d-flex align-center"><v-btn variant="tonal" :disabled="!grantBranchId" :loading="grantsLoading" @click="grantBranch">{{ t('organization.grants.grantBranch') }}</v-btn></v-col>
+          <v-col cols="12" sm="4" class="d-flex align-center"><v-btn variant="tonal" :disabled="!grantBranchId || !activeGrantAssignment" :loading="grantsLoading" @click="grantBranch">{{ t('organization.grants.grantBranch') }}</v-btn></v-col>
         </v-row>
         <v-list density="compact"><v-list-item v-for="assignment in assignments" :key="assignment.id" :title="`${assignment.companyId} / ${assignment.roleId}`" :subtitle="`${t('organization.grants.branches')}: ${assignment.branchIds.join(', ') || '—'}`"><template #append><v-btn icon="mdi-delete-outline" variant="text" color="error" :aria-label="t('organization.grants.revoke')" @click="revokeAssignment(assignment)" /></template></v-list-item></v-list>
       </v-card-text>
@@ -171,6 +222,6 @@ async function saveBranch() { if (!branchCompanyId.value || !branchForm.code.tri
         <v-card-actions class="pa-4"><v-spacer/><v-btn variant="text" :disabled="saving" @click="dialog = false">{{ t('common.cancel') }}</v-btn><v-btn color="primary" :loading="saving" :disabled="!form.code?.trim() || !form.name?.trim()" @click="save">{{ t('common.save') }}</v-btn></v-card-actions>
       </v-card>
     </v-dialog>
-    <v-dialog v-model="branchDialog" max-width="520"><v-card rounded="xl"><v-card-title>{{ t('organization.addBranch') }}</v-card-title><v-card-text><v-text-field v-model="branchForm.code" :label="t('organization.branchFields.code')" /><v-text-field v-model="branchForm.name" :label="t('organization.branchFields.name')" /><v-select v-model="branchForm.branchTypeId" :items="branchTypes" item-title="name" item-value="id" :label="t('organization.branchFields.type')" /><v-switch v-model="branchForm.active" :label="t('common.active')" color="success" /></v-card-text><v-card-actions><v-spacer/><v-btn variant="text" @click="branchDialog=false">{{ t('common.cancel') }}</v-btn><v-btn color="primary" :disabled="!branchForm.code.trim() || !branchForm.name.trim() || !branchForm.branchTypeId" @click="saveBranch">{{ t('common.save') }}</v-btn></v-card-actions></v-card></v-dialog>
+    <v-dialog v-model="branchDialog" max-width="520" aria-labelledby="branch-dialog-title"><v-card rounded="xl"><v-card-title id="branch-dialog-title">{{ t('organization.addBranch') }}</v-card-title><v-card-text><v-select v-model="branchCompanyId" :items="rows" item-title="name" item-value="id" :label="t('organization.grants.company')" /><v-text-field v-model="branchForm.code" :label="t('organization.branchFields.code')" /><v-text-field v-model="branchForm.name" :label="t('organization.branchFields.name')" /><v-select v-model="branchForm.branchTypeId" :items="branchTypes" item-title="name" item-value="id" :label="t('organization.branchFields.type')" /><v-switch v-model="branchForm.active" :label="t('common.active')" color="success" /></v-card-text><v-card-actions><v-spacer/><v-btn variant="text" :disabled="branchSaving" @click="branchDialog=false">{{ t('common.cancel') }}</v-btn><v-btn color="primary" :loading="branchSaving" :disabled="!branchCompanyId || !branchForm.code.trim() || !branchForm.name.trim() || !branchForm.branchTypeId" @click="saveBranch">{{ t('common.save') }}</v-btn></v-card-actions></v-card></v-dialog>
   </div>
 </template>

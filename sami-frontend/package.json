@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "test": "node --test tests/*.test.mjs",
     "test:browser": "playwright test",
-    "run-real-user-acceptance": "playwright test tests/browser --project=desktop --project=tablet --project=mobile",
+    "run-real-user-acceptance": "playwright test tests/browser --project=cold-auth --project=desktop --project=tablet --project=mobile",
     "test:font-assets": "node tests/font-assets-smoke.mjs",
     "type-check": "vue-tsc --noEmit"
   },

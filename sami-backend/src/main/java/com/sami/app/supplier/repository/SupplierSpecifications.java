@@ -23,6 +23,11 @@ public final class SupplierSpecifications {
     private SupplierSpecifications() {
     }
 
+    /** Mandatory tenant boundary for every supplier query. */
+    public static Specification<Supplier> hasTenant(Long tenantId) {
+        return (root, query, cb) -> cb.equal(root.get("tenantId"), tenantId);
+    }
+
     /** Default visibility: statuses flagged hiddenByDefault are excluded. */
     public static Specification<Supplier> visibleByDefault() {
         return (root, query, cb) -> cb.isFalse(root.get("status").get("hiddenByDefault"));

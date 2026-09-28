@@ -27,4 +27,6 @@ export const productsApi = {
 
   variants: (productId: number): Promise<Array<{ id: number; productId: number; variantCode: string; name: string; sku?: string; status: string }>> =>
     unwrap(http.get<ApiResponse<Array<{ id: number; productId: number; variantCode: string; name: string; sku?: string; status: string }>>>(`/v1/products/${productId}/variants`)),
+  createVariant: (productId: number, payload: { variantCode: string; name: string; sku?: string; status: string }) =>
+    unwrap(http.post<ApiResponse<{ id: number; productId: number; variantCode: string; name: string; sku?: string; status: string }>>(`/v1/products/${productId}/variants`, payload)),
 }

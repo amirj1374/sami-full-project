@@ -44,9 +44,11 @@ const form = reactive({
 })
 
 const total = computed(() => form.lines.reduce((sum, line) => sum + line.unitPrice * line.quantity - line.discount, 0))
-const label = (value: string) => t(`enum.${value}`, value)
+const label = (value: string) => t(`sales.values.${value}`, value)
 const money = (value: number) => new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(value)
 const customerName = (id: number) => customers.value.find((customer) => customer.id === id)?.displayName ?? `#${id}`
+const variantName = (productId: number, variantId?: number) =>
+  variantId ? variants.value[productId]?.find((variant) => variant.id === variantId)?.name ?? `#${variantId}` : ''
 
 async function load() {
   if (!org.companyId || !org.branchId) return
@@ -140,7 +142,11 @@ async function save() {
 
 async function show(row: SalesOrder) {
   try {
+    if (!customers.value.length || !products.value.length) await lookups()
     const [order, audit] = await Promise.all([salesOrdersApi.get(row.id), salesOrdersApi.audit(row.id)])
+    await Promise.all(order.lines
+      .filter((line) => line.variantId && !variants.value[line.productId])
+      .map(async (line) => { variants.value[line.productId] = await productsApi.variants(line.productId) }))
     selected.value = order
     audits.value = audit
   } catch (e) {
@@ -180,7 +186,7 @@ async function action(kind: 'confirm' | 'cancel') {
 
 onMounted(async () => {
   if (!org.context) await org.refresh()
-  await load()
+  await Promise.all([load(), lookups()])
 })
 </script>
 
@@ -244,7 +250,7 @@ onMounted(async () => {
       <v-card-text>
         <div>{{ t('customer.title', 'Customer') }}: {{ customerName(selected.customerId) }}</div>
         <div>Status: {{ label(selected.status) }}</div>
-        <div v-for="line in selected.lines" :key="line.id">{{ line.name }} × {{ line.quantity }}<span v-if="line.variantId"> · Variant {{ line.variantId }}</span><span v-if="line.imei"> · IMEI {{ line.imei }}</span></div>
+        <div v-for="line in selected.lines" :key="line.id">{{ line.name }} × {{ line.quantity }}<span v-if="line.variantId"> · {{ variantName(line.productId, line.variantId) }}</span><span v-if="line.imei"> · IMEI {{ line.imei }}</span></div>
         <div v-if="audits.length" class="text-caption mt-3">{{ audits.length }} audit events</div>
       </v-card-text>
       <v-card-actions>

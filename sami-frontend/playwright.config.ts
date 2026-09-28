@@ -1,6 +1,8 @@
 import { defineConfig, devices } from '@playwright/test'
+import path from 'node:path'
 
 const baseURL = process.env.SAMI_E2E_BASE_URL ?? 'http://127.0.0.1:7474'
+const authState = path.join(import.meta.dirname, 'test-results/.auth/user.json')
 
 export default defineConfig({
   testDir: './tests/browser',
@@ -17,8 +19,10 @@ export default defineConfig({
     viewport: { width: 1440, height: 900 },
   },
   projects: [
-    { name: 'desktop', use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } } },
-    { name: 'tablet', use: { ...devices['iPad Mini'], viewport: { width: 768, height: 1024 } } },
-    { name: 'mobile', use: { ...devices['Pixel 5'], viewport: { width: 393, height: 851 } } },
+    { name: 'cold-auth', testMatch: /harness\.spec\.ts/, use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } } },
+    { name: 'auth-setup', testMatch: /auth\.setup\.ts/ },
+    { name: 'desktop', testIgnore: /harness\.spec\.ts/, dependencies: ['auth-setup'], use: { ...devices['Desktop Chrome'], storageState: authState, viewport: { width: 1440, height: 900 } } },
+    { name: 'tablet', testIgnore: /harness\.spec\.ts/, dependencies: ['auth-setup'], use: { ...devices['iPad Mini'], storageState: authState, viewport: { width: 768, height: 1024 } } },
+    { name: 'mobile', testIgnore: /harness\.spec\.ts/, dependencies: ['auth-setup'], use: { ...devices['Pixel 5'], storageState: authState, viewport: { width: 393, height: 851 } } },
   ],
 })

@@ -249,6 +249,7 @@ public class SupplierService {
                 case REGISTRATION_NUMBER -> "registrationNumber";
             };
             Specification<Supplier> spec = (root, query, cb) -> cb.and(
+                    cb.equal(root.get("tenantId"), tenants.requireTenantId()),
                     cb.equal(root.get(attribute), value.trim()),
                     cb.notEqual(root.get("id"), exclude));
             List<Supplier> matches = supplierRepository.findAll(spec);
@@ -400,6 +401,7 @@ public class SupplierService {
         boolean explicitStatus = f.statusId() != null;
         boolean includeHidden = Boolean.TRUE.equals(f.includeHidden());
         return Specification.allOf(
+                SupplierSpecifications.hasTenant(tenants.requireTenantId()),
                 SupplierSpecifications.globalSearch(f.search()),
                 SupplierSpecifications.hasChannel(Kind.PHONE, f.phone()),
                 SupplierSpecifications.hasChannel(Kind.EMAIL, f.email()),
@@ -458,12 +460,12 @@ public class SupplierService {
     }
 
     Supplier findOrThrow(Long id) {
-        return supplierRepository.findById(id)
+        return supplierRepository.findByIdAndTenantId(id, tenants.requireTenantId())
                 .orElseThrow(() -> ResourceNotFoundException.of("Supplier", id));
     }
 
     Supplier findWithDetailsOrThrow(Long id) {
-        return supplierRepository.findWithDetailsById(id)
+        return supplierRepository.findWithDetailsByIdAndTenantId(id, tenants.requireTenantId())
                 .orElseThrow(() -> ResourceNotFoundException.of("Supplier", id));
     }
 }

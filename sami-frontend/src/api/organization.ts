@@ -48,7 +48,7 @@ export interface CompanyPayload {
   displayOrder?: number
   expectedVersion?: number
 }
-export interface Branch { id: number; companyId: number; code: string; name: string; active: boolean }
+export interface Branch { id: number; companyId: number; branchTypeId: number; code: string; name: string; active: boolean; displayOrder: number; version: number }
 export interface BranchType { id: number; code: string; name: string; allowsInventory: boolean; allowsSales: boolean }
 export interface OrganizationAssignment { id: number; userId: number; companyId: number; roleId: number; active: boolean; branchIds: number[] }
 

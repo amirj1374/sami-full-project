@@ -401,12 +401,12 @@ async function logout(): Promise<void> {
       <v-card min-width="220">
         <div class="px-4 py-2 text-caption text-medium-emphasis">{{ t('shell.branch') }}</div>
         <v-divider />
-        <v-list density="compact" nav class="pa-2">
-          <v-list-item v-for="company in organizationContext.context.companies" :key="'company-'+company.id" rounded="lg" prepend-icon="mdi-office-building-outline" :title="company.name" :active="company.id === organizationContext.companyId" @click="organizationContext.select(company.id, null)">
+        <v-list density="compact" nav class="pa-2" role="menu">
+          <v-list-item v-for="company in organizationContext.context.companies" :key="'company-'+company.id" role="menuitem" rounded="lg" prepend-icon="mdi-office-building-outline" :title="company.name" :active="company.id === organizationContext.companyId" @click="organizationContext.select(company.id, null)">
             <template v-if="company.id === organizationContext.companyId" #append><v-icon icon="mdi-check" size="18" color="primary" /></template>
           </v-list-item>
           <v-divider class="my-1" />
-          <v-list-item v-for="branch in organizationContext.context.branches" :key="'branch-'+branch.id" rounded="lg" prepend-icon="mdi-store-marker-outline" :title="branch.name" :active="branch.id === organizationContext.branchId" @click="organizationContext.select(branch.companyId, branch.id)">
+          <v-list-item v-for="branch in organizationContext.context.branches" :key="'branch-'+branch.id" role="menuitem" rounded="lg" prepend-icon="mdi-store-marker-outline" :title="branch.name" :active="branch.id === organizationContext.branchId" @click="organizationContext.select(branch.companyId, branch.id)">
             <template v-if="branch.id === organizationContext.branchId" #append><v-icon icon="mdi-check" size="18" color="primary" /></template>
           </v-list-item>
         </v-list>
@@ -441,7 +441,7 @@ async function logout(): Promise<void> {
       </v-list>
     </v-menu>
 
-    <LanguageSwitcher v-if="!mobile" />
+    <LanguageSwitcher />
 
     <!-- Profile -->
     <v-menu location="bottom end">

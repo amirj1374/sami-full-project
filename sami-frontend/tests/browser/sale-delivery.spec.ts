@@ -1,0 +1,140 @@
+import { test, expect, type Locator, type Page } from '@playwright/test'
+
+async function choose(page: Page, control: Locator, option: string) {
+  await control.focus()
+  await control.press('ArrowDown')
+  await page.getByRole('option', { name: option, exact: true }).click()
+}
+
+test('proves received phone stock, prices it, sells the same variant and IMEI, delivers and invoices it', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'The business mutation runs once; responsive projects verify the populated result')
+  test.setTimeout(120_000)
+  const productName = process.env.SAMI_E2E_PRODUCT_NAME!
+  const variantName = process.env.SAMI_E2E_VARIANT_NAME!
+  const imei = process.env.SAMI_E2E_IMEI!
+  expect(productName && variantName && imei).toBeTruthy()
+  const marker = Date.now().toString(36).toUpperCase()
+  const customerName = `Browser Customer ${marker}`
+  const sellingPrice = '65000000'
+
+  await page.goto('/inventory', { waitUntil: 'domcontentloaded' })
+  const languageButton = page.getByRole('button', { name: /English|فارسی/i })
+  if ((await languageButton.textContent())?.trim() !== 'English') {
+    await languageButton.click()
+    await page.getByText('English', { exact: true }).last().click()
+  }
+  const balanceSearch = page.getByRole('textbox', { name: 'Search', exact: true })
+  await balanceSearch.fill(productName)
+  const balanceRow = page.getByRole('row').filter({ hasText: productName })
+  await expect(balanceRow).toBeVisible()
+  await expect(balanceRow.getByRole('cell').nth(2)).toHaveText('1')
+  await expect(balanceRow.getByRole('cell').nth(3)).toHaveText('0')
+  await expect(balanceRow.getByRole('cell').nth(4)).toHaveText('1')
+  await page.reload({ waitUntil: 'domcontentloaded' })
+  await page.getByRole('textbox', { name: 'Search', exact: true }).fill(productName)
+  await expect(page.getByRole('row').filter({ hasText: productName })).toBeVisible()
+
+  await page.getByRole('tab', { name: 'Monitoring', exact: true }).click()
+  await page.getByRole('tab', { name: 'Serials / IMEI', exact: true }).click()
+  await page.getByRole('textbox', { name: 'Search', exact: true }).fill(imei)
+  const serialRow = page.getByRole('row').filter({ hasText: imei })
+  await expect(serialRow).toContainText(productName)
+  await expect(serialRow).toContainText('Available')
+
+  await page.goto('/products', { waitUntil: 'domcontentloaded' })
+  await page.getByRole('textbox', { name: 'Search by name', exact: true }).fill(productName)
+  const productRow = page.getByRole('row').filter({ hasText: productName })
+  await expect(productRow).toBeVisible()
+  await productRow.getByRole('button').first().click()
+  const productDialog = page.getByRole('dialog', { name: 'Edit product' })
+  const price = productDialog.getByRole('textbox', { name: /Price/i })
+  await price.fill(sellingPrice)
+  const priceResponse = page.waitForResponse((response) => /\/api\/v1\/products\/\d+$/.test(response.url()) && response.request().method() === 'PUT')
+  await productDialog.getByRole('button', { name: 'Save', exact: true }).click()
+  expect((await priceResponse).ok()).toBeTruthy()
+  await page.reload({ waitUntil: 'domcontentloaded' })
+  await page.getByRole('textbox', { name: 'Search by name', exact: true }).fill(productName)
+  await expect(page.getByRole('row').filter({ hasText: productName })).toContainText('65,000,000')
+
+  await page.goto('/customers', { waitUntil: 'domcontentloaded' })
+  await page.getByRole('button', { name: 'New customer', exact: true }).click()
+  const customerDialog = page.getByRole('dialog').filter({ hasText: 'New customer' })
+  await customerDialog.getByRole('textbox', { name: 'Display name', exact: true }).fill(customerName)
+  const customerResponse = page.waitForResponse((response) => /\/api\/v1\/customers$/.test(response.url()) && response.request().method() === 'POST')
+  await customerDialog.getByRole('button', { name: 'Save', exact: true }).click()
+  expect((await customerResponse).ok()).toBeTruthy()
+  await expect(page.getByText(customerName, { exact: true }).first()).toBeVisible()
+  await page.reload({ waitUntil: 'domcontentloaded' })
+  await expect(page.getByText(customerName, { exact: true }).first()).toBeVisible()
+
+  await page.goto('/sales', { waitUntil: 'domcontentloaded' })
+  await page.getByRole('tab', { name: 'Sales Orders', exact: true }).click()
+  await page.getByRole('button', { name: 'New order', exact: true }).click()
+  const orderEditor = page.locator('.sales-orders-panel').getByText('New order', { exact: true }).locator('..').locator('..')
+  await choose(page, page.getByRole('combobox', { name: 'Customer', exact: true }), customerName)
+  await choose(page, page.getByRole('combobox', { name: 'Product', exact: true }), productName)
+  await choose(page, page.getByRole('combobox', { name: 'Variant', exact: true }), variantName)
+  await page.getByRole('textbox', { name: 'IMEI', exact: true }).fill(imei)
+  await expect(page.getByRole('textbox', { name: 'Unit price', exact: true })).toHaveValue(/65[,.]?000[,.]?000/)
+  const orderResponse = page.waitForResponse((response) => /\/api\/v1\/sales-orders$/.test(response.url()) && response.request().method() === 'POST')
+  await orderEditor.getByRole('button', { name: 'Save', exact: true }).click()
+  const orderCreated = await orderResponse
+  expect(orderCreated.ok()).toBeTruthy()
+  const order = (await orderCreated.json()).data
+  const orderRow = page.getByRole('row').filter({ hasText: order.number })
+  await expect(orderRow).toContainText('Draft')
+  await orderRow.getByRole('button', { name: 'View', exact: true }).click()
+  const confirmResponse = page.waitForResponse((response) => new RegExp(`/api/v1/sales-orders/${order.id}/confirm$`).test(response.url()))
+  await page.getByRole('button', { name: 'Confirm', exact: true }).click()
+  expect((await confirmResponse).ok()).toBeTruthy()
+  await expect(page.getByText('Confirmed', { exact: true }).last()).toBeVisible()
+
+  await page.getByRole('tab', { name: 'Deliveries', exact: true }).click()
+  const orderItem = page.getByRole('listitem').filter({ hasText: order.number })
+  await orderItem.getByRole('button', { name: 'Create delivery', exact: true }).click()
+  const deliveryDialog = page.getByRole('dialog').filter({ hasText: 'Create delivery' })
+  await deliveryDialog.getByRole('spinbutton', { name: 'Delivery quantity', exact: true }).fill('1')
+  const deliveryResponse = page.waitForResponse((response) => new RegExp(`/api/v1/sales-deliveries/from-order/${order.id}$`).test(response.url()))
+  await deliveryDialog.getByRole('button', { name: 'Save', exact: true }).click()
+  const deliveryCreated = await deliveryResponse
+  expect(deliveryCreated.ok()).toBeTruthy()
+  const delivery = (await deliveryCreated.json()).data
+  const deliveryRow = page.getByRole('row').filter({ hasText: delivery.number })
+  await deliveryRow.getByRole('button').click()
+  const issueResponse = page.waitForResponse((response) => new RegExp(`/api/v1/sales-deliveries/${delivery.id}/confirm$`).test(response.url()))
+  await page.getByRole('button', { name: 'Confirm', exact: true }).click()
+  expect((await issueResponse).ok()).toBeTruthy()
+  await expect(page.getByText(/CONFIRMED|Confirmed/).last()).toBeVisible()
+  await page.keyboard.press('Escape')
+
+  await page.getByRole('tab', { name: 'Sales Invoices', exact: true }).click()
+  await page.getByRole('button', { name: 'New invoice', exact: true }).click()
+  const invoiceDialog = page.getByRole('dialog').filter({ hasText: 'New invoice' })
+  await choose(page, invoiceDialog.getByRole('combobox', { name: 'Sales order', exact: true }), order.number)
+  await expect(invoiceDialog.getByRole('spinbutton', { name: 'Quantity', exact: true })).toHaveValue('1')
+  const invoiceResponse = page.waitForResponse((response) => /\/api\/v1\/sales-invoices$/.test(response.url()) && response.request().method() === 'POST')
+  await invoiceDialog.getByRole('button', { name: 'Save', exact: true }).click()
+  const invoiceCreated = await invoiceResponse
+  expect(invoiceCreated.ok()).toBeTruthy()
+  const invoice = (await invoiceCreated.json()).data
+  const invoiceIssueResponse = page.waitForResponse((response) => new RegExp(`/api/v1/sales-invoices/${invoice.id}/issue$`).test(response.url()))
+  await page.getByRole('button', { name: 'Issue', exact: true }).click()
+  expect((await invoiceIssueResponse).ok()).toBeTruthy()
+  await expect(page.getByText('ISSUED', { exact: true })).toBeVisible()
+
+  await page.goto('/inventory', { waitUntil: 'domcontentloaded' })
+  await page.getByRole('textbox', { name: 'Search', exact: true }).fill(productName)
+  const finalBalance = page.getByRole('row').filter({ hasText: productName })
+  await expect(finalBalance.getByRole('cell').nth(2)).toHaveText('0')
+  await expect(finalBalance.getByRole('cell').nth(3)).toHaveText('0')
+  await expect(finalBalance.getByRole('cell').nth(4)).toHaveText('0')
+  await page.getByRole('tab', { name: 'Monitoring', exact: true }).click()
+  await page.getByRole('tab', { name: 'Serials / IMEI', exact: true }).click()
+  await page.getByRole('textbox', { name: 'Search', exact: true }).fill(imei)
+  await expect(page.getByRole('row').filter({ hasText: imei })).toContainText('Issued')
+  await page.reload({ waitUntil: 'domcontentloaded' })
+  await page.getByRole('tab', { name: 'Monitoring', exact: true }).click()
+  await page.getByRole('tab', { name: 'Serials / IMEI', exact: true }).click()
+  await page.getByRole('textbox', { name: 'Search', exact: true }).fill(imei)
+  await expect(page.getByRole('row').filter({ hasText: imei })).toContainText('Issued')
+})

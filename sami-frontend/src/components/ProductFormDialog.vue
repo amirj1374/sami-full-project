@@ -40,6 +40,9 @@ const [price, priceProps] = defineField('price')
 const [stockQuantity, stockProps] = defineField('stockQuantity')
 const [active, activeProps] = defineField('active')
 const [hamtaEligible, hamtaEligibleProps] = defineField('hamtaEligible')
+const variantCode = ref('')
+const variantName = ref('')
+const variantSku = ref('')
 
 const isEdit = computed(() => !!props.product)
 
@@ -63,6 +66,9 @@ watch(
           }
         : { name: '', sku: '', description: '', price: 0, stockQuantity: 0, active: true, hamtaEligible: false },
     })
+    variantCode.value = ''
+    variantName.value = ''
+    variantSku.value = ''
     await nextTick()
     nameField.value?.focus?.()
   },
@@ -104,6 +110,9 @@ const onSubmit = handleSubmit(async (values) => {
         active: values.active,
         hamtaEligible: values.hamtaEligible,
       })
+    if (!props.product && variantCode.value.trim() && variantName.value.trim()) {
+      await productsApi.createVariant(saved.id, { variantCode: variantCode.value.trim(), name: variantName.value.trim(), sku: variantSku.value.trim() || undefined, status: 'ACTIVE' })
+    }
     emit('saved', saved)
     close()
   } catch (err) {
@@ -119,6 +128,7 @@ const onSubmit = handleSubmit(async (values) => {
     :model-value="modelValue"
     max-width="640"
     scrollable
+    aria-labelledby="product-dialog-title"
     @update:model-value="(v) => (v ? emit('update:modelValue', true) : requestClose())"
   >
     <v-card rounded="lg">
@@ -128,7 +138,7 @@ const onSubmit = handleSubmit(async (values) => {
           <v-icon :icon="isEdit ? 'mdi-pencil' : 'mdi-package-variant-closed-plus'" />
         </v-avatar>
         <div class="flex-grow-1">
-          <div class="text-h6 font-weight-bold">
+          <div id="product-dialog-title" class="text-h6 font-weight-bold">
             {{ isEdit ? t('products.editTitle') : t('products.newProduct') }}
           </div>
           <div class="text-caption text-medium-emphasis">{{ t('products.title') }}</div>
@@ -143,6 +153,10 @@ const onSubmit = handleSubmit(async (values) => {
         </v-alert>
 
         <v-form @submit.prevent="onSubmit">
+          <AppFormSection v-if="!isEdit" icon="mdi-shape-plus-outline" :title="t('products.variantTitle')" :description="t('products.variantDescription')">
+            <v-row><v-col cols="12" sm="4"><v-text-field v-model="variantCode" :label="t('products.variantCode')" /></v-col><v-col cols="12" sm="4"><v-text-field v-model="variantName" :label="t('products.variantName')" /></v-col><v-col cols="12" sm="4"><v-text-field v-model="variantSku" :label="t('products.variantSku')" /></v-col></v-row>
+          </AppFormSection>
+
           <AppFormSection
             icon="mdi-information-outline"
             :title="t('products.sections.general')"
