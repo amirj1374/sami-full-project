@@ -1,7 +1,7 @@
 # RUN-EMPLOYER-DEMO-READINESS-001
 
 - **Purpose:** bounded employer-demo / real-world readiness pass after P6-S2.
-- **Revision:** `e42d3c1` plus responsive/isolation lane evidence.
+- **Revision:** `518edad` plus responsive-context correction evidence.
 - **Primary E2E:** Phone Purchase → Sale remains CERTIFIED and was not replayed.
 - **Phase 6 control:** implementation PAUSED; no P6-S3+ activation.
 
@@ -32,7 +32,7 @@
 - Sales detail serial/IMEI traceability: **PASS** after backend runtime correction and independent QA retest. With company 5 / branch 12 selected through the rendered organization context menu, `ORD-2026-000005` showed Product `Browser Phone MUJTB60C`, Variant `Browser Phone 256GB MUJTB60C`, and IMEI `351790594941501`; refresh/reopen and dashboard→Sales navigation/reopen preserved the same values.
 - Backend runtime correction: rebuilt the backend jar from current source and restarted only `sami-e2e-backend` against the preserved PostgreSQL database. Fresh authenticated requests now return Sales Order line `imei: 351790594941501` and Branch Types `200` with six options. No business data was mutated.
 - Organization setup / branch-types selection: **PASS** after backend correction and independent QA retest. Fresh browser received HTTP 200 with six options; `Retail Store` was visible/selectable, visibly reflected in the form, and validation kept Save disabled until required fields were complete. A separate post-create row assertion found the new branch outside the first paginated page; this is not a branch-type or selection failure and is recorded as a non-blocking pagination/QA assertion issue.
-- Responsive/Persian lane: **DESKTOP PASS** with branch 12 selected, certified order/detail/IMEI visible, no horizontal overflow and no console errors. **TABLET/MOBILE NOT TESTED / BLOCKED BY CONTEXT**: the responsive layout hides the organization/branch context selector, and fresh sessions defaulted to another branch, so populated certified-order proof would be false without a legitimate context path.
+- Responsive/Persian lane: **DESKTOP PASS** with branch 12 selected, certified order/detail/IMEI visible, no horizontal overflow and no console errors. The owning frontend correction `518edad` keeps the organization-context menu available at tablet/mobile widths and adds a contract regression. Tablet/mobile rendered retest is pending with the corrected global locator.
 - Tenant isolation lane: **SUPPLIER SURFACE PASS** via fresh authenticated `supplier-tenant-isolation.spec.ts` (2 passed): legitimate supplier visible, known cross-tenant supplier absent after reload, no unexpected HTTP failures. Other entity classes remain not independently re-exercised in this focused lane.
 - Context finding: fresh sessions may default to another branch; the certified order is correctly absent there. Selecting company 5 / branch 12 through normal UI restores the certified records; no cross-scope leakage was observed.
 - Desktop: **PARTIAL**; fresh auth, product, and warehouse rendered checks pass; populated lifecycle/report rows remain blocked by missing runner fixture identifiers and branch setup timeout.
@@ -52,5 +52,5 @@
 
 ## Verdict
 
-**EMPLOYER-DEMO READINESS: NOT READY — desktop and supplier isolation pass, but tablet/mobile populated acceptance is blocked by the responsive context-selector gap; broader isolation, scenario gaps, UI Quality and Guardian remain.**
+**EMPLOYER-DEMO READINESS: NOT READY — desktop and supplier isolation pass; tablet/mobile populated acceptance requires the post-fix rendered retest, and broader isolation, scenario gaps, UI Quality and Guardian remain.**
 The primary Phone Purchase → Sale E2E remains CERTIFIED. Phase 6 implementation remains paused at the clean P6-S2 boundary.
