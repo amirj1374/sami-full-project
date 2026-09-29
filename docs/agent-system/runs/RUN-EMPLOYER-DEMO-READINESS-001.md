@@ -1,7 +1,7 @@
 # RUN-EMPLOYER-DEMO-READINESS-001
 
 - **Purpose:** bounded employer-demo / real-world readiness pass after P6-S2.
-- **Revision:** `ae07e74` plus delegated specialist evidence.
+- **Revision:** `656a7d2` plus backend runtime correction evidence.
 - **Primary E2E:** Phone Purchase → Sale remains CERTIFIED and was not replayed.
 - **Phase 6 control:** implementation PAUSED; no P6-S3+ activation.
 
@@ -30,7 +30,9 @@
 - Durable E2E fixture handoff: **PASS**. Playwright config now loads the repository-owned `tests/browser/readiness-fixtures.env`; the values are stable business identifiers from the certified tenant/context and the populated runner resolved the existing product, variant, purchase, receipt, customer, order, delivery, invoice and warehouse without mutation.
 - Organization setup harness: **NOT COMPLETE**. The branch-types wait now uses URL-path matching rather than a brittle raw URL suffix; a deterministic successful branch setup has not yet been proven.
 - Sales detail serial/IMEI traceability: **FAIL**. PostgreSQL contains IMEI `351790594941501` on the certified order line. Fresh authenticated HTTP `GET /api/v1/sales-orders/5` returned 200 but its JSON line contained no `imei` or `serialNumber`; the rendered Sales detail consequently omitted it. This is the first proven loss boundary: running backend artifact/read path, before frontend state/DOM. The source DTO declares the fields, but source inspection is not acceptance evidence. Backend specialist owns rebuild/restart and QA must retest the full API→DOM→refresh/reopen chain.
-- Delegated Organization QA evidence: fresh authenticated browser requests for context, companies and branches returned 200, while `GET /api/v1/organization/branch-types` returned `500 INTERNAL_ERROR`; PostgreSQL contains six valid global branch types. The first loss boundary is the stale backend runtime artifact, not synchronization, locator, authorization context, or frontend state.
+- Backend runtime correction: rebuilt the backend jar from current source and restarted only `sami-e2e-backend` against the preserved PostgreSQL database. Fresh authenticated requests now return Sales Order line `imei: 351790594941501` and Branch Types `200` with six options. No business data was mutated.
+- Delegated Organization QA evidence before correction: fresh authenticated browser requests for context, companies and branches returned 200, while `GET /api/v1/organization/branch-types` returned `500 INTERNAL_ERROR`; PostgreSQL contains six valid global branch types. The first loss boundary was the stale backend runtime artifact.
+- Independent post-restart browser retest remains incomplete: the existing populated runner currently cannot locate `PO-3` under its active UI context, and the branch mutation lane timed out. These are follow-on QA/context failures, not a PASS claim.
 - Desktop: **PARTIAL**; fresh auth, product, and warehouse rendered checks pass; populated lifecycle/report rows remain blocked by missing runner fixture identifiers and branch setup timeout.
 - Tablet: **NOT RE-RUN** in this continuation; prior certified evidence remains valid.
 - Mobile: **NOT RE-RUN** in this continuation; prior certified evidence remains valid.
@@ -48,5 +50,5 @@
 
 ## Verdict
 
-**EMPLOYER-DEMO READINESS: NOT READY — delegated QA proves two backend runtime/artifact defects: Sales Order drops persisted IMEI/serial, and Branch Types returns 500 despite valid database rows. Both require specialist correction followed by independent QA retest before readiness can advance.**
+**EMPLOYER-DEMO READINESS: NOT READY — backend runtime correction is technically verified at both endpoints, but independent rendered QA has not yet proven Sales IMEI persistence/refresh/reopen or deterministic branch setup. The readiness run must continue through those retests and remaining adversarial lanes.**
 The primary Phone Purchase → Sale E2E remains CERTIFIED. Phase 6 implementation remains paused at the clean P6-S2 boundary.
