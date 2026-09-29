@@ -250,7 +250,12 @@ onMounted(async () => {
       <v-card-text>
         <div>{{ t('customer.title', 'Customer') }}: {{ customerName(selected.customerId) }}</div>
         <div>Status: {{ label(selected.status) }}</div>
-        <div v-for="line in selected.lines" :key="line.id">{{ line.name }} × {{ line.quantity }}<span v-if="line.variantId"> · {{ variantName(line.productId, line.variantId) }}</span><span v-if="line.imei"> · IMEI {{ line.imei }}</span></div>
+        <div v-for="line in selected.lines" :key="line.id" class="sales-order-detail-line">
+          <span>{{ line.name }} × {{ line.quantity }}</span>
+          <span v-if="line.variantId"> · {{ variantName(line.productId, line.variantId) }}</span>
+          <span v-if="line.imei"> · IMEI {{ line.imei }}</span>
+          <span v-else-if="line.serialNumber"> · Serial {{ line.serialNumber }}</span>
+        </div>
         <div v-if="audits.length" class="text-caption mt-3">{{ audits.length }} audit events</div>
       </v-card-text>
       <v-card-actions>
