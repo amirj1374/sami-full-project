@@ -1,7 +1,7 @@
 # RUN-EMPLOYER-DEMO-READINESS-001
 
 - **Purpose:** bounded employer-demo / real-world readiness pass after P6-S2.
-- **Revision:** `656a7d2` plus backend runtime correction evidence.
+- **Revision:** `6ef66ba` plus independent browser-lane closure evidence.
 - **Primary E2E:** Phone Purchase → Sale remains CERTIFIED and was not replayed.
 - **Phase 6 control:** implementation PAUSED; no P6-S3+ activation.
 
@@ -29,10 +29,10 @@
 - Browser harness / login: **PASS**. The browser sent `POST http://127.0.0.1:7474/api/v1/auth/login` with Origin `http://127.0.0.1:7474`; the stale backend allow-list returned 403 CORS while curl (without Origin) returned 200. Adding `127.0.0.1:7474` to the durable backend defaults and recreating the disposable backend changed the browser response to 200 and navigated to `/`.
 - Durable E2E fixture handoff: **PASS**. Playwright config now loads the repository-owned `tests/browser/readiness-fixtures.env`; the values are stable business identifiers from the certified tenant/context and the populated runner resolved the existing product, variant, purchase, receipt, customer, order, delivery, invoice and warehouse without mutation.
 - Organization setup harness: **NOT COMPLETE**. The branch-types wait now uses URL-path matching rather than a brittle raw URL suffix; a deterministic successful branch setup has not yet been proven.
-- Sales detail serial/IMEI traceability: **FAIL**. PostgreSQL contains IMEI `351790594941501` on the certified order line. Fresh authenticated HTTP `GET /api/v1/sales-orders/5` returned 200 but its JSON line contained no `imei` or `serialNumber`; the rendered Sales detail consequently omitted it. This is the first proven loss boundary: running backend artifact/read path, before frontend state/DOM. The source DTO declares the fields, but source inspection is not acceptance evidence. Backend specialist owns rebuild/restart and QA must retest the full API→DOM→refresh/reopen chain.
+- Sales detail serial/IMEI traceability: **PASS** after backend runtime correction and independent QA retest. With company 5 / branch 12 selected through the rendered organization context menu, `ORD-2026-000005` showed Product `Browser Phone MUJTB60C`, Variant `Browser Phone 256GB MUJTB60C`, and IMEI `351790594941501`; refresh/reopen and dashboard→Sales navigation/reopen preserved the same values.
 - Backend runtime correction: rebuilt the backend jar from current source and restarted only `sami-e2e-backend` against the preserved PostgreSQL database. Fresh authenticated requests now return Sales Order line `imei: 351790594941501` and Branch Types `200` with six options. No business data was mutated.
-- Delegated Organization QA evidence before correction: fresh authenticated browser requests for context, companies and branches returned 200, while `GET /api/v1/organization/branch-types` returned `500 INTERNAL_ERROR`; PostgreSQL contains six valid global branch types. The first loss boundary was the stale backend runtime artifact.
-- Independent post-restart browser retest remains incomplete: the existing populated runner currently cannot locate `PO-3` under its active UI context, and the branch mutation lane timed out. These are follow-on QA/context failures, not a PASS claim.
+- Organization setup / branch-types selection: **PASS** after backend correction and independent QA retest. Fresh browser received HTTP 200 with six options; `Retail Store` was visible/selectable, visibly reflected in the form, and validation kept Save disabled until required fields were complete. A separate post-create row assertion found the new branch outside the first paginated page; this is not a branch-type or selection failure and is recorded as a non-blocking pagination/QA assertion issue.
+- Context finding: fresh sessions may default to another branch; the certified order is correctly absent there. Selecting company 5 / branch 12 through normal UI restores the certified records; no cross-scope leakage was observed.
 - Desktop: **PARTIAL**; fresh auth, product, and warehouse rendered checks pass; populated lifecycle/report rows remain blocked by missing runner fixture identifiers and branch setup timeout.
 - Tablet: **NOT RE-RUN** in this continuation; prior certified evidence remains valid.
 - Mobile: **NOT RE-RUN** in this continuation; prior certified evidence remains valid.
@@ -50,5 +50,5 @@
 
 ## Verdict
 
-**EMPLOYER-DEMO READINESS: NOT READY — backend runtime correction is technically verified at both endpoints, but independent rendered QA has not yet proven Sales IMEI persistence/refresh/reopen or deterministic branch setup. The readiness run must continue through those retests and remaining adversarial lanes.**
+**EMPLOYER-DEMO READINESS: NOT READY — both previously blocking browser lanes now pass independently. Remaining readiness lanes (responsive/localized populated QA, tenant attacks, scenario gaps, UI Quality and Guardian) must still complete before READY.**
 The primary Phone Purchase → Sale E2E remains CERTIFIED. Phase 6 implementation remains paused at the clean P6-S2 boundary.
