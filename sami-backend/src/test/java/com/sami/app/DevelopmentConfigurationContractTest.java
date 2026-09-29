@@ -18,11 +18,11 @@ class DevelopmentConfigurationContractTest {
         assertThat(read("../sami-frontend/vite.config.ts"))
                 .contains("port: 7474");
         assertThat(read("src/main/resources/application.yml"))
-                .contains("${CORS_ALLOWED_ORIGINS:http://localhost:7474}");
+                .contains("${CORS_ALLOWED_ORIGINS:http://localhost:7474,http://127.0.0.1:7474}");
         assertThat(read("docker-compose.yml"))
-                .contains("${CORS_ALLOWED_ORIGINS:-http://localhost:7474}");
+                .contains("${CORS_ALLOWED_ORIGINS:-http://localhost:7474,http://127.0.0.1:7474}");
         assertThat(read(".env.example"))
-                .contains("CORS_ALLOWED_ORIGINS=http://localhost:7474");
+                .contains("CORS_ALLOWED_ORIGINS=http://localhost:7474,http://127.0.0.1:7474");
     }
 
     private String read(String path) throws IOException {
