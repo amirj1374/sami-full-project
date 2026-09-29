@@ -1,7 +1,7 @@
 # RUN-EMPLOYER-DEMO-READINESS-001
 
 - **Purpose:** bounded employer-demo / real-world readiness pass after P6-S2.
-- **Revision:** `50cac57` plus browser-runtime correction evidence.
+- **Revision:** `c1cc519` plus durable fixture-handoff evidence.
 - **Primary E2E:** Phone Purchase → Sale remains CERTIFIED and was not replayed.
 - **Phase 6 control:** implementation PAUSED; no P6-S3+ activation.
 
@@ -22,11 +22,13 @@
 | Insufficient stock / wrong IMEI / issued IMEI resale | P0 | Backend/integration | Sale rejected; no negative stock | Existing sales/inventory regression evidence | Sales/inventory acceptance suites | CERTIFIED | None |
 | Invoice/receivable exactly once | P0 | PostgreSQL | One invoice and one receivable; retries do not duplicate | Proven | Phone acceptance and accounting evidence | CERTIFIED | None |
 | Rendered report surfaces | P1 | Real browser | Authenticated reports render without runtime/network errors | Fresh Playwright login now returns 200 and reaches `/`; auth setup and cold-auth pass. Full populated report run still requires the established lifecycle fixture identifiers. | Playwright request/response trace; `npm run run-real-user-acceptance` auth-setup + cold-auth PASS | PARTIAL | CORS runtime correction applied |
-| Clean employer demo journey | P0 | Real browser | Employer can follow Product→Supplier→Purchase→Receipt→Inventory→Sale→Invoice | Not completed in this bounded continuation: browser authentication is fixed, but the runner has no durable `SAMI_E2E_*` lifecycle identifiers and the organization branch setup row timed out waiting for branch-types. | Playwright auth proof; runner output (4 passed, 8 failed, 14 skipped; data-dependent failures separated) | BLOCKED BY TEST/ENVIRONMENT | Requires populated fixture identifiers and focused branch investigation |
+| Clean employer demo journey | P0 | Real browser | Employer can follow Product→Supplier→Purchase→Receipt→Inventory→Sale→Invoice | Durable fixture handoff now loads the certified tenant-5 identities and reaches the populated Sales screen. The focused populated check then exposed a mismatch: the existing Sales detail surface does not render the certified IMEI value asserted by the readiness spec. Organization branch setup still needs deterministic branch-types completion. | `tests/browser/readiness-fixtures.env`; Playwright cold-auth PASS; populated runner reached ORD-2026-000005 before IMEI assertion | BLOCKED BY PRODUCT/HARNESS | Requires branch setup completion and resolving the IMEI visibility/assertion boundary |
 
 ## Readiness gates
 
 - Browser harness / login: **PASS**. The browser sent `POST http://127.0.0.1:7474/api/v1/auth/login` with Origin `http://127.0.0.1:7474`; the stale backend allow-list returned 403 CORS while curl (without Origin) returned 200. Adding `127.0.0.1:7474` to the durable backend defaults and recreating the disposable backend changed the browser response to 200 and navigated to `/`.
+- Durable E2E fixture handoff: **PASS**. Playwright config now loads the repository-owned `tests/browser/readiness-fixtures.env`; the values are stable business identifiers from the certified tenant/context and the populated runner resolved the existing product, variant, purchase, receipt, customer, order, delivery, invoice and warehouse without mutation.
+- Organization setup harness: **NOT COMPLETE**. The branch-types wait now uses URL-path matching rather than a brittle raw URL suffix; a deterministic successful branch setup has not yet been proven.
 - Desktop: **PARTIAL**; fresh auth, product, and warehouse rendered checks pass; populated lifecycle/report rows remain blocked by missing runner fixture identifiers and branch setup timeout.
 - Tablet: **NOT RE-RUN** in this continuation; prior certified evidence remains valid.
 - Mobile: **NOT RE-RUN** in this continuation; prior certified evidence remains valid.
@@ -44,5 +46,5 @@
 
 ## Verdict
 
-**EMPLOYER-DEMO READINESS: NOT READY — browser authentication is corrected and PASS; remaining blocker is the bounded readiness runner environment (missing durable lifecycle identifiers plus the focused branch-types wait), not a proven product defect.**
+**EMPLOYER-DEMO READINESS: NOT READY — browser authentication and durable fixture handoff are PASS; remaining concrete blockers are deterministic organization branch setup and the existing Sales detail surface not rendering the certified IMEI value required by the populated readiness assertion.**
 The primary Phone Purchase → Sale E2E remains CERTIFIED. Phase 6 implementation remains paused at the clean P6-S2 boundary.

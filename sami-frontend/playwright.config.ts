@@ -1,5 +1,17 @@
 import { defineConfig, devices } from '@playwright/test'
 import path from 'node:path'
+import fs from 'node:fs'
+
+const fixtureFile = path.join(import.meta.dirname, 'tests/browser/readiness-fixtures.env')
+try {
+  const fixtureText = fs.readFileSync(fixtureFile, 'utf8')
+  for (const line of fixtureText.split(/\r?\n/)) {
+    const match = line.match(/^([A-Z0-9_]+)=(.*)$/)
+    if (match && !process.env[match[1]]) process.env[match[1]] = match[2]
+  }
+} catch {
+  // Fixture handoff is optional for unrelated browser tests.
+}
 
 const baseURL = process.env.SAMI_E2E_BASE_URL ?? 'http://127.0.0.1:7474'
 const authState = path.join(import.meta.dirname, 'test-results/.auth/user.json')

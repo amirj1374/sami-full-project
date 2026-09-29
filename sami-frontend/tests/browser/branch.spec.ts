@@ -14,7 +14,10 @@ test('creates a branch through the rendered Vuetify selector and proves persiste
   })
 
   const organizationLoaded = page.waitForResponse((response) => /\/api\/v1\/organization\/companies$/.test(response.url()) && response.ok())
-  const branchTypesLoaded = page.waitForResponse((response) => /\/api\/v1\/organization\/branch-types$/.test(response.url()) && response.ok())
+  const branchTypesLoaded = page.waitForResponse((response) => {
+    const url = new URL(response.url())
+    return url.pathname === '/api/v1/organization/branch-types' && response.ok()
+  })
   await page.goto('/organization', { waitUntil: 'domcontentloaded' })
   await Promise.all([organizationLoaded, branchTypesLoaded])
   await expect(page).toHaveURL(/\/organization$/)
