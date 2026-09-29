@@ -390,9 +390,9 @@ async function logout(): Promise<void> {
     />
 
     <!-- Server-verified organization choices only; selection never grants access. -->
-    <v-menu v-if="!mobile && organizationContext.context" location="bottom end">
+    <v-menu v-if="organizationContext.context" location="bottom end">
       <template #activator="{ props: p }">
-        <v-btn variant="text" class="text-none d-none d-sm-flex" v-bind="p">
+        <v-btn variant="text" class="text-none" v-bind="p">
           <v-icon icon="mdi-store-outline" size="18" class="me-2" />
           {{ organizationContext.context.branches.find((b) => b.id === organizationContext.branchId)?.name || organizationContext.context.companies.find((c) => c.id === organizationContext.companyId)?.name || t('shell.branch') }}
           <v-icon icon="mdi-chevron-down" size="16" class="ms-1" />

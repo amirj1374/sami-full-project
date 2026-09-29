@@ -324,6 +324,13 @@ test('Persian date, locale, dark theme, and form rhythm are centralized', () => 
   assert.doesNotMatch(frontendSource, /type=["']date["']/)
 })
 
+test('organization context selector remains available at responsive widths', () => {
+  const shell = read('src/layouts/DefaultLayout.vue')
+  assert.match(shell, /<v-menu v-if="organizationContext\.context"/)
+  assert.doesNotMatch(shell, /<v-menu v-if="!mobile && organizationContext\.context"/)
+  assert.doesNotMatch(shell, /class="text-none d-none d-sm-flex"/)
+})
+
 test('organization company management is a tenant-scoped routed workflow', () => {
   const migration = read('../sami-backend/src/main/resources/db/migration/V48__organization_company_management.sql')
   const controller = read('../sami-backend/src/main/java/com/sami/app/organization/web/CompanyController.java')
