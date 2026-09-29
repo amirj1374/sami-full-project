@@ -1,7 +1,7 @@
 # RUN-EMPLOYER-DEMO-READINESS-001
 
 - **Purpose:** bounded employer-demo / real-world readiness pass after P6-S2.
-- **Revision:** `95be0fb` plus adversarial boundary-trace evidence.
+- **Revision:** `ae07e74` plus delegated specialist evidence.
 - **Primary E2E:** Phone Purchase → Sale remains CERTIFIED and was not replayed.
 - **Phase 6 control:** implementation PAUSED; no P6-S3+ activation.
 
@@ -29,7 +29,8 @@
 - Browser harness / login: **PASS**. The browser sent `POST http://127.0.0.1:7474/api/v1/auth/login` with Origin `http://127.0.0.1:7474`; the stale backend allow-list returned 403 CORS while curl (without Origin) returned 200. Adding `127.0.0.1:7474` to the durable backend defaults and recreating the disposable backend changed the browser response to 200 and navigated to `/`.
 - Durable E2E fixture handoff: **PASS**. Playwright config now loads the repository-owned `tests/browser/readiness-fixtures.env`; the values are stable business identifiers from the certified tenant/context and the populated runner resolved the existing product, variant, purchase, receipt, customer, order, delivery, invoice and warehouse without mutation.
 - Organization setup harness: **NOT COMPLETE**. The branch-types wait now uses URL-path matching rather than a brittle raw URL suffix; a deterministic successful branch setup has not yet been proven.
-- Sales detail serial/IMEI traceability: **FAIL**. PostgreSQL contains IMEI `351790594941501` on the certified order line. Fresh authenticated HTTP `GET /api/v1/sales-orders/5` returned 200 but its JSON line contained no `imei` or `serialNumber`; the rendered Sales detail consequently omitted it. This is the first proven loss boundary: running backend artifact/read path, before frontend state/DOM. The source DTO declares the fields, but source inspection is not acceptance evidence. Backend rebuild/restart and fresh browser proof are required.
+- Sales detail serial/IMEI traceability: **FAIL**. PostgreSQL contains IMEI `351790594941501` on the certified order line. Fresh authenticated HTTP `GET /api/v1/sales-orders/5` returned 200 but its JSON line contained no `imei` or `serialNumber`; the rendered Sales detail consequently omitted it. This is the first proven loss boundary: running backend artifact/read path, before frontend state/DOM. The source DTO declares the fields, but source inspection is not acceptance evidence. Backend specialist owns rebuild/restart and QA must retest the full API→DOM→refresh/reopen chain.
+- Delegated Organization QA evidence: fresh authenticated browser requests for context, companies and branches returned 200, while `GET /api/v1/organization/branch-types` returned `500 INTERNAL_ERROR`; PostgreSQL contains six valid global branch types. The first loss boundary is the stale backend runtime artifact, not synchronization, locator, authorization context, or frontend state.
 - Desktop: **PARTIAL**; fresh auth, product, and warehouse rendered checks pass; populated lifecycle/report rows remain blocked by missing runner fixture identifiers and branch setup timeout.
 - Tablet: **NOT RE-RUN** in this continuation; prior certified evidence remains valid.
 - Mobile: **NOT RE-RUN** in this continuation; prior certified evidence remains valid.
@@ -47,5 +48,5 @@
 
 ## Verdict
 
-**EMPLOYER-DEMO READINESS: NOT READY — adversarial evidence proves a runtime read-path defect: the running Sales Order endpoint drops the persisted IMEI/serial before the UI. Organization branch setup is also not deterministically proven.**
+**EMPLOYER-DEMO READINESS: NOT READY — delegated QA proves two backend runtime/artifact defects: Sales Order drops persisted IMEI/serial, and Branch Types returns 500 despite valid database rows. Both require specialist correction followed by independent QA retest before readiness can advance.**
 The primary Phone Purchase → Sale E2E remains CERTIFIED. Phase 6 implementation remains paused at the clean P6-S2 boundary.
