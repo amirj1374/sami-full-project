@@ -36,6 +36,9 @@ import java.util.List;
 @Builder
 public class KpiDefinition extends BaseEntity {
 
+    @Column(name = "tenant_id", nullable = false)
+    private Long tenantId;
+
     @Column(nullable = false, unique = true, length = 64)
     private String code;
 

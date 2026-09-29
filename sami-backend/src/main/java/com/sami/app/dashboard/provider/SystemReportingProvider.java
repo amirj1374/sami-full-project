@@ -6,6 +6,7 @@ import com.sami.app.dashboard.repository.KpiDefinitionRepository;
 import com.sami.app.dashboard.spi.ReportingProvider;
 import com.sami.app.dashboard.spi.WidgetData;
 import com.sami.app.dashboard.spi.WidgetDataRequest;
+import com.sami.app.common.tenancy.TenantContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -26,6 +27,7 @@ public class SystemReportingProvider implements ReportingProvider {
     private final DashboardRepository dashboardRepository;
     private final KpiDefinitionRepository kpiRepository;
     private final DashboardWidgetRepository widgetRepository;
+    private final TenantContext tenantContext;
 
     @Override
     public String key() {
@@ -36,10 +38,11 @@ public class SystemReportingProvider implements ReportingProvider {
     public WidgetData fetch(WidgetDataRequest request) {
         String metric = request.metric() != null ? request.metric()
                 : String.valueOf(request.config() == null ? "" : request.config().getOrDefault("metric", ""));
+        Long tenantId = tenantContext.requireTenantId();
         long count = switch (metric) {
-            case "dashboards.count" -> dashboardRepository.count();
-            case "kpis.count" -> kpiRepository.count();
-            case "widgets.count" -> widgetRepository.count();
+            case "dashboards.count" -> dashboardRepository.countByTenantId(tenantId);
+            case "kpis.count" -> kpiRepository.countByTenantId(tenantId);
+            case "widgets.count" -> widgetRepository.countByTenantId(tenantId);
             default -> 0L;
         };
         return WidgetData.scalar(BigDecimal.valueOf(count), Map.of("metric", metric, "source", "system"));

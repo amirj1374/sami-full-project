@@ -70,6 +70,9 @@ public class Dashboard extends BaseEntity {
     @Column(name = "branch_id")
     private Long branchId;
 
+    @Column(name = "tenant_id", nullable = false)
+    private Long tenantId;
+
     @Column(name = "created_by")
     private Long createdBy;
 

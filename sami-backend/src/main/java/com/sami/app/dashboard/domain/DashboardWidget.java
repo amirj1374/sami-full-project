@@ -33,6 +33,9 @@ import java.util.Map;
 @Builder
 public class DashboardWidget extends BaseEntity {
 
+    @Column(name = "tenant_id", nullable = false)
+    private Long tenantId;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "dashboard_id", nullable = false)
     private Dashboard dashboard;

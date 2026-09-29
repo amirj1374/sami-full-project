@@ -30,6 +30,8 @@ public interface DashboardRepository
 
     long countByVisibilityId(Long visibilityId);
 
+    long countByTenantId(Long tenantId);
+
     @Override
     @EntityGraph(attributePaths = {"status", "visibility", "owner", "role"})
     Page<Dashboard> findAll(Specification<Dashboard> spec, Pageable pageable);

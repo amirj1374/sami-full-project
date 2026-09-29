@@ -10,6 +10,7 @@ import com.sami.app.dashboard.spi.ReportingProvider;
 import com.sami.app.dashboard.spi.ReportingProviderRegistry;
 import com.sami.app.dashboard.spi.WidgetData;
 import com.sami.app.dashboard.spi.WidgetDataRequest;
+import com.sami.app.common.tenancy.TenantContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -33,10 +34,11 @@ public class WidgetDataService {
     private final DashboardWidgetRepository widgetRepository;
     private final ReportingProviderRegistry providerRegistry;
     private final KpiCalculationService kpiCalculationService;
+    private final TenantContext tenantContext;
 
     @Transactional
     public WidgetDataResponse resolveById(Long widgetId, RefreshContext context) {
-        DashboardWidget widget = widgetRepository.findWithDetailsById(widgetId)
+        DashboardWidget widget = widgetRepository.findWithDetailsByIdAndTenantId(widgetId, tenantContext.requireTenantId())
                 .orElseThrow(() -> com.sami.app.common.exception.ResourceNotFoundException
                         .of("Widget", widgetId));
         return resolve(widget, context);

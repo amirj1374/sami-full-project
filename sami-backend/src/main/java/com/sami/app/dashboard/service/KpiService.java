@@ -26,6 +26,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.sami.app.common.tenancy.TenantContext;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -40,6 +41,7 @@ import java.util.Set;
 @Service
 @RequiredArgsConstructor
 public class KpiService {
+    private final TenantContext tenantContext;
 
     private static final Set<String> AGGREGATIONS = Set.of("SUM", "AVG", "COUNT", "MIN", "MAX", "LAST");
 
@@ -83,6 +85,7 @@ public class KpiService {
         validateMethodAndAggregation(request);
 
         KpiDefinition kpi = new KpiDefinition();
+        kpi.setTenantId(tenantContext.requireTenantId());
         kpi.setCode(request.code());
         applyFields(kpi, request);
         applyThresholds(kpi, request.thresholds());

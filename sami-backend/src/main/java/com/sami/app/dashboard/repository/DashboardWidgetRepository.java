@@ -13,6 +13,12 @@ public interface DashboardWidgetRepository extends JpaRepository<DashboardWidget
             "refreshPolicy", "kpi"})
     Optional<DashboardWidget> findWithDetailsById(Long id);
 
+    @EntityGraph(attributePaths = {"dashboard", "widgetType", "chartType", "dataSource",
+            "refreshPolicy", "kpi"})
+    Optional<DashboardWidget> findWithDetailsByIdAndTenantId(Long id, Long tenantId);
+
+    long countByTenantId(Long tenantId);
+
     boolean existsByDashboardIdAndCodeIgnoreCase(Long dashboardId, String code);
 
     boolean existsByDashboardIdAndCodeIgnoreCaseAndIdNot(Long dashboardId, String code, Long id);

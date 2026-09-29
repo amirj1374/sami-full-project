@@ -50,7 +50,7 @@ authorized and do not expand the Step 6 application scope.
 ## Current Phase / Wave / Feature
 
 - **Phase:** Phase 6 — Reports / Integrations / Migration
-- **Step:** P6-S1 — Phase 6 boundary and execution decomposition
+- **Step:** P6-S2 — Existing report reconciliation baseline
 - **Feature:** Reporting reconciliation, bounded integrations and Legacy Asan migration
 
 ## Accepted Baseline
@@ -64,7 +64,9 @@ authorized and do not expand the Step 6 application scope.
 ## Active Contracts
 
 - `docs/agent-system/contracts/AUTH-P6-PHASE6-REPORTS-INTEGRATIONS-MIGRATION.md` — ACTIVE
-- `docs/agent-system/contracts/AUTH-P6-S1-PHASE6-BOUNDARY.md` — ACTIVE
+- `docs/agent-system/contracts/AUTH-P6-S2-REPORT-RECONCILIATION-BASELINE.md` — ACTIVE
+- Run: `docs/agent-system/runs/RUN-P6-S2-001.md`
+- `docs/agent-system/contracts/AUTH-P6-S1-PHASE6-BOUNDARY.md` — COMPLETED
 - Run: `docs/agent-system/runs/RUN-P6-S1-001.md`
 - `docs/agent-system/contracts/AUTH-P4-S1-ACCOUNTING-BOUNDARY.md` — COMPLETED
 - Run: `docs/agent-system/runs/RUN-P4-S1-001.md`
@@ -264,8 +266,8 @@ silently resolve those decisions here.
 
 ## Next Authorized Action
 
- Complete P6-S1 Guardian/documentation/Git closure, then activate P6-S2.
- P6-S2 through P6-S4 may proceed independently. P6-S5 requires approved report
+ Continue P6-S2 focused report tests, real PostgreSQL reconciliation, rendered
+ report-surface/UI Quality validation, Guardian/DoD and Git closure. P6-S3 and P6-S4 then continue independently. P6-S5 requires approved report
  semantics; P6-S6 requires an approved Asan mapping/acceptance/cutover package.
  The certified Phone Purchase → Sale lifecycle remains closed unless Phase 6
  causes a proven regression.

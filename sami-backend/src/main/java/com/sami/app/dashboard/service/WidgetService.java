@@ -18,6 +18,7 @@ import com.sami.app.dashboard.repository.KpiDefinitionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.sami.app.common.tenancy.TenantContext;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -30,6 +31,7 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 public class WidgetService {
+    private final TenantContext tenantContext;
 
     private final DashboardRepository dashboardRepository;
     private final DashboardWidgetRepository widgetRepository;
@@ -51,6 +53,7 @@ public class WidgetService {
         }
 
         DashboardWidget widget = new DashboardWidget();
+        widget.setTenantId(tenantContext.requireTenantId());
         widget.setDashboard(dashboard);
         widget.setCode(request.code());
         apply(widget, request);
@@ -135,6 +138,7 @@ public class WidgetService {
             return; // skip invalid / duplicate widgets rather than aborting the import
         }
         DashboardWidget widget = new DashboardWidget();
+        widget.setTenantId(tenantContext.requireTenantId());
         widget.setDashboard(dashboard);
         widget.setCode(code);
         widget.setTitle(String.valueOf(snapshot.getOrDefault("title", code)));

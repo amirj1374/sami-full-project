@@ -14,6 +14,8 @@ public interface KpiDefinitionRepository
     @EntityGraph(attributePaths = {"status", "dataSource", "refreshPolicy", "owner", "thresholds"})
     Optional<KpiDefinition> findWithDetailsById(Long id);
 
+    long countByTenantId(Long tenantId);
+
     Optional<KpiDefinition> findByCode(String code);
 
     boolean existsByCodeIgnoreCase(String code);
