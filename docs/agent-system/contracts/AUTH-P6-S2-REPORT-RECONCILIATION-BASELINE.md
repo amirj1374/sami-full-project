@@ -37,4 +37,4 @@
   isolated to P6-S5.
 - **Completion Conditions:** Existing report semantics reconcile and scope
   safely, focused/integration gates pass, Guardian passes, state/Git close.
-- **Status:** ACTIVE.
+- **Status:** COMPLETED WITH BROWSER-HARNESS LIMITATION.

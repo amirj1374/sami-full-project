@@ -10,7 +10,7 @@ repository reality on every resume.
 - **Last Reconciled:** 2026-09-28
 - **Repository Branch:** `development`
 - **Recorded implementation commit:** `3d9cd1d` (`test(e2e): certify phone purchase to sale journey`)
-- **State Status:** Phase 6 ACTIVE at P6-S1 boundary closure; prior accepted phases and PHONE PURCHASE → SALE E2E remain closed/certified
+- **State Status:** Phase 6 PAUSED at P6-S2 closure for employer-demo readiness; prior accepted phases and PHONE PURCHASE → SALE E2E remain closed/certified
 
 ## Authority References
 
@@ -50,7 +50,7 @@ authorized and do not expand the Step 6 application scope.
 ## Current Phase / Wave / Feature
 
 - **Phase:** Phase 6 — Reports / Integrations / Migration
-- **Step:** P6-S2 — Existing report reconciliation baseline
+- **Step:** P6-S2 — Existing report reconciliation baseline (COMPLETE)
 - **Feature:** Reporting reconciliation, bounded integrations and Legacy Asan migration
 
 ## Accepted Baseline
@@ -64,7 +64,7 @@ authorized and do not expand the Step 6 application scope.
 ## Active Contracts
 
 - `docs/agent-system/contracts/AUTH-P6-PHASE6-REPORTS-INTEGRATIONS-MIGRATION.md` — ACTIVE
-- `docs/agent-system/contracts/AUTH-P6-S2-REPORT-RECONCILIATION-BASELINE.md` — ACTIVE
+- `docs/agent-system/contracts/AUTH-P6-S2-REPORT-RECONCILIATION-BASELINE.md` — COMPLETED WITH BROWSER-HARNESS LIMITATION
 - Run: `docs/agent-system/runs/RUN-P6-S2-001.md`
 - `docs/agent-system/contracts/AUTH-P6-S1-PHASE6-BOUNDARY.md` — COMPLETED
 - Run: `docs/agent-system/runs/RUN-P6-S1-001.md`
@@ -266,8 +266,9 @@ silently resolve those decisions here.
 
 ## Next Authorized Action
 
- Continue P6-S2 focused report tests, real PostgreSQL reconciliation, rendered
- report-surface/UI Quality validation, Guardian/DoD and Git closure. P6-S3 and P6-S4 then continue independently. P6-S5 requires approved report
+ Phase 6 implementation is paused after P6-S2 closure. Execute the bounded
+ employer-demo readiness scenario matrix and one clean representative demo
+ journey; do not activate another Phase 6 implementation step. P6-S5 requires approved report
  semantics; P6-S6 requires an approved Asan mapping/acceptance/cutover package.
  The certified Phone Purchase → Sale lifecycle remains closed unless Phase 6
  causes a proven regression.
