@@ -10,7 +10,7 @@ repository reality on every resume.
 - **Last Reconciled:** 2026-09-28
 - **Repository Branch:** `development`
 - **Recorded implementation commit:** `3d9cd1d` (`test(e2e): certify phone purchase to sale journey`)
-- **State Status:** Phase 3 COMPLETE/ACCEPTED — Phase 4 COMPLETE/ACCEPTED — Phase 5 COMPLETE/ACCEPTED — PHONE PURCHASE → SALE E2E CERTIFIED
+- **State Status:** Phase 6 ACTIVE at P6-S1 boundary closure; prior accepted phases and PHONE PURCHASE → SALE E2E remain closed/certified
 
 ## Authority References
 
@@ -49,9 +49,9 @@ authorized and do not expand the Step 6 application scope.
 
 ## Current Phase / Wave / Feature
 
-- **Phase:** Phase 5 — CRM Intelligence
-- **Step:** P5-S6 — final Phase 5 certification (complete)
-- **Feature:** Lead, Opportunity, Contact history and follow-up
+- **Phase:** Phase 6 — Reports / Integrations / Migration
+- **Step:** P6-S1 — Phase 6 boundary and execution decomposition
+- **Feature:** Reporting reconciliation, bounded integrations and Legacy Asan migration
 
 ## Accepted Baseline
 
@@ -63,6 +63,9 @@ authorized and do not expand the Step 6 application scope.
 
 ## Active Contracts
 
+- `docs/agent-system/contracts/AUTH-P6-PHASE6-REPORTS-INTEGRATIONS-MIGRATION.md` — ACTIVE
+- `docs/agent-system/contracts/AUTH-P6-S1-PHASE6-BOUNDARY.md` — ACTIVE
+- Run: `docs/agent-system/runs/RUN-P6-S1-001.md`
 - `docs/agent-system/contracts/AUTH-P4-S1-ACCOUNTING-BOUNDARY.md` — COMPLETED
 - Run: `docs/agent-system/runs/RUN-P4-S1-001.md`
 - `docs/agent-system/contracts/AUTH-P4-S2-ACCOUNTING-FOUNDATION.md` — COMPLETED
@@ -112,20 +115,21 @@ authorized and do not expand the Step 6 application scope.
 - Phase 5 implementation and validation evidence are complete; P5-S5 rendered
   UI evidence is accepted with explicit browser-harness limitations recorded in
   `RUN-P5-S5-001.md`.
+- Phase 6 is authorized and decomposed. P6-S1 boundary closure is active;
+  P6-S2–S4 are independent safe work, while P6-S5 and P6-S6 retain explicit
+  Owner-input boundaries.
 
 ## Working Tree Preservation
 
 ### Authorized active changes
 
-- Phase 5 implementation, acceptance fixture correction, Contracts/runs and
-  validation evidence are authorized active changes.
+- Phase 6 planning, Contracts/runs/state and the currently active Step's scoped
+  implementation and validation evidence are authorized active changes.
 
 ### Unrelated pre-existing changes to preserve
 
-- `docs/business/SALES_USER_WORKFLOW_FA.md`
-- `docs/business/SALES_WORKFLOW_TRACE.md`
-- Existing Sales frontend components, services, locales, types, and tests
-  shown by `git status`.
+- Root backend/frontend image TAR files and browser `test-results` directories
+  are untracked execution artifacts and must not be committed accidentally.
 
 ## Validation Status
 
@@ -252,18 +256,19 @@ silently resolve those decisions here.
 
 ## Current Authorization
 
-- **Authorization ID:** `AUTH-P5-PHASE5-CRM`
+- **Authorization ID:** `AUTH-P6-PHASE6-REPORTS-INTEGRATIONS-MIGRATION`
 - **Scope Type:** ROADMAP / PHASE
-- **Scope:** Phase 5 — CRM Intelligence
-- **Status:** COMPLETED — Phase 5 accepted; no Phase 6 authorization.
+- **Scope:** Phase 6 — Reports / Integrations / Migration
+- **Status:** ACTIVE — P6-S1 boundary work in progress.
 - **Release Permission:** NOT AUTHORIZED
 
 ## Next Authorized Action
 
- Phase 5 is COMPLETE/ACCEPTED. Phase 6 remains NOT STARTED / NOT AUTHORIZED.
- The cross-module Phone Purchase → Sale lifecycle is CERTIFIED across
- backend/PostgreSQL, authenticated desktop/tablet/mobile browser execution,
- UI Quality, Real User Acceptance, Guardian and final regression gates.
+ Complete P6-S1 Guardian/documentation/Git closure, then activate P6-S2.
+ P6-S2 through P6-S4 may proceed independently. P6-S5 requires approved report
+ semantics; P6-S6 requires an approved Asan mapping/acceptance/cutover package.
+ The certified Phone Purchase → Sale lifecycle remains closed unless Phase 6
+ causes a proven regression.
 
 ## Cross-Module E2E Certification
 
@@ -296,13 +301,14 @@ silently resolve those decisions here.
 Phase 4 retrospective: `docs/agent-system/retrospectives/PHASE-4-EXECUTION-RETROSPECTIVE.md`.
 No generic framework correction was required; the external PostgreSQL fixture
 path and continuation/checkpoint protections are recorded in existing artifacts.
-Phase 5 is COMPLETE/ACCEPTED. Phase 6 remains NOT STARTED / NOT AUTHORIZED.
+Phase 5 is COMPLETE/ACCEPTED. Phase 6 is AUTHORIZED and ACTIVE.
 
 ## Resume Instructions
 
-1. Preserve the certified Phone Purchase → Sale lifecycle and its run evidence.
-2. Phase 6 remains NOT STARTED / NOT AUTHORIZED.
-3. Release and deployment remain separately unauthorized.
+1. Reconcile and close P6-S1, then activate P6-S2 automatically.
+2. Continue P6-S2–S4 without waiting for the P6-S5/P6-S6 Owner inputs.
+3. Preserve the certified Phone Purchase → Sale lifecycle and prior phases.
+4. Release and deployment remain separately unauthorized.
 
 Read `AGENTS.md`, this file, `docs/agent-system/GOVERNANCE.md`, and the
 authoritative sources. Verify branch/HEAD/upstream/status, inspect V71 and
