@@ -1,7 +1,7 @@
 # RUN-EMPLOYER-DEMO-READINESS-001
 
 - **Purpose:** bounded employer-demo / real-world readiness pass after P6-S2.
-- **Revision:** `c1cc519` plus durable fixture-handoff evidence.
+- **Revision:** `95be0fb` plus adversarial boundary-trace evidence.
 - **Primary E2E:** Phone Purchase → Sale remains CERTIFIED and was not replayed.
 - **Phase 6 control:** implementation PAUSED; no P6-S3+ activation.
 
@@ -22,14 +22,14 @@
 | Insufficient stock / wrong IMEI / issued IMEI resale | P0 | Backend/integration | Sale rejected; no negative stock | Existing sales/inventory regression evidence | Sales/inventory acceptance suites | CERTIFIED | None |
 | Invoice/receivable exactly once | P0 | PostgreSQL | One invoice and one receivable; retries do not duplicate | Proven | Phone acceptance and accounting evidence | CERTIFIED | None |
 | Rendered report surfaces | P1 | Real browser | Authenticated reports render without runtime/network errors | Fresh Playwright login now returns 200 and reaches `/`; auth setup and cold-auth pass. Full populated report run still requires the established lifecycle fixture identifiers. | Playwright request/response trace; `npm run run-real-user-acceptance` auth-setup + cold-auth PASS | PARTIAL | CORS runtime correction applied |
-| Clean employer demo journey | P0 | Real browser | Employer can follow Product→Supplier→Purchase→Receipt→Inventory→Sale→Invoice | Durable fixture handoff now loads the certified tenant-5 identities and reaches the populated Sales screen. The focused populated check still cannot prove the certified IMEI in the rendered detail. Organization branch setup still needs deterministic branch-types completion. | `tests/browser/readiness-fixtures.env`; Playwright cold-auth PASS; populated runner reached ORD-2026-000005 before IMEI assertion | BLOCKED BY PRODUCT/HARNESS | Requires branch setup completion and proving the serialized identity in the running backend/UI read path |
+| Clean employer demo journey | P0 | Real browser | Employer can follow Product→Supplier→Purchase→Receipt→Inventory→Sale→Invoice | Adversarial trace proved the running `/api/v1/sales-orders/5` response omits the persisted IMEI/serial fields; the populated UI therefore cannot prove serialized traceability. Branch setup remains unproven. | PostgreSQL row `ORD-2026-000005`/IMEI `351790594941501`; fresh Playwright request returned 200 but line omitted `imei` and `serialNumber`; rendered assertion failed | FAIL / BLOCKED BY RUNTIME | Running backend is stale relative to source DTO; rebuild/restart required, then fresh UI proof |
 
 ## Readiness gates
 
 - Browser harness / login: **PASS**. The browser sent `POST http://127.0.0.1:7474/api/v1/auth/login` with Origin `http://127.0.0.1:7474`; the stale backend allow-list returned 403 CORS while curl (without Origin) returned 200. Adding `127.0.0.1:7474` to the durable backend defaults and recreating the disposable backend changed the browser response to 200 and navigated to `/`.
 - Durable E2E fixture handoff: **PASS**. Playwright config now loads the repository-owned `tests/browser/readiness-fixtures.env`; the values are stable business identifiers from the certified tenant/context and the populated runner resolved the existing product, variant, purchase, receipt, customer, order, delivery, invoice and warehouse without mutation.
 - Organization setup harness: **NOT COMPLETE**. The branch-types wait now uses URL-path matching rather than a brittle raw URL suffix; a deterministic successful branch setup has not yet been proven.
-- Sales detail serial/IMEI traceability: **NOT COMPLETE**. The existing backend/source contract contains `serialNumber` and `imei` on `SalesOrderDtos.LineResponse`, and the detail surface now explicitly renders either `IMEI` or `Serial`; the running populated browser still did not show the certified IMEI, so this gate is not claimed PASS.
+- Sales detail serial/IMEI traceability: **FAIL**. PostgreSQL contains IMEI `351790594941501` on the certified order line. Fresh authenticated HTTP `GET /api/v1/sales-orders/5` returned 200 but its JSON line contained no `imei` or `serialNumber`; the rendered Sales detail consequently omitted it. This is the first proven loss boundary: running backend artifact/read path, before frontend state/DOM. The source DTO declares the fields, but source inspection is not acceptance evidence. Backend rebuild/restart and fresh browser proof are required.
 - Desktop: **PARTIAL**; fresh auth, product, and warehouse rendered checks pass; populated lifecycle/report rows remain blocked by missing runner fixture identifiers and branch setup timeout.
 - Tablet: **NOT RE-RUN** in this continuation; prior certified evidence remains valid.
 - Mobile: **NOT RE-RUN** in this continuation; prior certified evidence remains valid.
@@ -47,5 +47,5 @@
 
 ## Verdict
 
-**EMPLOYER-DEMO READINESS: NOT READY — browser authentication and durable fixture handoff are PASS; remaining concrete blockers are deterministic organization branch setup and proving the serialized IMEI through the running Sales detail read path.**
+**EMPLOYER-DEMO READINESS: NOT READY — adversarial evidence proves a runtime read-path defect: the running Sales Order endpoint drops the persisted IMEI/serial before the UI. Organization branch setup is also not deterministically proven.**
 The primary Phone Purchase → Sale E2E remains CERTIFIED. Phase 6 implementation remains paused at the clean P6-S2 boundary.
