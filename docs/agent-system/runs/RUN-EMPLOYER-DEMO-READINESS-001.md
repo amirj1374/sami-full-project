@@ -1,7 +1,7 @@
 # RUN-EMPLOYER-DEMO-READINESS-001
 
 - **Purpose:** bounded employer-demo / real-world readiness pass after P6-S2.
-- **Revision:** `29eba3f` plus responsive diagnostic boundary.
+- **Revision:** `a92cc85` plus resumed responsive/isolation boundary.
 - **Primary E2E:** Phone Purchase → Sale remains CERTIFIED and was not replayed.
 - **Phase 6 control:** implementation PAUSED; no P6-S3+ activation.
 
@@ -32,8 +32,9 @@
 - Sales detail serial/IMEI traceability: **PASS** after backend runtime correction and independent QA retest. With company 5 / branch 12 selected through the rendered organization context menu, `ORD-2026-000005` showed Product `Browser Phone MUJTB60C`, Variant `Browser Phone 256GB MUJTB60C`, and IMEI `351790594941501`; refresh/reopen and dashboard→Sales navigation/reopen preserved the same values.
 - Backend runtime correction: rebuilt the backend jar from current source and restarted only `sami-e2e-backend` against the preserved PostgreSQL database. Fresh authenticated requests now return Sales Order line `imei: 351790594941501` and Branch Types `200` with six options. No business data was mutated.
 - Organization setup / branch-types selection: **PASS** after backend correction and independent QA retest. Fresh browser received HTTP 200 with six options; `Retail Store` was visible/selectable, visibly reflected in the form, and validation kept Save disabled until required fields were complete. A separate post-create row assertion found the new branch outside the first paginated page; this is not a branch-type or selection failure and is recorded as a non-blocking pagination/QA assertion issue.
-- Responsive/Persian lane: **DESKTOP PASS** with branch 12 selected, certified order/detail/IMEI visible, no horizontal overflow and no console errors. After frontend correction `518edad` and frontend runtime restart, **MOBILE remains NOT TESTED / BLOCKED BY CONTEXT** (activator visible but certified order absent after selection), and **TABLET remains NOT TESTED / BLOCKED BY RUNTIME** (activator absent). No overflow or console errors were observed. The required focused diagnostic (top-bar labels, context GET/PUT, sales-orders GET, rendered active label) was not completed within this execution window; no further product conclusion is inferred.
+- Responsive/Persian lane: **DESKTOP PASS** with branch 12 selected, certified order/detail/IMEI visible, no horizontal overflow and no console errors. After frontend correction `518edad` and frontend runtime restart, **MOBILE remains NOT TESTED / BLOCKED BY CONTEXT** (activator visible but certified order absent after selection), and **TABLET remains NOT TESTED / BLOCKED BY RUNTIME** (activator absent). No overflow or console errors were observed. The required focused diagnostic (top-bar labels, context GET/PUT, sales-orders GET, rendered active label) still lacks durable execution evidence; next action is to add/run an inline or committed Playwright probe without shared temporary-file cleanup.
 - Tenant isolation lane: **SUPPLIER SURFACE PASS** via fresh authenticated `supplier-tenant-isolation.spec.ts` (2 passed): legitimate supplier visible, known cross-tenant supplier absent after reload, no unexpected HTTP failures. Other entity classes remain not independently re-exercised in this focused lane.
+- Scenario review: existing backend/PostgreSQL evidence covers single-IMEI lifecycle, variant isolation, duplicate/invalid IMEI rejection, stock-state integrity, historical pricing, and accounting idempotency. Multiple serialized lines, multiple variants in one transaction, partial receipt/cancellation, browser retry/idempotency, broader cross-tenant classes, backorder/release, and fresh cross-screen contradiction checks remain NOT TESTED or PARTIAL.
 - Context finding: fresh sessions may default to another branch; the certified order is correctly absent there. Selecting company 5 / branch 12 through normal UI restores the certified records; no cross-scope leakage was observed.
 - Desktop: **PARTIAL**; fresh auth, product, and warehouse rendered checks pass; populated lifecycle/report rows remain blocked by missing runner fixture identifiers and branch setup timeout.
 - Tablet: **NOT RE-RUN** in this continuation; prior certified evidence remains valid.
@@ -52,5 +53,5 @@
 
 ## Verdict
 
-**EMPLOYER-DEMO READINESS: NOT READY — desktop and supplier isolation pass; tablet/mobile context resolution remains unproven after runtime restart, and broader isolation, scenario gaps, UI Quality and Guardian remain. EXECUTION WINDOW EXHAUSTED at the responsive diagnostic boundary.**
+**EMPLOYER-DEMO READINESS: NOT READY — desktop and supplier isolation pass; tablet/mobile context resolution remains unproven, and broader isolation, scenario gaps, UI Quality and Guardian remain. Exact resumable boundary: durable responsive context probe → independent tablet/mobile retest → remaining isolation/scenario lanes.**
 The primary Phone Purchase → Sale E2E remains CERTIFIED. Phase 6 implementation remains paused at the clean P6-S2 boundary.
