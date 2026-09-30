@@ -1,7 +1,7 @@
 # RUN-EMPLOYER-DEMO-READINESS-001
 
 - **Purpose:** bounded employer-demo / real-world readiness pass after P6-S2.
-- **Revision:** `9ba8cc3` plus independent UI Quality and Guardian review.
+- **Revision:** `9ba8cc3` plus final blocker-closure classifications.
 - **Primary E2E:** Phone Purchase → Sale remains CERTIFIED and was not replayed.
 - **Phase 6 control:** implementation PAUSED; no P6-S3+ activation.
 
@@ -37,6 +37,8 @@
 - Scenario review: high-risk core integrity is PASS for duplicate serial, wrong Variant/IMEI, issued reuse, insufficient stock, backorder, release/cancellation, repeated invoice, Variant and Warehouse isolation. Missing/invalid IMEI, repeated receipt, duplicate delivery, multi-serialized/multi-line documents, partial receipt, returns, cost-change stability and minimum-margin behavior are explicitly DEFERRED LOW-RISK or NOT TESTED because no supported/approved behavior-specific evidence was found.
 - Cross-screen contradiction review: **PASS** on the preserved certified transaction; tenant/company/branch, Product/Variant, Supplier, PO-3, GR-3, warehouse, IMEI, Sales Order, Delivery, Invoice, Customer, stock state and exactly one receivable reconcile.
 - UI Quality: **PASS** for the populated Persian Sales Order detail after `9ba8cc3`: localized `شماره`, `مشتری`, `وضعیت` labels, Product/Variant/IMEI visible, no overflow, no console errors. The prior MAJOR defect was independently retested and closed.
+- Final isolation matrix: Product **PARTIAL**; Variant **PASS**; Warehouse **NOT TESTED** for dedicated tenant/company/branch known-ID/export; Sales **PARTIAL**; Inventory **PARTIAL**; Serial/IMEI **PASS**; Invoice **PARTIAL**; Company/Branch **PASS**. No leakage was discovered, but aggregate isolation is not PASS.
+- Final integrity classifications: serialized receipt without IMEI **NOT TESTED**; malformed IMEI **NOT TESTED**; repeated Goods Receipt **NOT TESTED**; duplicate delivery **PARTIAL**; multi-serialized/multi-line/multi-Variant document **PARTIAL**; historical cost/price mutation stability **PARTIAL**; partial receipt **N/A — no approved behavior-specific workflow found**; returns/reversals **N/A — no supported serialized-phone return workflow found**; minimum-margin **NOT TESTED**. High-risk rows remain open and are not downgraded to low risk.
 - Guardian: **NOT READY**. Independent review confirms core integrity, responsive evidence and cross-screen PASS, but tenant isolation remains PARTIAL, several scenario rows remain NOT TESTED/DEFERRED, and a fresh final Persian employer demo has not been proven in this closure wave.
 - Context finding: fresh sessions may default to another branch; the certified order is correctly absent there. Selecting company 5 / branch 12 through normal UI restores the certified records; no cross-scope leakage was observed.
 - Desktop: **PASS**; Tablet: **PASS**; Mobile: **PASS**; Persian/RTL: **PASS** from completed responsive diagnostic evidence.
@@ -53,5 +55,5 @@
 
 ## Verdict
 
-**EMPLOYER-DEMO READINESS: NOT READY — cross-screen consistency, core high-risk integrity and UI Quality now PASS; broader isolation remains PARTIAL, several high-risk scenario rows remain NOT TESTED/DEFERRED, and final Persian employer demo/Guardian closure is incomplete.**
+**EMPLOYER-DEMO READINESS: NOT READY — UI Quality and cross-screen consistency PASS, but tenant isolation is PARTIAL, high-risk receipt/IMEI/idempotency gaps remain NOT TESTED/PARTIAL, and the final Persian employer demo plus Guardian closure are incomplete.**
 The primary Phone Purchase → Sale E2E remains CERTIFIED. Phase 6 implementation remains paused at the clean P6-S2 boundary.
