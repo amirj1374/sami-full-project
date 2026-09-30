@@ -1,7 +1,7 @@
 # RUN-EMPLOYER-DEMO-READINESS-001
 
 - **Purpose:** bounded employer-demo / real-world readiness pass after P6-S2.
-- **Revision:** `2e4b4e6` plus permanent responsive diagnostic evidence.
+- **Revision:** `88f0770` plus final closure-wave evidence.
 - **Primary E2E:** Phone Purchase → Sale remains CERTIFIED and was not replayed.
 - **Phase 6 control:** implementation PAUSED; no P6-S3+ activation.
 
@@ -35,6 +35,8 @@
 - Responsive/Persian lane: **DESKTOP PASS** with branch 12 selected, certified order/detail/IMEI visible, no horizontal overflow and no console errors. Permanent diagnostic `responsive-context-diagnostic.spec.ts` now proves both **TABLET PASS** and **MOBILE PASS**: rendered context selection, PUT context, Sales list request with company 5/branch 12, certified order, Product/Variant/IMEI, refresh/reopen, no overflow and no console errors.
 - Tenant isolation lane: **SUPPLIER SURFACE PASS** via fresh authenticated `supplier-tenant-isolation.spec.ts` (2 passed): legitimate supplier visible, known cross-tenant supplier absent after reload, no unexpected HTTP failures. Other entity classes remain not independently re-exercised in this focused lane.
 - Scenario review: existing backend/PostgreSQL evidence covers single-IMEI lifecycle, variant isolation, duplicate/invalid IMEI rejection, stock-state integrity, historical pricing, accounting idempotency, backorder/release and warehouse custody. Multiple serialized lines, multiple variants in one transaction, partial receipt/cancellation, browser retry/idempotency, broader cross-tenant classes, and fresh cross-screen contradiction checks remain NOT TESTED or PARTIAL.
+- Broader isolation matrix: Customer, Purchase, Company and Branch backend boundaries PASS; Supplier browser PASS; Inventory/serial/variant integrity PASS; Product, Warehouse, and several Sales/Inventory/IMEI/Invoice browser known-ID/export checks remain NOT TESTED or PARTIAL. No unauthorized leakage was evidenced.
+- Phone P0/P1 closure matrix: duplicate serial, wrong Variant/IMEI, issued reuse, insufficient stock, backorder, release/cancellation, repeated invoice, Variant and Warehouse isolation PASS. Multiple serialized/multi-line documents, invalid/missing IMEI, repeated receipt, duplicate delivery, partial receipt, returns, cost-change stability and minimum-margin behavior remain NOT TESTED/PARTIAL; no Owner decision was inferred.
 - Context finding: fresh sessions may default to another branch; the certified order is correctly absent there. Selecting company 5 / branch 12 through normal UI restores the certified records; no cross-scope leakage was observed.
 - Desktop: **PARTIAL**; fresh auth, product, and warehouse rendered checks pass; populated lifecycle/report rows remain blocked by missing runner fixture identifiers and branch setup timeout.
 - Tablet: **NOT RE-RUN** in this continuation; prior certified evidence remains valid.
@@ -53,5 +55,5 @@
 
 ## Verdict
 
-**EMPLOYER-DEMO READINESS: NOT READY — responsive lanes now pass, but broader isolation, P0/P1 scenario gaps, cross-screen contradiction review, UI Quality, Persian employer journey and Guardian remain.**
+**EMPLOYER-DEMO READINESS: NOT READY — responsive lanes pass, but broader isolation remains PARTIAL, the Phone P0/P1 matrix remains PARTIAL with explicit high-risk gaps, and cross-screen contradiction review, UI Quality, Persian employer journey and Guardian are not yet complete.**
 The primary Phone Purchase → Sale E2E remains CERTIFIED. Phase 6 implementation remains paused at the clean P6-S2 boundary.
