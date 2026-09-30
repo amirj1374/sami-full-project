@@ -1,7 +1,7 @@
 # RUN-EMPLOYER-DEMO-READINESS-001
 
 - **Purpose:** bounded employer-demo / real-world readiness pass after P6-S2.
-- **Revision:** `ba06961` plus independent UI Quality findings.
+- **Revision:** `9ba8cc3` plus independent UI Quality and Guardian review.
 - **Primary E2E:** Phone Purchase → Sale remains CERTIFIED and was not replayed.
 - **Phase 6 control:** implementation PAUSED; no P6-S3+ activation.
 
@@ -36,7 +36,8 @@
 - Tenant isolation lane: **PARTIAL**. Customer, Purchase, Company and Branch backend boundaries PASS; Supplier browser PASS; Inventory/serial/variant integrity PASS. Product, Warehouse, and several Sales/Inventory/IMEI/Invoice browser known-ID/export checks remain NOT TESTED. No unauthorized leakage was evidenced.
 - Scenario review: high-risk core integrity is PASS for duplicate serial, wrong Variant/IMEI, issued reuse, insufficient stock, backorder, release/cancellation, repeated invoice, Variant and Warehouse isolation. Missing/invalid IMEI, repeated receipt, duplicate delivery, multi-serialized/multi-line documents, partial receipt, returns, cost-change stability and minimum-margin behavior are explicitly DEFERRED LOW-RISK or NOT TESTED because no supported/approved behavior-specific evidence was found.
 - Cross-screen contradiction review: **PASS** on the preserved certified transaction; tenant/company/branch, Product/Variant, Supplier, PO-3, GR-3, warehouse, IMEI, Sales Order, Delivery, Invoice, Customer, stock state and exactly one receivable reconcile.
-- UI Quality: **FAIL**. Independent review found raw English Sales Orders headers and detail labels (`Number`, `Customer`, `Status`) in Persian mode. Severity **MAJOR** for employer-demo readiness; frontend localization correction and rendered retest required. Tablet/mobile populated detail remains not independently UI-certified.
+- UI Quality: **PASS** for the populated Persian Sales Order detail after `9ba8cc3`: localized `شماره`, `مشتری`, `وضعیت` labels, Product/Variant/IMEI visible, no overflow, no console errors. The prior MAJOR defect was independently retested and closed.
+- Guardian: **NOT READY**. Independent review confirms core integrity, responsive evidence and cross-screen PASS, but tenant isolation remains PARTIAL, several scenario rows remain NOT TESTED/DEFERRED, and a fresh final Persian employer demo has not been proven in this closure wave.
 - Context finding: fresh sessions may default to another branch; the certified order is correctly absent there. Selecting company 5 / branch 12 through normal UI restores the certified records; no cross-scope leakage was observed.
 - Desktop: **PASS**; Tablet: **PASS**; Mobile: **PASS**; Persian/RTL: **PASS** from completed responsive diagnostic evidence.
 - Tenant isolation: **PARTIAL**; high-risk backend boundaries and Supplier browser PASS, but Product/Warehouse/Sales/Inventory/IMEI/Invoice rendered known-ID/export checks remain not independently closed.
@@ -52,5 +53,5 @@
 
 ## Verdict
 
-**EMPLOYER-DEMO READINESS: NOT READY — cross-screen consistency PASS and core high-risk integrity PASS, but broader isolation remains PARTIAL; UI Quality has a MAJOR Persian localization defect, and demo/Guardian remain incomplete.**
+**EMPLOYER-DEMO READINESS: NOT READY — cross-screen consistency, core high-risk integrity and UI Quality now PASS; broader isolation remains PARTIAL, several high-risk scenario rows remain NOT TESTED/DEFERRED, and final Persian employer demo/Guardian closure is incomplete.**
 The primary Phone Purchase → Sale E2E remains CERTIFIED. Phase 6 implementation remains paused at the clean P6-S2 boundary.
