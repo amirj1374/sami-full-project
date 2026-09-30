@@ -21,7 +21,7 @@ test.describe('responsive organization context diagnostic', () => {
       })
 
       await page.goto('/sales', { waitUntil: 'networkidle' })
-      const contextButton = page.getByRole('button').filter({ has: page.locator('svg') }).filter({ hasText: /Branch|شعبه|Company|شرکت|Browser/i }).first()
+      const contextButton = page.getByRole('button').filter({ hasText: /Branch|شعبه|Company|شرکت|Browser/i }).first()
       await expect(contextButton).toBeVisible()
       await contextButton.click()
       const branch = page.getByRole('menuitem', { name: /Browser Branch MUJSXNRG-0/i }).first()
