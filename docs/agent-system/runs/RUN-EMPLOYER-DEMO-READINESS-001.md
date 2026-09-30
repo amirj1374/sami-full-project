@@ -1,7 +1,7 @@
 # RUN-EMPLOYER-DEMO-READINESS-001
 
 - **Purpose:** bounded employer-demo / real-world readiness pass after P6-S2.
-- **Revision:** `9ba8cc3` plus final blocker-closure classifications.
+- **Revision:** `acf4275` plus invariant-test implementation progress.
 - **Primary E2E:** Phone Purchase → Sale remains CERTIFIED and was not replayed.
 - **Phase 6 control:** implementation PAUSED; no P6-S3+ activation.
 
@@ -39,6 +39,7 @@
 - UI Quality: **PASS** for the populated Persian Sales Order detail after `9ba8cc3`: localized `شماره`, `مشتری`, `وضعیت` labels, Product/Variant/IMEI visible, no overflow, no console errors. The prior MAJOR defect was independently retested and closed.
 - Final isolation matrix: Product **PARTIAL**; Variant **PASS**; Warehouse **NOT TESTED** for dedicated tenant/company/branch known-ID/export; Sales **PARTIAL**; Inventory **PARTIAL**; Serial/IMEI **PASS**; Invoice **PARTIAL**; Company/Branch **PASS**. No leakage was discovered, but aggregate isolation is not PASS.
 - Final integrity classifications: serialized receipt without IMEI **NOT TESTED**; malformed IMEI **NOT TESTED**; repeated Goods Receipt **NOT TESTED**; duplicate delivery **PARTIAL**; multi-serialized/multi-line/multi-Variant document **PARTIAL**; historical cost/price mutation stability **PARTIAL**; partial receipt **N/A — no approved behavior-specific workflow found**; returns/reversals **N/A — no supported serialized-phone return workflow found**; minimum-margin **NOT TESTED**. High-risk rows remain open and are not downgraded to low risk.
+- New permanent invariant coverage: `InventoryWarehouseTenantIsolationTest` asserts trusted tenant scoping for warehouse listing. Focused Maven execution was attempted in a disposable Maven container but produced no result after several minutes and was terminated; no PASS/FAIL is claimed. Exact continuation: execute this test and add/run the remaining Product/Sales/Inventory/Invoice isolation and replay/idempotency tests.
 - Guardian: **NOT READY**. Independent review confirms core integrity, responsive evidence and cross-screen PASS, but tenant isolation remains PARTIAL, several scenario rows remain NOT TESTED/DEFERRED, and a fresh final Persian employer demo has not been proven in this closure wave.
 - Context finding: fresh sessions may default to another branch; the certified order is correctly absent there. Selecting company 5 / branch 12 through normal UI restores the certified records; no cross-scope leakage was observed.
 - Desktop: **PASS**; Tablet: **PASS**; Mobile: **PASS**; Persian/RTL: **PASS** from completed responsive diagnostic evidence.
