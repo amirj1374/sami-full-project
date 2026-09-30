@@ -331,6 +331,14 @@ test('organization context selector remains available at responsive widths', () 
   assert.doesNotMatch(shell, /class="text-none d-none d-sm-flex"/)
 })
 
+test('sales order populated labels use localized keys', () => {
+  const panel = read('src/components/SalesOrdersPanel.vue')
+  assert.match(panel, /salesDocuments\.number/)
+  assert.match(panel, /salesDocuments\.status/)
+  assert.doesNotMatch(panel, /<th>Status<\/th>/)
+  assert.doesNotMatch(panel, /<div>Status: \{\{/)
+})
+
 test('organization company management is a tenant-scoped routed workflow', () => {
   const migration = read('../sami-backend/src/main/resources/db/migration/V48__organization_company_management.sql')
   const controller = read('../sami-backend/src/main/java/com/sami/app/organization/web/CompanyController.java')

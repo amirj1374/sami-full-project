@@ -235,7 +235,7 @@ onMounted(async () => {
 
     <v-progress-linear v-if="loading" indeterminate class="mb-2" />
     <v-table v-if="mdAndUp">
-      <thead><tr><th>{{ t('common.number', 'Number') }}</th><th>{{ t('customer.title', 'Customer') }}</th><th>Status</th><th></th></tr></thead>
+      <thead><tr><th>{{ t('salesDocuments.number', 'Number') }}</th><th>{{ t('customer.title', 'Customer') }}</th><th>{{ t('salesDocuments.status', 'Status') }}</th><th></th></tr></thead>
       <tbody>
         <tr v-for="row in rows" :key="row.id" @click="show(row)">
           <td>{{ row.number }}</td><td>{{ customerName(row.customerId) }}</td><td>{{ label(row.status) }}</td>
@@ -249,7 +249,7 @@ onMounted(async () => {
       <v-card-title>{{ selected.number }}</v-card-title>
       <v-card-text>
         <div>{{ t('customer.title', 'Customer') }}: {{ customerName(selected.customerId) }}</div>
-        <div>Status: {{ label(selected.status) }}</div>
+        <div>{{ t('salesDocuments.status', 'Status') }}: {{ label(selected.status) }}</div>
         <div v-for="line in selected.lines" :key="line.id" class="sales-order-detail-line">
           <span>{{ line.name }} × {{ line.quantity }}</span>
           <span v-if="line.variantId"> · {{ variantName(line.productId, line.variantId) }}</span>
